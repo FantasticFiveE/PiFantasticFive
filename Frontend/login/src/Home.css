@@ -1,0 +1,224 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap");
+
+.home-container {
+  background: linear-gradient(135deg, #0f1923 0%, #2e2f3e 100%);
+  color: #ffffff;
+}
+
+/* Hero Section */
+.hero_section {
+  position: relative;
+  overflow: hidden;
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero_overlay {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.hero_bg_img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(60%);
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+.hero_content {
+  position: relative;
+  z-index: 2;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 20px;
+  text-align: center;
+}
+
+.hero_content h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 15px;
+  animation: fadeInDown 1s ease;
+}
+
+.hero_content p {
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+  animation: fadeInUp 1s ease;
+}
+
+.hero_cta_btn {
+  background: linear-gradient(135deg, #5b86e5 0%, #36d1dc 100%);
+  padding: 14px 28px;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+/* The new background block behind the hero text */
+.hero_text_bg {
+    background: rgba(0, 0, 0, 0.5);  /* semi-transparent black overlay */
+    backdrop-filter: blur(4px);      /* frosted glass effect */
+    border-radius: 10px;
+    padding: 20px;
+    display: inline-block;
+    margin: 0 auto;
+  }
+.hero_cta_btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 15px rgba(91, 134, 229, 0.4);
+}
+
+/* Carousel Section */
+.carousel_section {
+  padding: 60px 20px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(10px);
+}
+
+.carousel_section .section-title {
+  font-size: 2rem;
+  margin-bottom: 30px;
+  color: #36d1dc;
+}
+
+.slide_item {
+  position: relative;
+  outline: none; /* Remove default focus outline from slick slides */
+}
+
+.slide_img {
+  width: 100%;
+  height: 400px;
+  object-fit: cover;
+  border-radius: 10px;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+}
+
+.slide_caption {
+  position: absolute;
+  bottom: 20px;
+  left: 30px;
+  color: #fff;
+  text-align: left;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 10px 15px;
+  border-radius: 6px;
+  max-width: 300px;
+}
+
+.slide_caption h3 {
+  margin-bottom: 5px;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.slide_caption p {
+  font-size: 0.95rem;
+}
+
+/* Features Section */
+.features_section {
+  padding: 60px 20px;
+}
+
+.features_section .section-title {
+  font-size: 2rem;
+  margin-bottom: 30px;
+  text-align: center;
+  color: #36d1dc;
+}
+
+.features_grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.feature_card {
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(8px);
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.feature_card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.feature_card img {
+  width: 80px;
+  margin-bottom: 15px;
+}
+
+.feature_card h4 {
+  margin-bottom: 10px;
+  font-size: 1.2rem;
+  color: #5b86e5;
+}
+
+.feature_card p {
+  font-size: 0.95rem;
+  color: #fff;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .hero_content h1 {
+    font-size: 2rem;
+  }
+  .hero_content p {
+    font-size: 1rem;
+  }
+
+  .slide_img {
+    height: 250px;
+  }
+  .hero_content {
+    position: relative;
+    z-index: 2;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 20px;
+    text-align: center;
+  }
+}

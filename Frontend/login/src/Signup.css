@@ -1,115 +1,399 @@
-/* Signup.css */
+/* 
+  Futuristic / Glassmorphism Signup Page 
+  Inspired by a 2025 design aesthetic
+*/
 
-/* Container principal, centré sur toute la page */
-.signup-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    background-color: #f4f7fc; /* Fond gris clair */
+/* Font Import */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap");
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
+
+/* Container */
+.futuristic-signup-container {
+  position: relative; /* For absolute overlay positioning */
+  display: flex;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #2e2f3e 0%, #0f1923 100%);
+  background-size: cover;
+  background-position: center;
+  overflow: hidden; /* Hide floating overlay edges */
+}
+
+/* 
+  1) Animated Rotating Background Overlay
+*/
+.animated-bg-overlay {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.2), transparent 40%);
+  opacity: 0.7;
+  animation: rotateOverlay 25s linear infinite;
+  z-index: 1;
+}
+
+@keyframes rotateOverlay {
+  0% {
+    transform: rotate(0deg) scale(1);
   }
-  
-  /* Conteneur du formulaire */
-  .signup-form-container {
-    background-color: #fff;
-    padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  50% {
+    transform: rotate(180deg) scale(1.15);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+/* Left Panel (Branding) */
+.futuristic-signup-left {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    60deg,
+    rgba(28, 56, 93, 0.9),
+    rgba(15, 25, 35, 0.8),
+    rgba(28, 56, 93, 0.9)
+  );
+  backdrop-filter: blur(8px);
+  padding: 40px;
+  z-index: 2; /* Above overlay */
+}
+
+/* 2) Subtle floating animation */
+.floating-brand {
+  animation: floating 3s ease-in-out infinite;
+}
+
+@keyframes floating {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+/* Fade in from left */
+.fade-in-left {
+  animation: fadeLeft 1s ease forwards;
+}
+
+@keyframes fadeLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.futuristic-signup-left-content {
+  text-align: center;
+  color: #fff;
+  max-width: 300px;
+}
+
+/* Branding Logo */
+.futuristic-signup-logo-container {
+  margin-bottom: 20px;
+}
+
+.futuristic-signup-logo {
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  padding: 8px;
+}
+
+.futuristic-signup-brand {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 15px;
+}
+
+.futuristic-signup-text {
+  font-size: 1.1rem;
+  opacity: 0.9;
+  line-height: 1.4;
+}
+
+/* Right Panel (Form) */
+.futuristic-signup-right {
+  flex: 1.5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: 20px;
+  z-index: 2; /* Above overlay */
+}
+
+/* Fade in from right */
+.fade-in-right {
+  animation: fadeRight 1s ease forwards;
+}
+
+@keyframes fadeRight {
+  0% {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Glassmorphism Card */
+.futuristic-signup-card {
+  max-width: 450px;
+  width: 100%;
+  padding: 40px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  position: relative;
+}
+
+/* Slight float-up on hover */
+.float-up:hover {
+  transform: translateY(-5px);
+  transition: transform 0.3s ease;
+}
+
+/* Headings */
+.futuristic-signup-heading {
+  font-size: 1.8rem;
+  color: #fff;
+  margin-bottom: 10px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.futuristic-signup-subheading {
+  font-size: 1rem;
+  color: #cccccc;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+/* Error Message */
+.futuristic-error-message {
+  background-color: rgba(255, 0, 0, 0.1);
+  color: #ff4f4f;
+  border-left: 4px solid #ff4f4f;
+  padding: 8px;
+  margin-top: 5px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+/* Form Styles */
+.futuristic-signup-form {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Role Selection */
+.futuristic-form-group.futuristic-role-group {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.futuristic-role-button {
+  flex: 1;
+  padding: 12px 0;
+  border: 2px solid #5b86e5;
+  border-radius: 30px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  background: transparent;
+  color: #5b86e5;
+  text-align: center;
+}
+
+.futuristic-role-button:hover {
+  background-color: #4d6bab;
+  color: #fff;
+  border-color: #4d6bab;
+}
+
+.futuristic-role-button.selected {
+  background-color: #5b86e5;
+  color: #fff;
+  border-color: #5b86e5;
+}
+
+/* Form Group */
+.futuristic-form-group {
+  margin-bottom: 20px;
+}
+
+.futuristic-signup-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+  color: #fff;
+  font-weight: 500;
+}
+
+.futuristic-input-container {
+  position: relative;
+}
+
+.futuristic-input {
+  width: 100%;
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.futuristic-input:focus {
+  border-color: #5b86e5;
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Input Error State */
+.error-input {
+  border-color: #ff4f4f !important;
+}
+
+/* Eye Icon */
+.futuristic-eye-icon {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #aaa;
+  font-size: 1rem;
+}
+
+.futuristic-eye-icon:hover {
+  color: #fff;
+}
+
+/* Submit Button */
+.futuristic-signup-button {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #5b86e5 0%, #36d1dc 100%);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 10px;
+}
+
+.futuristic-signup-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 15px rgba(91, 134, 229, 0.4);
+}
+
+.futuristic-signup-button.loading {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+/* Footer */
+.futuristic-signup-footer {
+  margin-top: 20px;
+  text-align: center;
+  color: #ccc;
+}
+
+.futuristic-signup-footer p {
+  margin-bottom: 8px;
+}
+
+.futuristic-signup-link {
+  color: #5b86e5;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.3s;
+}
+
+.futuristic-signup-link:hover {
+  color: #9bc4eb;
+  text-decoration: underline;
+}
+
+/* Additional Keyframes */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 960px) {
+  .futuristic-signup-container {
+    flex-direction: column;
+  }
+
+  .futuristic-signup-left,
+  .futuristic-signup-right {
+    flex: none;
     width: 100%;
-    max-width: 480px;  /* Largeur ajustée du formulaire */
   }
-  
-  /* Titre du formulaire */
-  .signup-header {
-    text-align: center;
-    color: #004080; /* Bleu pour le titre */
-    font-size: 28px;
-    font-weight: bold;
-    margin-bottom: 25px;
+
+  .futuristic-signup-left {
+    padding: 40px 20px;
   }
-  
-  /* Espacement pour chaque groupe de champs */
-  .input-group {
-    margin-bottom: 25px; /* Espacement entre les champs */
+
+  .futuristic-signup-right {
+    padding: 40px 20px;
   }
-  
-  /* Labels des champs */
-  .input-group label {
-    font-size: 16px;
-    margin-bottom: 8px; /* Ajout d'une marge sous les labels */
-    display: block;
-    color: #333;
+
+  .futuristic-signup-card {
+    margin-top: 30px;
+    max-width: 500px;
   }
-  
-  /* Champs de saisie */
-  .form-control {
-    border: 2px solid #d1d8e0; /* Bordure gris clair */
-    border-radius: 5px;
-    padding: 12px;
-    width: 100%;
-    font-size: 16px;
-    margin-top: 5px;
-    background-color: #fafafa; /* Fond clair */
-  }
-  
-  /* Champs de saisie invalides */
-  .form-control.is-invalid {
-    border-color: #dc3545; /* Rouge pour les champs invalides */
-    background-color: #fff0f0; /* Fond légèrement rouge */
-  }
-  
-  /* Messages d'erreur */
-  .invalid-feedback {
-    color: #dc3545;
-    font-size: 12px;
-    margin-top: 5px; /* Un petit espace après le message d'erreur */
-  }
-  
-  /* Sélecteur pour le rôle */
-  .form-select {
-    width: 100%;
-    padding: 12px;
-    border-radius: 5px;
-    border: 2px solid #d1d8e0;
-    margin-top: 5px;
-    background-color: #fafafa;
-  }
-  
-  /* Bouton de soumission */
-  .btn-submit {
-    background-color: #004080;
-    color: #fff;
-    border: none;
-    padding: 14px;
-    border-radius: 5px;
-    width: 100%;
-    font-size: 16px;
-    cursor: pointer;
-    margin-top: 20px;
-  }
-  
-  .btn-submit:hover {
-    background-color: #003366;
-  }
-  
-  /* Lien vers la page de connexion */
-  .signup-footer {
-    text-align: center;
-    margin-top: 25px;
-  }
-  
-  .signup-footer p {
-    font-size: 14px;
-    color: #666;
-  }
-  
-  .btn-link {
-    text-decoration: none;
-    color: #004080;
-    font-size: 16px;
-  }
-  
-  .btn-link:hover {
-    color: #003366;
-  }
-  
+}

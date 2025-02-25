@@ -1,89 +1,151 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import axios from 'axios';
-import { useNavigate } from "react-router-dom";
-import React from "react";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
+import "./Login.css";
 
-function Signup() {
-  // Utiliser un seul état pour le formulaire
-  const [formData, setFormData] = useState({
-    email: "",
-    password: ""
-  });
-  const [error, setError] = useState("");  // Ajouter un état pour gérer l'erreur
+const Login = () => {
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
 
-  // Fonction pour mettre à jour l'état du formulaire
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
 
-  // Fonction de soumission du formulaire
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");  // Réinitialiser l'erreur avant chaque soumission
-    axios.post('http://localhost:3001/Frontend/login', formData)
-      .then(result => {
-        console.log(result);
-        if (result.data === "Success") {
-          navigate('/home'); // Rediriger si la connexion est réussie
-        } else {
-          setError("Email ou mot de passe incorrect!"); // Afficher une erreur si les informations sont incorrectes
-        }
-      })
-      .catch(err => {
-        console.error(err);
-        setError("Erreur de connexion. Veuillez réessayer plus tard."); // Gestion d'une erreur générique
-      });
+    setError("");
+    setLoading(true);
+
+    try {
+      const response = await axios.post(
+        "http://localhost:3001/Frontend/login",
+        formData
+      );
+      if (response.data === "Success") {
+        navigate("/home");
+      } else {
+        setError("Email ou mot de passe incorrect!");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Erreur de connexion. Veuillez réessayer plus tard.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="d-flex justify-content-center align-items-center bg-secondary vh-100">
-      <div className="bg-white p-3 rounded w-25">
-        <h2>Login</h2>
-        <form onSubmit={handleSubmit}>
-          {error && <div className="alert alert-danger">{error}</div>}  {/* Afficher l'erreur si elle existe */}
-          <div className="mb-3">
-            <label htmlFor="email">
-              <strong>Email</strong>
-            </label>
-            <input
-              type="email"
-              id="email"
-              placeholder="Enter Email"
-              autoComplete="off"
-              name="email"
-              className="form-control rounded-0"
-              value={formData.email}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="mb-3">
-            <label htmlFor="password">
-              <strong>Password</strong>
-            </label>
-            <input
-              type="password"
-              id="password"
-              placeholder="Enter Password"
-              name="password"
-              className="form-control rounded-0"
-              value={formData.password}
-              onChange={handleChange}
-            />
-          </div>
-          <button type="submit" className="btn btn-primary w-100 rounded-0">
-  Login
-</button>
+    <div className="futuristic-login-container">
+      {/* Animated Overlay for the full background */}
+      <div className="animated-bg-overlay"></div>
 
-        </form>
-        <p>Already Have an Account?</p>
-        <Link to="/register" className="btn btn-default border w-100 bg-light rounded-0">
-          Sign Up
-        </Link>
+      {/* Left Side (Branding / Slogan) */}
+      <div className="futuristic-login-left floating-brand">
+        <div className="futuristic-brand-container">
+          <img
+            src="images/nexthire.png"
+            alt="Futuristic Brand Logo"
+            className="futuristic-company-logo"
+          />
+          <h1 className="futuristic-brand-title">NextHire 2025</h1>
+          <p className="futuristic-brand-subtitle">
+            Optimisez votre recrutement à l'ère de l'IA
+          </p>
+        </div>
+      </div>
+
+      {/* Right Side (Form) */}
+      <div className="futuristic-login-right fade-in">
+        <div className="futuristic-form-card float-up">
+          <h2 className="futuristic-form-heading">Connexion</h2>
+          <p className="futuristic-form-subheading">
+            Accédez à votre espace personnel
+          </p>
+
+          {error && <div className="futuristic-error-message">{error}</div>}
+
+          <form onSubmit={handleSubmit} className="futuristic-login-form">
+            {/* Email Field */}
+            <div className="futuristic-form-group">
+              <label className="futuristic-label" htmlFor="email">
+                Adresse email
+              </label>
+              <div className="futuristic-input-container">
+                <i className="fas fa-envelope futuristic-input-icon"></i>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  placeholder="Entrez votre email"
+                  className="futuristic-input"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Password Field */}
+            <div className="futuristic-form-group">
+              <label className="futuristic-label" htmlFor="password">
+                Mot de passe
+              </label>
+              <div className="futuristic-input-container">
+                <i className="fas fa-lock futuristic-input-icon"></i>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  name="password"
+                  placeholder="Entrez votre mot de passe"
+                  className="futuristic-input"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                />
+                <span
+                  className="futuristic-eye-icon"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <VisibilityOff /> : <Visibility />}
+                </span>
+              </div>
+            </div>
+
+            <div className="futuristic-forgot-password">
+              <Link to="/forgot-password" className="futuristic-forgot-link">
+                Mot de passe oublié?
+              </Link>
+            </div>
+
+            <button
+              type="submit"
+              className={`futuristic-login-button ${
+                loading ? "loading" : ""
+              }`}
+              disabled={loading}
+            >
+              {loading ? "Connexion en cours..." : "Se connecter"}
+            </button>
+          </form>
+
+          <div className="futuristic-register-option">
+            <p>Vous n'avez pas de compte?</p>
+            <Link to="/register" className="futuristic-register-link">
+              Créer un compte
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );
-}
+};
 
-export default Signup;
+export default Login;

@@ -3,13 +3,15 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 import Signup from './signup'
 import {BrowserRouter, Routes, Route} from 'react-router-dom'
 import Login from './Login'
-import Navbar from './navbar'
-import Footer from './footer'
+import Navbar from './Navbar'
+import Footer from './Footer'
 import Home from './Home'
 import Why from './why'
 import Team from './team'
-import Service from './service'
-import About from './about'
+import Service from './Service'
+import About from './About'
+
+
 function App() {
   
 

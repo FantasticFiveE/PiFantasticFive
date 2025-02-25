@@ -1,33 +1,36 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import axios from 'axios';
-import { useNavigate } from "react-router-dom";
-import React from "react";
-import './Signup.css'; // Assurez-vous d'inclure ce fichier CSS pour les styles
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
+import "./Signup.css";
 
-function Signup() {
+const Signup = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
-    role: "candidat", // Par défaut "candidat"
-    matriculeFiscale: "", // Nouveau champ pour "Entreprise"
-    adresse: "", // Nouveau champ pour "Entreprise"
-    type: "" // Nouveau champ pour "Entreprise"
+    role: "candidat",
+    matriculeFiscale: "",
+    adresse: "",
+    type: "",
   });
 
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
   const navigate = useNavigate();
 
-  // Fonction pour mettre à jour l'état du formulaire
+  const handleRoleChange = (role) => {
+    setFormData({ ...formData, role });
+  };
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Validation des champs
   const validateForm = () => {
     const newErrors = {};
-
     if (!formData.name) newErrors.name = "Name is required.";
     const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!formData.email) {
@@ -41,169 +44,272 @@ function Signup() {
       newErrors.password = "Password must be at least 6 characters long.";
     }
 
-    // Validation des champs pour "Entreprise"
     if (formData.role === "entreprise") {
-      if (!formData.matriculeFiscale) newErrors.matriculeFiscale = "Matricule Fiscale is required.";
+      if (!formData.matriculeFiscale) {
+        newErrors.matriculeFiscale = "Matricule Fiscale is required.";
+      }
       if (!formData.adresse) newErrors.adresse = "Adresse is required.";
       if (!formData.type) newErrors.type = "Type is required.";
     }
-
     return newErrors;
   };
 
-  // Fonction de soumission du formulaire
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
     const formErrors = validateForm();
     if (Object.keys(formErrors).length > 0) {
       setErrors(formErrors);
       return;
     }
+    setLoading(true);
 
-    axios.post('http://localhost:3001/Frontend/register', formData)
-      .then(result => {
-        console.log(result);
-        navigate('/login');
-      })
-      .catch(err => console.log(err));
+    try {
+      await axios.post("http://localhost:3001/Frontend/register", formData);
+      navigate("/login");
+    } catch (error) {
+      console.error(error);
+      // Display a global error message if needed
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="signup-container">
-      <div className="signup-form-container">
-        <h2 className="signup-header">Register</h2>
+    <div className="futuristic-signup-container">
+      {/* Rotating Background Overlay */}
+      <div className="animated-bg-overlay"></div>
 
-        <form onSubmit={handleSubmit}>
-          {/* Champ pour le role placé en haut */}
-          <div className="input-group mb-3">
-            <label htmlFor="role" className="form-label">
-              <strong>Role</strong>
-            </label>
-            <select
-              name="role"
-              className="form-select"
-              value={formData.role}
-              onChange={handleChange}
+      {/* Left Side - Branding / Slogan with float animation */}
+      <div className="futuristic-signup-left floating-brand">
+        <div className="futuristic-signup-left-content fade-in-left">
+          <div className="futuristic-signup-logo-container">
+            <img
+              src="images/nexthire.png"
+              alt="NextHire Logo"
+              className="futuristic-signup-logo"
+            />
+          </div>
+          <h1 className="futuristic-signup-brand">NextHire 2025</h1>
+          <p className="futuristic-signup-text">
+            Simplifiez le recrutement grâce à l'IA
+          </p>
+        </div>
+      </div>
+
+      {/* Right Side - Glassmorphism Form with slight float-up */}
+      <div className="futuristic-signup-right fade-in-right">
+        <div className="futuristic-signup-card float-up">
+          <h2 className="futuristic-signup-heading">Inscription</h2>
+          <p className="futuristic-signup-subheading">
+            Créez votre compte en quelques étapes
+          </p>
+
+          <form onSubmit={handleSubmit} className="futuristic-signup-form">
+            {/* Role Selection */}
+            <div className="futuristic-form-group futuristic-role-group">
+              <button
+                type="button"
+                className={`futuristic-role-button ${
+                  formData.role === "candidat" ? "selected" : ""
+                }`}
+                onClick={() => handleRoleChange("candidat")}
+              >
+                Je suis un Candidat
+              </button>
+              <button
+                type="button"
+                className={`futuristic-role-button ${
+                  formData.role === "entreprise" ? "selected" : ""
+                }`}
+                onClick={() => handleRoleChange("entreprise")}
+              >
+                Je suis un Employeur
+              </button>
+            </div>
+
+            {/* Name */}
+            <div className="futuristic-form-group">
+              <label className="futuristic-signup-label" htmlFor="name">
+                Nom
+              </label>
+              <div className="futuristic-input-container">
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  placeholder="Entrez votre nom"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className={
+                    errors.name ? "futuristic-input error-input" : "futuristic-input"
+                  }
+                />
+              </div>
+              {errors.name && (
+                <div className="futuristic-error-message">{errors.name}</div>
+              )}
+            </div>
+
+            {/* Email */}
+            <div className="futuristic-form-group">
+              <label className="futuristic-signup-label" htmlFor="email">
+                Email
+              </label>
+              <div className="futuristic-input-container">
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  placeholder="Entrez votre email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={
+                    errors.email ? "futuristic-input error-input" : "futuristic-input"
+                  }
+                />
+              </div>
+              {errors.email && (
+                <div className="futuristic-error-message">{errors.email}</div>
+              )}
+            </div>
+
+            {/* Password */}
+            <div className="futuristic-form-group">
+              <label className="futuristic-signup-label" htmlFor="password">
+                Mot de passe
+              </label>
+              <div className="futuristic-input-container">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  name="password"
+                  placeholder="Entrez votre mot de passe"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={
+                    errors.password
+                      ? "futuristic-input error-input"
+                      : "futuristic-input"
+                  }
+                />
+                <span
+                  className="futuristic-eye-icon"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <VisibilityOff /> : <Visibility />}
+                </span>
+              </div>
+              {errors.password && (
+                <div className="futuristic-error-message">{errors.password}</div>
+              )}
+            </div>
+
+            {/* Additional Fields for Entreprise */}
+            {formData.role === "entreprise" && (
+              <>
+                {/* Matricule Fiscale */}
+                <div className="futuristic-form-group">
+                  <label
+                    className="futuristic-signup-label"
+                    htmlFor="matriculeFiscale"
+                  >
+                    Matricule Fiscale
+                  </label>
+                  <div className="futuristic-input-container">
+                    <input
+                      type="text"
+                      id="matriculeFiscale"
+                      name="matriculeFiscale"
+                      placeholder="Entrez votre matricule fiscale"
+                      value={formData.matriculeFiscale}
+                      onChange={handleChange}
+                      className={
+                        errors.matriculeFiscale
+                          ? "futuristic-input error-input"
+                          : "futuristic-input"
+                      }
+                    />
+                  </div>
+                  {errors.matriculeFiscale && (
+                    <div className="futuristic-error-message">
+                      {errors.matriculeFiscale}
+                    </div>
+                  )}
+                </div>
+
+                {/* Adresse */}
+                <div className="futuristic-form-group">
+                  <label className="futuristic-signup-label" htmlFor="adresse">
+                    Adresse
+                  </label>
+                  <div className="futuristic-input-container">
+                    <input
+                      type="text"
+                      id="adresse"
+                      name="adresse"
+                      placeholder="Entrez votre adresse"
+                      value={formData.adresse}
+                      onChange={handleChange}
+                      className={
+                        errors.adresse
+                          ? "futuristic-input error-input"
+                          : "futuristic-input"
+                      }
+                    />
+                  </div>
+                  {errors.adresse && (
+                    <div className="futuristic-error-message">{errors.adresse}</div>
+                  )}
+                </div>
+
+                {/* Type */}
+                <div className="futuristic-form-group">
+                  <label className="futuristic-signup-label" htmlFor="type">
+                    Type
+                  </label>
+                  <div className="futuristic-input-container">
+                    <input
+                      type="text"
+                      id="type"
+                      name="type"
+                      placeholder="Entrez le type d'entreprise"
+                      value={formData.type}
+                      onChange={handleChange}
+                      className={
+                        errors.type
+                          ? "futuristic-input error-input"
+                          : "futuristic-input"
+                      }
+                    />
+                  </div>
+                  {errors.type && (
+                    <div className="futuristic-error-message">{errors.type}</div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              className={`futuristic-signup-button ${loading ? "loading" : ""}`}
+              disabled={loading}
             >
-              <option value="candidat">Candidat</option>
-              <option value="entreprise">Entreprise</option>
-            </select>
+              {loading ? "Inscription en cours..." : "S'inscrire"}
+            </button>
+          </form>
+
+          {/* Already Have an Account? */}
+          <div className="futuristic-signup-footer">
+            <p>Vous avez déjà un compte ?</p>
+            <Link to="/login" className="futuristic-signup-link">
+              Se connecter
+            </Link>
           </div>
-
-          {/* Champs pour name, email et password sous le role */}
-          <div className="input-group mb-3">
-            <label htmlFor="name" className="form-label">
-              <strong>Name</strong>
-            </label>
-            <input
-              type="text"
-              id="name"
-              placeholder="Enter Name"
-              autoComplete="off"
-              name="name"
-              className={`form-control ${errors.name ? 'is-invalid' : ''}`}
-              value={formData.name}
-              onChange={handleChange}
-            />
-            {errors.name && <div className="invalid-feedback">{errors.name}</div>}
-          </div>
-
-          <div className="input-group mb-3">
-            <label htmlFor="email" className="form-label">
-              <strong>Email</strong>
-            </label>
-            <input
-              type="email"
-              id="email"
-              placeholder="Enter Email"
-              autoComplete="off"
-              name="email"
-              className={`form-control ${errors.email ? 'is-invalid' : ''}`}
-              value={formData.email}
-              onChange={handleChange}
-            />
-            {errors.email && <div className="invalid-feedback">{errors.email}</div>}
-          </div>
-
-          <div className="input-group mb-3">
-            <label htmlFor="password" className="form-label">
-              <strong>Password</strong>
-            </label>
-            <input
-              type="password"
-              id="password"
-              placeholder="Enter Password"
-              name="password"
-              className={`form-control ${errors.password ? 'is-invalid' : ''}`}
-              value={formData.password}
-              onChange={handleChange}
-            />
-            {errors.password && <div className="invalid-feedback">{errors.password}</div>}
-          </div>
-
-          {/* Champs spécifiques à l'Entreprise */}
-          {formData.role === "entreprise" && (
-            <>
-              <div className="input-group mb-3">
-                <label htmlFor="matriculeFiscale" className="form-label">
-                  <strong>Matricule Fiscale</strong>
-                </label>
-                <input
-                  type="text"
-                  id="matriculeFiscale"
-                  name="matriculeFiscale"
-                  className={`form-control ${errors.matriculeFiscale ? 'is-invalid' : ''}`}
-                  value={formData.matriculeFiscale}
-                  onChange={handleChange}
-                />
-                {errors.matriculeFiscale && <div className="invalid-feedback">{errors.matriculeFiscale}</div>}
-              </div>
-
-              <div className="input-group mb-3">
-                <label htmlFor="adresse" className="form-label">
-                  <strong>Adresse</strong>
-                </label>
-                <input
-                  type="text"
-                  id="adresse"
-                  name="adresse"
-                  className={`form-control ${errors.adresse ? 'is-invalid' : ''}`}
-                  value={formData.adresse}
-                  onChange={handleChange}
-                />
-                {errors.adresse && <div className="invalid-feedback">{errors.adresse}</div>}
-              </div>
-
-              <div className="input-group mb-3">
-                <label htmlFor="type" className="form-label">
-                  <strong>Type</strong>
-                </label>
-                <input
-                  type="text"
-                  id="type"
-                  name="type"
-                  className={`form-control ${errors.type ? 'is-invalid' : ''}`}
-                  value={formData.type}
-                  onChange={handleChange}
-                />
-                {errors.type && <div className="invalid-feedback">{errors.type}</div>}
-              </div>
-            </>
-          )}
-
-          <button type="submit" className="btn-submit">
-            Register
-          </button>
-        </form>
-
-        <div className="signup-footer">
-          <p>Already Have an account?</p>
-          <Link to="/login" className="btn-link">Login</Link>
         </div>
       </div>
     </div>
   );
-}
+};
 
 export default Signup;

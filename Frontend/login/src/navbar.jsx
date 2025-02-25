@@ -1,16 +1,19 @@
+import React from "react";
 import { Link } from "react-router-dom";
+import "./Navbar.css";
 
 const Navbar = () => {
   return (
-    <nav className="navbar navbar-expand-lg custom_nav-container">
+    <nav className="futuristic-navbar navbar navbar-expand-lg">
       <div className="container-fluid">
-        <Link className="navbar-brand" to="/">
+        {/* Brand */}
+        <Link className="navbar-brand futuristic-brand" to="/">
           <span>NEXTHIRE</span>
         </Link>
 
         {/* Mobile menu toggle button */}
         <button
-          className="navbar-toggler"
+          className="navbar-toggler futuristic-toggler"
           type="button"
           data-bs-toggle="collapse"
           data-bs-target="#navbarSupportedContent"
@@ -23,62 +26,44 @@ const Navbar = () => {
 
         {/* Navbar links */}
         <div className="collapse navbar-collapse" id="navbarSupportedContent">
-          <ul className="navbar-nav">
+          <ul className="navbar-nav ms-auto align-items-center">
             <li className="nav-item">
-              <Link className="nav-link" to="/">Home</Link>
-            </li>
-            <li className="nav-item">
-              <Link className="nav-link" to="/about">About</Link>
-            </li>
-            <li className="nav-item">
-              <Link className="nav-link" to="/service">Service</Link>
-            </li>
-            <li className="nav-item">
-              <Link className="nav-link" to="/why">Why Us</Link>
-            </li>
-            <li className="nav-item">
-              <Link className="nav-link" to="/team">Team</Link>
-            </li>
-            <li className="nav-item">
-              <Link className="nav-link" to="/dashboard">Dashboard</Link>
-            </li>
-
-            {/* Dropdown User Menu */}
-            <li className="nav-item dropdown">
-              <Link
-                className="nav-link dropdown-toggle"
-                to="#"
-                id="profileDropdown"
-                role="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false" >
-                <i className="fa fa-user-circle" aria-hidden="true" style={{ fontSize: "20px" }}></i>
+              <Link className="nav-link futuristic-nav-link" to="/home">
+                Home
               </Link>
-              <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
-                <li>
-                  <Link className="dropdown-item" to="/profile">Profile</Link>
-                </li>
-                <li>
-                  <Link className="dropdown-item" to="/settings">Settings</Link>
-                </li>
-                <li>
-                  <Link className="dropdown-item" to="/login">Login</Link>
-                </li>
-                <li>
-                  <hr className="dropdown-divider" />
-                </li>
-                <li>
-                  <Link className="dropdown-item" to="/logout">Logout</Link>
-                </li>
-              </ul>
+            </li>
+            <li className="nav-item">
+              <Link className="nav-link futuristic-nav-link" to="/about">
+                About
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link className="nav-link futuristic-nav-link" to="/service">
+                Services
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link className="nav-link futuristic-nav-link" to="/why">
+                Why Us
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link className="nav-link futuristic-nav-link" to="/team">
+                Team
+              </Link>
             </li>
 
-            {/* Search Button */}
-            <form className="form-inline">
-              <button className="btn my-2 my-sm-0 nav_search-btn" type="submit">
-                <i className="fa fa-search" aria-hidden="true"></i>
-              </button>
-            </form>
+            {/* Sign In & Sign Up Buttons */}
+            <li className="nav-item">
+              <Link className="btn signin-btn mx-2" to="/login">
+                Sign In
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link className="btn signup-btn" to="/register">
+                Sign Up
+              </Link>
+            </li>
           </ul>
         </div>
       </div>

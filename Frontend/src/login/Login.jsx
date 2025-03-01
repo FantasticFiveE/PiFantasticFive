@@ -1,13 +1,18 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import React from "react";
 import "./Login.css";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faEnvelope, faLock, faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
+import AuthContext from "../context/AuthContext";  // ✅ Import the context
 
 function Login() {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const { login } = useContext(AuthContext);  // ✅ Get login function from context
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -32,6 +37,9 @@ function Login() {
         const userRole = result.data.role || "CANDIDATE";
         localStorage.setItem("role", userRole);
 
+        // ✅ Update global auth state so Navbar updates immediately
+        login(userRole);
+
         if (userRole === "ENTERPRISE") {
           navigate("/enterprise-dashboard");
         } else {
@@ -49,64 +57,104 @@ function Login() {
     }
   };
 
-  
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
 
   return (
-      <div className="d-flex justify-content-center align-items-center bg-secondary vh-100">
-        <div className="bg-white p-3 rounded w-25">
-          <h2>Login</h2>
+    <div className="futuristic-login-container">
+      {/* Animated Background Overlay */}
+      <div className="animated-bg-overlay"></div>
+
+      {/* Left Panel (Branding) */}
+      <div className="futuristic-login-left">
+        <div className="futuristic-brand-container floating-brand">
+          <img 
+            src="/logo.png" 
+            alt="Company Logo" 
+            className="futuristic-company-logo" 
+            onError={(e) => { e.target.src = 'https://placehold.co/80x80'; }}
+          />
+          <h1 className="futuristic-brand-title">YourCompany</h1>
+          <p className="futuristic-brand-subtitle">
+            Your gateway to the future. Login to access our innovative platform.
+          </p>
+        </div>
+      </div>
+
+      {/* Right Panel (Form) */}
+      <div className="futuristic-login-right fade-in">
+        <div className="futuristic-form-card float-up">
+          <h2 className="futuristic-form-heading">Login</h2>
+          <p className="futuristic-form-subheading">Enter your credentials to continue</p>
+
           <form onSubmit={handleSubmit}>
-            {error && <div className="alert alert-danger">{error}</div>}
-            <div className="mb-3">
-              <label htmlFor="email">
-                <strong>Email</strong>
+            {error && <div className="futuristic-error-message">{error}</div>}
+
+            <div className="futuristic-form-group">
+              <label htmlFor="email" className="futuristic-label">
+                Email Address
               </label>
-              <input
-                type="email"
-                id="email"
-                placeholder="Enter Email"
-                autoComplete="off"
-                name="email"
-                className="form-control rounded-0"
-                value={formData.email}
-                onChange={handleChange}
-                required
-              />
+              <div className="futuristic-input-container">
+                <FontAwesomeIcon icon={faEnvelope} className="futuristic-input-icon" />
+                <input
+                  type="email"
+                  id="email"
+                  placeholder="Enter your email"
+                  autoComplete="off"
+                  name="email"
+                  className="futuristic-input"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
             </div>
-            <div className="mb-3">
-              <label htmlFor="password">
-                <strong>Password</strong>
+
+            <div className="futuristic-form-group">
+              <label htmlFor="password" className="futuristic-label">
+                Password
               </label>
-              <input
-                type="password"
-                id="password"
-                placeholder="Enter Password"
-                name="password"
-                className="form-control rounded-0"
-                value={formData.password}
-                onChange={handleChange}
-                required
-              />
+              <div className="futuristic-input-container">
+                <FontAwesomeIcon icon={faLock} className="futuristic-input-icon" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  placeholder="Enter your password"
+                  name="password"
+                  className="futuristic-input"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                />
+                <FontAwesomeIcon
+                  icon={showPassword ? faEyeSlash : faEye}
+                  className="futuristic-eye-icon"
+                  onClick={togglePasswordVisibility}
+                />
+              </div>
             </div>
-            <button type="submit" className="btn btn-primary w-100 rounded-0">
+
+            <div className="futuristic-forgot-password">
+              <Link to="/forgotPassword" className="futuristic-forgot-link">
+                Forgot Password?
+              </Link>
+            </div>
+
+            <button type="submit" className="futuristic-login-button">
               Login
             </button>
 
-            <Link to="/forgotPassword">Forgot Password</Link>
-
-            <p>Don't Have an Account?</p>
-            <Link
-              to="/register"
-              className="btn btn-default border w-100 bg-light rounded-0"
-            >
-              Sign Up
-            </Link>
-
-            
+            <div className="futuristic-register-option">
+              <p>Don't have an account?</p>
+              <Link to="/register" className="futuristic-register-link">
+                Sign Up
+              </Link>
+            </div>
           </form>
         </div>
       </div>
-    
+    </div>
   );
 }
 

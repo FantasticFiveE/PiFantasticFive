@@ -2,11 +2,14 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import "./VerifyEmail.css";
+import { FaEnvelope, FaLock, FaCheckCircle, FaExclamationCircle } from "react-icons/fa";
 
 function VerifyEmail() {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -21,6 +24,9 @@ function VerifyEmail() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setStatus(null);
+    setMessage("");
 
     try {
       const response = await axios.post("http://localhost:3001/Frontend/verify-email", {
@@ -28,40 +34,64 @@ function VerifyEmail() {
         verificationCode: code,
       });
 
-      setMessage(response.data.message);
+      setStatus("success");
+      setMessage("✅ Vérification réussie ! Redirection vers la connexion...");
 
       // Redirect to login page after successful verification
-      setTimeout(() => navigate("/login"), 2000);
+      setTimeout(() => navigate("/login"), 3000);
     } catch (err) {
-      setMessage(err.response?.data?.message || "Erreur lors de la vérification.");
+      setStatus("error");
+      setMessage("❌ Code incorrect. Veuillez réessayer.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="verify-email-container">
-      <h2>Vérification de l'Email</h2>
-      <p>📩 Un code de vérification vous a été envoyé par email.</p>
+      <div className="verify-email-card">
+        <h2 className="verify-email-title">Vérification de l'Email</h2>
+        <p className="verify-email-subtitle">
+          <FaEnvelope className="email-icon" /> Un code de vérification a été envoyé à votre adresse email.
+        </p>
 
-      <form onSubmit={handleSubmit}>
-        <input
-          type="email"
-          placeholder="Votre Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          readOnly // Make the email field read-only if it's pre-filled
-        />
-        <input
-          type="text"
-          placeholder="Code de vérification"
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          required
-        />
-        <button type="submit">Vérifier</button>
-      </form>
+        <form className="verify-email-form" onSubmit={handleSubmit}>
+          <div className="verify-email-input-container">
+            <input
+              type="email"
+              placeholder="Votre Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              readOnly
+              className="verify-email-input"
+            />
+          </div>
 
-      {message && <p>{message}</p>}
+          <div className="verify-email-input-container">
+            <FaLock className="input-icon" />
+            <input
+              type="text"
+              placeholder="Code de vérification"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              required
+              className="verify-email-input"
+            />
+          </div>
+
+          <button type="submit" className={`verify-email-button ${loading ? "loading" : ""}`} disabled={loading}>
+            {loading ? "Vérification en cours..." : "Vérifier"}
+          </button>
+        </form>
+
+        {message && (
+          <div className={`verify-email-message ${status === "success" ? "success" : "error"}`}>
+            {status === "success" ? <FaCheckCircle /> : <FaExclamationCircle />}
+            {message}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

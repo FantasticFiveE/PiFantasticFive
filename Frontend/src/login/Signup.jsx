@@ -3,14 +3,15 @@ import { Link } from "react-router-dom";
 import axios from 'axios';
 import { useNavigate } from "react-router-dom";
 import React from "react";
-import './Signup.css'; // Assurez-vous d'inclure ce fichier CSS pour les styles
+import './Signup.css';
+import { FaUser, FaEnvelope, FaLock, FaBuilding, FaIndustry, FaMapMarkerAlt, FaGlobe, FaFileAlt, FaUsers, FaEye, FaEyeSlash } from 'react-icons/fa';
 
 function Signup() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
-    role: "CANDIDATE", // Par défaut "CANDIDATE"
+    role: "CANDIDATE",
     enterprise: {
       name: "",
       industry: "",
@@ -22,9 +23,11 @@ function Signup() {
   });
 
   const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const [confirmationMessage, setConfirmationMessage] = useState("");
-  // Fonction pour mettre à jour l'état du formulaire
+  
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name.startsWith('enterprise.')) {
@@ -40,7 +43,6 @@ function Signup() {
     }
   };
 
-  // Validation des champs
   const validateForm = () => {
     const newErrors = {};
 
@@ -57,7 +59,7 @@ function Signup() {
       newErrors.password = "Password must be at least 6 characters long.";
     }
 
-    // Validation des champs pour "Entreprise"
+    // Validation for Enterprise fields
     if (formData.role === "ENTERPRISE") {
       if (!formData.enterprise.name) newErrors.enterpriseName = "Enterprise name is required.";
       if (!formData.enterprise.industry) newErrors.industry = "Industry is required.";
@@ -70,8 +72,7 @@ function Signup() {
     return newErrors;
   };
 
-  // Fonction de soumission du formulaire
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
   
     const formErrors = validateForm();
@@ -79,214 +80,258 @@ function Signup() {
       setErrors(formErrors);
       return;
     }
+
+    setIsLoading(true);
   
-    axios.post('http://localhost:3001/Frontend/register', formData)
-      .then(result => {
-        console.log(result);
-  
-        // Afficher le message de confirmation
-        setConfirmationMessage("Un code de vérification a été envoyé à votre adresse email.");
-  
-        // Rediriger vers la page VerifyEmail après 3 secondes
-        setTimeout(() => {
-          navigate(`/verify-email?email=${formData.email}`);
-        }, 3000);
-      })
-      .catch(err => {
-        console.log(err);
-        setErrors({ submit: "Erreur lors de l'inscription. Veuillez réessayer." });
-      });
+    try {
+      const result = await axios.post('http://localhost:3001/Frontend/register', formData);
+      console.log(result);
+      
+      setConfirmationMessage("A verification code has been sent to your email.");
+      
+      setTimeout(() => {
+        navigate(`/verify-email?email=${formData.email}`);
+      }, 3000);
+    } catch (err) {
+      console.log(err);
+      setErrors({ submit: "Registration error. Please try again." });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="signup-container">
-      <div className="signup-form-container">
-        <h2 className="signup-header">Register</h2>
-  
-        {/* Afficher le message de confirmation */}
-        {confirmationMessage && (
-          <div className="confirmation-message">
-            {confirmationMessage}
+    <div className="futuristic-signup-container">
+      {/* Animated background overlay */}
+      <div className="animated-bg-overlay"></div>
+      
+      {/* Left panel - Branding */}
+      <div className="futuristic-signup-left">
+        <div className="futuristic-signup-left-content floating-brand fade-in-left">
+          <div className="futuristic-signup-logo-container">
+            <img src="/logo.png" alt="Logo" className="futuristic-signup-logo" />
           </div>
-        )}
-  
-        <form onSubmit={handleSubmit}>
-          {/* Champ pour le role placé en haut */}
-          <div className="input-group mb-3">
-            <label htmlFor="role" className="form-label">
-              <strong>Role</strong>
-            </label>
-            <select
-              name="role"
-              className="form-select"
-              value={formData.role}
-              onChange={handleChange}
+          <h1 className="futuristic-signup-brand">CareerConnect</h1>
+          <p className="futuristic-signup-text">
+            Join our platform to connect with opportunities and talents in a seamless experience.
+          </p>
+        </div>
+      </div>
+      
+      {/* Right panel - Form */}
+      <div className="futuristic-signup-right">
+        <div className="futuristic-signup-card float-up fade-in-right">
+          <h2 className="futuristic-signup-heading">Create Account</h2>
+          <p className="futuristic-signup-subheading">Start your journey with us today</p>
+          
+          {confirmationMessage && (
+            <div className="futuristic-confirmation-message">
+              {confirmationMessage}
+            </div>
+          )}
+          
+          {errors.submit && (
+            <div className="futuristic-error-message">
+              {errors.submit}
+            </div>
+          )}
+          
+          <form className="futuristic-signup-form" onSubmit={handleSubmit}>
+            {/* Role selection */}
+            <div className="futuristic-form-group futuristic-role-group">
+              <div 
+                className={`futuristic-role-button ${formData.role === "CANDIDATE" ? "selected" : ""}`}
+                onClick={() => setFormData({...formData, role: "CANDIDATE"})}
+              >
+                <FaUser style={{ marginRight: '8px' }} />
+                Candidate
+              </div>
+              <div 
+                className={`futuristic-role-button ${formData.role === "ENTERPRISE" ? "selected" : ""}`}
+                onClick={() => setFormData({...formData, role: "ENTERPRISE"})}
+              >
+                <FaBuilding style={{ marginRight: '8px' }} />
+                Enterprise
+              </div>
+            </div>
+            
+            {/* Name field */}
+            <div className="futuristic-form-group">
+              <label className="futuristic-signup-label" htmlFor="name">Full Name</label>
+              <div className="futuristic-input-container">
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  className={`futuristic-input ${errors.name ? 'error-input' : ''}`}
+                  placeholder="Enter your full name"
+                  value={formData.name}
+                  onChange={handleChange}
+                />
+              </div>
+              {errors.name && <div className="futuristic-error-message">{errors.name}</div>}
+            </div>
+            
+            {/* Email field */}
+            <div className="futuristic-form-group">
+              <label className="futuristic-signup-label" htmlFor="email">Email Address</label>
+              <div className="futuristic-input-container">
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  className={`futuristic-input ${errors.email ? 'error-input' : ''}`}
+                  placeholder="Enter your email"
+                  value={formData.email}
+                  onChange={handleChange}
+                />
+              </div>
+              {errors.email && <div className="futuristic-error-message">{errors.email}</div>}
+            </div>
+            
+            {/* Password field */}
+            <div className="futuristic-form-group">
+              <label className="futuristic-signup-label" htmlFor="password">Password</label>
+              <div className="futuristic-input-container">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  name="password"
+                  className={`futuristic-input ${errors.password ? 'error-input' : ''}`}
+                  placeholder="Create a password"
+                  value={formData.password}
+                  onChange={handleChange}
+                />
+                <div 
+                  className="futuristic-eye-icon" 
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </div>
+              </div>
+              {errors.password && <div className="futuristic-error-message">{errors.password}</div>}
+            </div>
+            
+            {/* Enterprise Fields */}
+            {formData.role === "ENTERPRISE" && (
+              <div className="futuristic-enterprise-fields">
+                {/* Enterprise Name */}
+                <div className="futuristic-form-group">
+                  <label className="futuristic-signup-label" htmlFor="enterprise.name">Enterprise Name</label>
+                  <div className="futuristic-input-container">
+                    <input
+                      type="text"
+                      id="enterprise.name"
+                      name="enterprise.name"
+                      className={`futuristic-input ${errors.enterpriseName ? 'error-input' : ''}`}
+                      placeholder="Enter enterprise name"
+                      value={formData.enterprise.name}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  {errors.enterpriseName && <div className="futuristic-error-message">{errors.enterpriseName}</div>}
+                </div>
+                
+                {/* Industry */}
+                <div className="futuristic-form-group">
+                  <label className="futuristic-signup-label" htmlFor="enterprise.industry">Industry</label>
+                  <div className="futuristic-input-container">
+                    <input
+                      type="text"
+                      id="enterprise.industry"
+                      name="enterprise.industry"
+                      className={`futuristic-input ${errors.industry ? 'error-input' : ''}`}
+                      placeholder="Enter industry"
+                      value={formData.enterprise.industry}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  {errors.industry && <div className="futuristic-error-message">{errors.industry}</div>}
+                </div>
+                
+                {/* Location */}
+                <div className="futuristic-form-group">
+                  <label className="futuristic-signup-label" htmlFor="enterprise.location">Location</label>
+                  <div className="futuristic-input-container">
+                    <input
+                      type="text"
+                      id="enterprise.location"
+                      name="enterprise.location"
+                      className={`futuristic-input ${errors.location ? 'error-input' : ''}`}
+                      placeholder="Enter location"
+                      value={formData.enterprise.location}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  {errors.location && <div className="futuristic-error-message">{errors.location}</div>}
+                </div>
+                
+                {/* Website */}
+                <div className="futuristic-form-group">
+                  <label className="futuristic-signup-label" htmlFor="enterprise.website">Website</label>
+                  <div className="futuristic-input-container">
+                    <input
+                      type="text"
+                      id="enterprise.website"
+                      name="enterprise.website"
+                      className={`futuristic-input ${errors.website ? 'error-input' : ''}`}
+                      placeholder="Enter website URL"
+                      value={formData.enterprise.website}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  {errors.website && <div className="futuristic-error-message">{errors.website}</div>}
+                </div>
+                
+                {/* Description */}
+                <div className="futuristic-form-group">
+                  <label className="futuristic-signup-label" htmlFor="enterprise.description">Description</label>
+                  <div className="futuristic-input-container">
+                    <textarea
+                      id="enterprise.description"
+                      name="enterprise.description"
+                      className={`futuristic-input futuristic-textarea ${errors.description ? 'error-input' : ''}`}
+                      placeholder="Enter company description"
+                      value={formData.enterprise.description}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  {errors.description && <div className="futuristic-error-message">{errors.description}</div>}
+                </div>
+                
+                {/* Employee Count */}
+                <div className="futuristic-form-group">
+                  <label className="futuristic-signup-label" htmlFor="enterprise.employeeCount">Employee Count</label>
+                  <div className="futuristic-input-container">
+                    <input
+                      type="number"
+                      id="enterprise.employeeCount"
+                      name="enterprise.employeeCount"
+                      className={`futuristic-input ${errors.employeeCount ? 'error-input' : ''}`}
+                      placeholder="Enter number of employees"
+                      value={formData.enterprise.employeeCount}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  {errors.employeeCount && <div className="futuristic-error-message">{errors.employeeCount}</div>}
+                </div>
+              </div>
+            )}
+            
+            {/* Submit button */}
+            <button 
+              type="submit" 
+              className={`futuristic-signup-button ${isLoading ? 'loading' : ''}`}
+              disabled={isLoading}
             >
-              <option value="CANDIDATE">Candidat</option>
-              <option value="ENTERPRISE">Entreprise</option>
-            </select>
+              {isLoading ? 'Creating Account...' : 'Create Account'}
+            </button>
+          </form>
+          
+          <div className="futuristic-signup-footer">
+            <p>Already have an account?</p>
+            <Link to="/login" className="futuristic-signup-link">Login now</Link>
           </div>
-  
-          {/* Champs pour name, email et password sous le role */}
-          <div className="input-group mb-3">
-            <label htmlFor="name" className="form-label">
-              <strong>Name</strong>
-            </label>
-            <input
-              type="text"
-              id="name"
-              placeholder="Enter Name"
-              autoComplete="off"
-              name="name"
-              className={`form-control ${errors.name ? 'is-invalid' : ''}`}
-              value={formData.name}
-              onChange={handleChange}
-            />
-            {errors.name && <div className="invalid-feedback">{errors.name}</div>}
-          </div>
-  
-          <div className="input-group mb-3">
-            <label htmlFor="email" className="form-label">
-              <strong>Email</strong>
-            </label>
-            <input
-              type="email"
-              id="email"
-              placeholder="Enter Email"
-              autoComplete="off"
-              name="email"
-              className={`form-control ${errors.email ? 'is-invalid' : ''}`}
-              value={formData.email}
-              onChange={handleChange}
-            />
-            {errors.email && <div className="invalid-feedback">{errors.email}</div>}
-          </div>
-  
-          <div className="input-group mb-3">
-            <label htmlFor="password" className="form-label">
-              <strong>Password</strong>
-            </label>
-            <input
-              type="password"
-              id="password"
-              placeholder="Enter Password"
-              name="password"
-              className={`form-control ${errors.password ? 'is-invalid' : ''}`}
-              value={formData.password}
-              onChange={handleChange}
-            />
-            {errors.password && <div className="invalid-feedback">{errors.password}</div>}
-          </div>
-  
-          {/* Champs spécifiques à l'Entreprise */}
-{formData.role === "ENTERPRISE" && (
-  <>
-    {/* Enterprise Name */}
-    <div className="input-group mb-3">
-      <label htmlFor="enterprise.name" className="form-label">
-        <strong>Enterprise Name</strong>
-      </label>
-      <input
-        type="text"
-        id="enterprise.name"
-        name="enterprise.name"
-        className={`form-control ${errors.enterpriseName ? 'is-invalid' : ''}`}
-        value={formData.enterprise.name}
-        onChange={handleChange}
-      />
-      {errors.enterpriseName && <div className="invalid-feedback">{errors.enterpriseName}</div>}
-    </div>
-
-    {/* Industry */}
-    <div className="input-group mb-3">
-      <label htmlFor="enterprise.industry" className="form-label">
-        <strong>Industry</strong>
-      </label>
-      <input
-        type="text"
-        id="enterprise.industry"
-        name="enterprise.industry"
-        className={`form-control ${errors.industry ? 'is-invalid' : ''}`}
-        value={formData.enterprise.industry}
-        onChange={handleChange}
-      />
-      {errors.industry && <div className="invalid-feedback">{errors.industry}</div>}
-    </div>
-
-    {/* Location */}
-    <div className="input-group mb-3">
-      <label htmlFor="enterprise.location" className="form-label">
-        <strong>Location</strong>
-      </label>
-      <input
-        type="text"
-        id="enterprise.location"
-        name="enterprise.location"
-        className={`form-control ${errors.location ? 'is-invalid' : ''}`}
-        value={formData.enterprise.location}
-        onChange={handleChange}
-      />
-      {errors.location && <div className="invalid-feedback">{errors.location}</div>}
-    </div>
-
-    {/* Website */}
-    <div className="input-group mb-3">
-      <label htmlFor="enterprise.website" className="form-label">
-        <strong>Website</strong>
-      </label>
-      <input
-        type="text"
-        id="enterprise.website"
-        name="enterprise.website"
-        className={`form-control ${errors.website ? 'is-invalid' : ''}`}
-        value={formData.enterprise.website}
-        onChange={handleChange}
-      />
-      {errors.website && <div className="invalid-feedback">{errors.website}</div>}
-    </div>
-
-    {/* Description */}
-    <div className="input-group mb-3">
-      <label htmlFor="enterprise.description" className="form-label">
-        <strong>Description</strong>
-      </label>
-      <textarea
-        id="enterprise.description"
-        name="enterprise.description"
-        className={`form-control ${errors.description ? 'is-invalid' : ''}`}
-        value={formData.enterprise.description}
-        onChange={handleChange}
-      />
-      {errors.description && <div className="invalid-feedback">{errors.description}</div>}
-    </div>
-
-    {/* Employee Count */}
-    <div className="input-group mb-3">
-      <label htmlFor="enterprise.employeeCount" className="form-label">
-        <strong>Employee Count</strong>
-      </label>
-      <input
-        type="number"
-        id="enterprise.employeeCount"
-        name="enterprise.employeeCount"
-        className={`form-control ${errors.employeeCount ? 'is-invalid' : ''}`}
-        value={formData.enterprise.employeeCount}
-        onChange={handleChange}
-      />
-      {errors.employeeCount && <div className="invalid-feedback">{errors.employeeCount}</div>}
-    </div>
-  </>
-)}
-
-  
-          <button type="submit" className="btn-submit">
-            Register
-          </button>
-        </form>
-  
-        <div className="signup-footer">
-          <p>Already Have an account?</p>
-          <Link to="/login" className="btn-link">Login</Link>
         </div>
       </div>
     </div>

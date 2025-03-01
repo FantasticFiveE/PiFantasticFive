@@ -1,0 +1,131 @@
+/* Import Google Font */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap");
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
+
+/* Page Container */
+.verify-email-pending-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #1e3c72, #2a5298);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Animated Background */
+.verify-email-pending-container::before {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1), transparent 40%);
+  animation: rotateBackground 20s linear infinite;
+}
+
+@keyframes rotateBackground {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Verification Card */
+.verify-email-pending-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 30px;
+  width: 400px;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  animation: fadeInUp 0.8s ease-in-out;
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.verify-email-pending-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 10px;
+}
+
+.verify-email-pending-text {
+  color: #ddd;
+  font-size: 1rem;
+  margin-bottom: 20px;
+}
+
+.pending-icon {
+  font-size: 3rem;
+  color: #ffcc00;
+  margin-bottom: 10px;
+  animation: pulse 1.5s infinite;
+}
+
+.email-icon {
+  color: #4fc3f7;
+  margin-right: 5px;
+}
+
+/* Loading Animation */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+}
+
+/* Button */
+.verify-email-pending-button {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #4fc3f7, #1e88e5);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+  margin-top: 15px;
+}
+
+.verify-email-pending-button:hover {
+  background: linear-gradient(135deg, #42a5f5, #0d47a1);
+}
+
+@media (max-width: 480px) {
+  .verify-email-pending-card {
+    width: 90%;
+    padding: 20px;
+  }
+}

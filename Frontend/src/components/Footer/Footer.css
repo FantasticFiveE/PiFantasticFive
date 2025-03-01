@@ -1,0 +1,139 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap");
+
+.futuristic-footer {
+  background: linear-gradient(135deg, #0f1923 0%, #2e2f3e 100%);
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+
+.futuristic-footer-top {
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(8px);
+  padding: 40px 0;
+}
+
+/* Titles */
+.info_col h4 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: #36d1dc;
+}
+
+/* Contact Links, Social Icons */
+.contact_link_box a {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  color: #fff;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.contact_link_box a:hover {
+  color: #36d1dc;
+}
+
+.contact_link_box i {
+  margin-right: 8px;
+}
+
+.info_social a {
+  display: inline-block;
+  margin-right: 10px;
+  color: #fff;
+  transition: transform 0.3s;
+}
+
+.info_social a:hover {
+  transform: scale(1.1);
+  color: #36d1dc;
+}
+
+/* Info Details */
+.info_col p {
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+/* Quick Links */
+.info_links a {
+  display: block;
+  color: #fff;
+  margin-bottom: 8px;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.info_links a:hover {
+  color: #36d1dc;
+}
+
+/* Subscribe Form */
+.subscribe-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.subscribe-form input {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.subscribe-form input::placeholder {
+  color: #ccc;
+}
+
+.subscribe-form button {
+  background: linear-gradient(135deg, #5b86e5 0%, #36d1dc 100%);
+  border: none;
+  padding: 10px;
+  border-radius: 6px;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.subscribe-form button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 15px rgba(91, 134, 229, 0.3);
+}
+
+/* Footer Bottom */
+.futuristic-footer-bottom {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 20px 0;
+  text-align: center;
+}
+
+.futuristic-footer-bottom p {
+  color: #ccc;
+  margin: 0;
+}
+
+.futuristic-footer-bottom a {
+  color: #5b86e5;
+  text-decoration: none;
+  margin-left: 5px;
+}
+
+.futuristic-footer-bottom a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .subscribe-form {
+    flex-direction: row;
+  }
+  .subscribe-form input {
+    flex: 1;
+    margin-right: 8px;
+  }
+}

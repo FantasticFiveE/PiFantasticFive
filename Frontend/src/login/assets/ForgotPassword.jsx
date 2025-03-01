@@ -1,22 +1,18 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from 'axios';
-import React from "react";
+import axios from "axios";
+import "./ForgotPassword.css"; // New CSS file
 
 const ForgotPassword = () => {
-  const [formData, setFormData] = useState({
-    email: "",
-  });
-  
+  const [formData, setFormData] = useState({ email: "" });
   const [errors, setErrors] = useState({});
+  const [message, setMessage] = useState("");
   const navigate = useNavigate();
 
-  // Function to handle form input changes
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Form validation function
   const validateForm = () => {
     const errors = {};
     if (!formData.email) {
@@ -27,61 +23,57 @@ const ForgotPassword = () => {
     return errors;
   };
 
-  // Form submission handler
   const handleSubmit = (e) => {
     e.preventDefault();
+    setMessage("");
 
-    // Validate form
     const formErrors = validateForm();
     if (Object.keys(formErrors).length > 0) {
       setErrors(formErrors);
       return;
     }
 
-    // Sending the request to reset password
-    axios.post('http://localhost:3001/forgot-password', formData)
-      .then((result) => {
-        console.log(result);
-        alert("Check your email for a password reset link.");
-        navigate('/login'); // Redirect to login page after submission
+    axios
+      .post("http://localhost:3001/forgot-password", formData)
+      .then(() => {
+        setMessage("✅ Check your email for a password reset link.");
+        setTimeout(() => navigate("/login"), 3000); // Redirect after showing message
       })
-      .catch((err) => {
-        console.error(err);
-        alert("An error occurred. Please try again later.");
+      .catch(() => {
+        setMessage("❌ An error occurred. Please try again later.");
       });
   };
 
   return (
-    <div className="signup-container">
-      <div className="signup-form-container">
-        <h2 className="signup-header">Forgot Password</h2>
+    <div className="forgot-password-container">
+      <div className="forgot-password-card">
+        <h2 className="forgot-password-title">Forgot Your Password?</h2>
+        <p className="forgot-password-subtitle">
+          Enter your email and we’ll send you a link to reset your password.
+        </p>
 
-        <form onSubmit={handleSubmit}>
-          <div className="input-group mb-3">
-            <label htmlFor="email" className="form-label">
-              <strong>Email</strong>
-            </label>
+        {message && <div className="forgot-password-message">{message}</div>}
+
+        <form onSubmit={handleSubmit} className="forgot-password-form">
+          <div className="forgot-password-input-group">
+            <label htmlFor="email" className="forgot-password-label">Email Address</label>
             <input
               type="email"
               id="email"
-              placeholder="Enter Email"
-              autoComplete="off"
               name="email"
-              className={`form-control ${errors.email ? 'is-invalid' : ''}`}
+              placeholder="Enter your email"
               value={formData.email}
               onChange={handleChange}
+              className={`forgot-password-input ${errors.email ? 'error' : ''}`}
             />
-            {errors.email && <div className="invalid-feedback">{errors.email}</div>}
+            {errors.email && <div className="error-message">{errors.email}</div>}
           </div>
 
-          <button type="submit" className="btn-submit">
-            Send Reset Link
-          </button>
+          <button type="submit" className="forgot-password-button">Send Reset Link</button>
         </form>
 
-        <div className="signup-footer">
-          {/* Optionally, add a link back to login or home */}
-          <Link to="/login">Back to Login</Link>
+        <div className="forgot-password-footer">
+          <Link to="/login" className="back-to-login">← Back to Login</Link>
         </div>
       </div>
     </div>

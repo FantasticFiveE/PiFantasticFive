@@ -9,14 +9,28 @@ const nodemailer = require("nodemailer"); // Ajout de l'importation de nodemaile
 require("dotenv").config();
 
 
+
+
 const app = express();
 app.use(express.json());
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",  // Add more if needed
+];
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
-    credentials: true, // Active l'utilisation des cookies côté client
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
   })
 );
+
 app.use(cookieParser());
 
 mongoose

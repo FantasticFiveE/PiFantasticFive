@@ -69,13 +69,14 @@ function Login() {
       {/* Left Panel (Branding) */}
       <div className="futuristic-login-left">
         <div className="futuristic-brand-container floating-brand">
-          <img 
-            src="/logo.png" 
-            alt="Company Logo" 
-            className="futuristic-company-logo" 
-            onError={(e) => { e.target.src = 'https://placehold.co/80x80'; }}
-          />
-          <h1 className="futuristic-brand-title">YourCompany</h1>
+        <img 
+  src="/images/nexthire.png" 
+  alt="Company Logo" 
+  className="futuristic-company-logo" 
+  onError={(e) => { e.target.src = 'https://placehold.co/80x80'; }}
+/>
+
+          <h1 className="futuristic-brand-title">NextHire</h1>
           <p className="futuristic-brand-subtitle">
             Your gateway to the future. Login to access our innovative platform.
           </p>

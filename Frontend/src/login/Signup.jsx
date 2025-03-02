@@ -109,9 +109,14 @@ function Signup() {
       <div className="futuristic-signup-left">
         <div className="futuristic-signup-left-content floating-brand fade-in-left">
           <div className="futuristic-signup-logo-container">
-            <img src="/logo.png" alt="Logo" className="futuristic-signup-logo" />
+          <img 
+  src="/images/nexthire.png" 
+  alt="Company Logo" 
+  className="futuristic-company-logo" 
+  onError={(e) => { e.target.src = 'https://placehold.co/80x80'; }}
+/>
           </div>
-          <h1 className="futuristic-signup-brand">CareerConnect</h1>
+          <h1 className="futuristic-signup-brand">NextHire</h1>
           <p className="futuristic-signup-text">
             Join our platform to connect with opportunities and talents in a seamless experience.
           </p>

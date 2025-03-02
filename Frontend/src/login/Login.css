@@ -226,7 +226,8 @@
 .futuristic-input {
   width: 100%;
   padding: 14px;
-  padding-left: 50px; /* This creates space between icon and text */
+  padding-left: 50px; /* Keeps space for the icon */
+  text-align: center; /* This centers the placeholder text */
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   background-color: rgba(255, 255, 255, 0.1);
@@ -235,7 +236,6 @@
   transition: all 0.3s ease;
   font-size: 0.95rem;
 }
-
 
 /* Optional: Move the icon slightly if needed */
 .futuristic-input-icon {

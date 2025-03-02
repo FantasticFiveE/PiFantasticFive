@@ -6,17 +6,29 @@ const cookieParser = require("cookie-parser");
 const UserModel = require("./models/user"); // Changed to User model
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer"); // Ajout de l'importation de nodemailer
+const passport = require("passport");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
 require("dotenv").config();
 
 
 
 
 const app = express();
+
+
+app.use((req, res, next) => {
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+  res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
+  next();
+});
+
 app.use(express.json());
 const allowedOrigins = [
   "http://localhost:5173",
-  "http://localhost:5174",  // Add more if needed
+   // Add more if needed
 ];
+
+
 
 app.use(
   cors({
@@ -109,6 +121,94 @@ const verifyToken = (req, res, next) => {
 app.get("/Frontend/protected", verifyToken, (req, res) => {
   res.json({ message: "This is a protected route", user: req.user });
 });
+
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: "http://localhost:3001/auth/google/callback",
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        let user = await UserModel.findOne({ email: profile.emails[0].value });
+
+        if (!user) {
+          user = await UserModel.create({
+            email: profile.emails[0].value,
+            name: profile.displayName,
+            googleId: profile.id,
+            emailVerified: true,
+            role: "CANDIDATE",
+          });
+        }
+
+        return done(null, user);
+      } catch (err) {
+        return done(err, null);
+      }
+    }
+  )
+);
+
+passport.serializeUser((user, done) => {
+  done(null, user.id);
+});
+
+passport.deserializeUser(async (id, done) => {
+  const user = await UserModel.findById(id);
+  done(null, user);
+});
+
+app.post("/auth/google", async (req, res) => {
+  const { email, name, googleId } = req.body;
+
+  try {
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      user = new User({ email, name, googleId });
+      await user.save();
+    }
+
+    const token = jwt.sign({ userId: user._id }, "SECRET_KEY", { expiresIn: "1h" });
+
+    res.json({ status: true, token, role: user.role || "CANDIDATE" });
+  } catch (error) {
+    console.error("Google Auth Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Route pour déclencher l'auth Google
+app.get(
+  "/auth/google",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
+
+// Route de callback après authentification Google
+app.get(
+  "/auth/google/callback",
+  passport.authenticate("google", {
+    failureRedirect: "/login",
+    session: false,
+  }),
+  (req, res) => {
+    const token = jwt.sign({ id: req.user._id, email: req.user.email }, SECRET_KEY, {
+      expiresIn: "1h",
+    });
+
+    res.cookie("token", token, { httpOnly: true, maxAge: 3600000, sameSite: "strict" });
+
+    res.redirect("http://localhost:5173/home"); // Redirige après connexion réussie
+  }
+);
+app.use((req, res, next) => {
+  res.setHeader("Content-Security-Policy", "frame-ancestors 'self' https://accounts.google.com");
+  next();
+});
+
+
 
 app.post("/Frontend/register", async (req, res) => {
   try {

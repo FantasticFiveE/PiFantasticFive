@@ -318,7 +318,7 @@ function Signup() {
               </div>
             )}
             
-            {/* Submit button */}
+            {/* Submit  */}
             <button 
               type="submit" 
               className={`futuristic-signup-button ${isLoading ? 'loading' : ''}`}

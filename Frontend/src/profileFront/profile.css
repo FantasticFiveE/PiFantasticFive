@@ -1,0 +1,276 @@
+/* 🌟 Global Styles */
+.profile-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 40px 20px;
+  background: linear-gradient(135deg, #0a1931, #1a2e50);
+  color: white;
+}
+
+.card {
+  width: 100%;
+  max-width: 850px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border-radius: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  padding: 30px;
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.card-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  background: rgba(0, 102, 236, 0.892);
+  border-radius: 15px 15px 0 0;
+}
+
+.avatar-container {
+  position: relative;
+  margin-top: -80px;
+}
+
+.avatar {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border: 5px solid #1877f2;
+  box-shadow: 0 8px 20px rgba(24, 119, 242, 0.6);
+  background: white;
+  object-fit: cover;
+  transition: transform 0.3s ease-in-out;
+}
+
+.avatar:hover {
+  transform: scale(1.05);
+}
+
+.camera-icon {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: #1877f2;
+  color: white;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+
+.camera-icon:hover {
+  background: #145dbf;
+  transform: scale(1.1);
+}
+
+.name {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 10px 0 5px;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.role {
+  color: #4b4b4b;
+  font-size: 1.2rem;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+
+.card-body {
+  padding: 20px;
+}
+
+.email {
+  font-size: 1.2rem;
+  color: #e0d7d7;
+  margin-bottom: 20px;
+}
+
+.skills ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.skills li {
+  background: linear-gradient(45deg, #004aad, #007bff);
+  color: white;
+  font-size: 0.9rem;
+  padding: 8px 16px;
+  border-radius: 25px;
+  font-weight: 500;
+  text-transform: uppercase;
+  box-shadow: 0 4px 10px rgba(0, 122, 255, 0.3);
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.skills li:hover {
+  transform: scale(1.1);
+  box-shadow: 0 8px 20px rgba(0, 122, 255, 0.6);
+}
+
+.experience-card {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 20px;
+  margin-top: 15px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.experience-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.experience-card h4 {
+  color: #007bff;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.experience-card p {
+  color: #cccccc;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.upload-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 30px;
+  gap: 15px;
+}
+
+.upload-button {
+  background: linear-gradient(45deg, #004aad, #007bff);
+  color: white;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 122, 255, 0.4);
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+  width: 200px;
+  text-align: center;
+}
+
+.upload-button:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 122, 255, 0.6);
+}
+
+.upload-success, .upload-error {
+  padding: 10px;
+  border-radius: 5px;
+  margin-top: 10px;
+  max-width: 80%;
+  text-align: center;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.upload-success {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.upload-error {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.cv-link a {
+  color: #007bff;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.cv-link a:hover {
+  text-decoration: underline;
+}
+
+.confirm-cancel-container {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.confirm-button,
+.cancel-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: bold;
+  transition: background 0.3s ease;
+}
+
+.confirm-button {
+  background: #28a745;
+  color: white;
+}
+
+.cancel-button {
+  background: #dc3545;
+  color: white;
+}
+
+.confirm-button:hover {
+  background: #218838;
+}
+
+.cancel-button:hover {
+  background: #c82333;
+}
+
+.edit-profile-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+  margin-top: 10px;
+}
+
+.edit-profile-button:hover {
+  background-color: #0056b3;
+  transform: translateY(-2px);
+}
+
+.edit-profile-button:active {
+  transform: translateY(0);
+}

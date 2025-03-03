@@ -1,16 +1,21 @@
-import React, { useContext } from "react";
+import  { useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";  // ✅ Import useNavigate
 import AuthContext from "../../context/AuthContext";  // ✅ Import the AuthContext
 import "./Navbar.css";
 
 const Navbar = () => {
-  const { isAuthenticated, logout } = useContext(AuthContext);  // ✅ Access login state & logout function
-  const navigate = useNavigate();  // ✅ Initialize navigate
+  const userId = localStorage.getItem("userId"); // Vérifier si l'ID est bien dans le localStorage
+  console.log("userId:", userId); // Ajouter un log pour déboguer l'ID
+
+  const { isAuthenticated, logout } = useContext(AuthContext);  // ✅ Accéder à l'état d'authentification
+  const navigate = useNavigate();  // ✅ Initialiser le navigate
 
   const handleLogout = () => {
     logout();              // ✅ Clear auth state
-    navigate("/login");     // ✅ Redirect to login page
+    navigate("/login");     // ✅ Rediriger vers la page de login
   };
+
+  console.log("isAuthenticated:", isAuthenticated); // Vérifier si l'utilisateur est authentifié
 
   return (
     <nav className="futuristic-navbar navbar navbar-expand-lg">
@@ -65,11 +70,17 @@ const Navbar = () => {
             {/* Conditional Rendering for Authenticated/Unauthenticated Users */}
             {isAuthenticated ? (
               <>
+                {/* Profile Link */}
                 <li className="nav-item">
-                  <Link className="nav-link futuristic-nav-link" to="/profile">
-                    Edit Profile
-                  </Link>
+                  {userId ? (
+                    <Link className="nav-link futuristic-nav-link" to={`/profile/${userId}`}>
+                      Mon Profil
+                    </Link>
+                  ) : (
+                    <span>Loading...</span> // Affiche un message de chargement si l'ID n'est pas encore récupéré
+                  )}
                 </li>
+                {/* Logout Button */}
                 <li className="nav-item">
                   <button
                     className="btn logout-btn"

@@ -1,38 +1,58 @@
-import React, { createContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect } from "react";
+import PropTypes from "prop-types"; // ✅ Importer PropTypes
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [role, setRole] = useState(null);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const savedRole = localStorage.getItem("role");
+    try {
+      const token = localStorage.getItem("token");
+      const savedUser = JSON.parse(localStorage.getItem("user"));
 
-    if (token) {
-      setIsAuthenticated(true);
-      setRole(savedRole);
+      if (token && savedUser) {
+        setIsAuthenticated(true);
+        setUser(savedUser);
+      }
+    } catch (error) {
+      console.error("Error reading from localStorage", error);
     }
   }, []);
 
-  const login = (userRole) => {
-    setIsAuthenticated(true);
-    setRole(userRole);
+  const login = (userData, token) => {
+    try {
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(userData));
+      setIsAuthenticated(true);
+      setUser(userData);
+    } catch (error) {
+      console.error("Error saving to localStorage", error);
+    }
   };
 
   const logout = () => {
-    setIsAuthenticated(false);
-    setRole(null);
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
+    try {
+      setIsAuthenticated(false);
+      setUser(null);
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+    } catch (error) {
+      console.error("Error removing from localStorage", error);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, role, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
+};
+
+// ✅ Définition des PropTypes pour éviter l'erreur ESLint
+AuthProvider.propTypes = {
+  children: PropTypes.node.isRequired,
 };
 
 export default AuthContext;

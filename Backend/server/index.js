@@ -7,6 +7,10 @@ const UserModel = require("./models/user"); // Changed to User model
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer"); // Ajout de l'importation de nodemailer
 const passport = require("passport");
+const fs = require('fs');
+const multer = require("multer");
+
+
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 require("dotenv").config();
 
@@ -92,12 +96,20 @@ app.post("/Frontend/login", async (req, res) => {
       sameSite: "strict",
     });
 
-    return res.json({ status: true, message: "Login successful", token, emailVerified: true });
+    // Retourner l'ID de l'utilisateur dans la réponse
+    return res.json({ 
+      status: true, 
+      message: "Login successful", 
+      token, 
+      userId: user._id, // ID de l'utilisateur
+      emailVerified: true 
+    });
   } catch (err) {
     console.error("Login Error:", err);
     return res.status(500).json({ message: "Erreur serveur" });
   }
 });
+
 
 
 // Middleware pour vérifier le token
@@ -119,6 +131,7 @@ const verifyToken = (req, res, next) => {
 
 // Route protégée (exemple)
 app.get("/Frontend/protected", verifyToken, (req, res) => {
+  const userId = req.user.id;
   res.json({ message: "This is a protected route", user: req.user });
 });
 
@@ -381,8 +394,183 @@ const path = require("path");
 // Servir l'application React pour toutes les autres routes non définies dans Express
 app.use(express.static(path.join(__dirname, "client/build"))); // Assure-toi d'avoir buildé React
 
-app.get("*", (req, res) => {
+/* app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "client/build", "index.html"));
+}); */
+
+
+//************** PROFILE */
+// Middleware pour servir les fichiers statiques des dossiers 'uploads/' et 'uploadsPics/'
+const uploadDir = path.join(__dirname, 'uploads');
+const uploadPicsDir = path.join(__dirname, 'uploadsPics');
+
+// Vérifiez si les dossiers existent, sinon créez-les
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+if (!fs.existsSync(uploadPicsDir)) {
+  fs.mkdirSync(uploadPicsDir, { recursive: true });
+}
+
+app.use("/uploads", express.static(uploadDir)); 
+app.use("/uploadsPics", express.static(uploadPicsDir)); 
+
+app.get("/Frontend/getUser/:id", async (req, res) => {
+  try {
+    const user = await UserModel.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+    
+    // Nettoyer les chemins de résumé invalides
+    if (user.resume && (user.resume.startsWith("file://") || user.resume === "")) {
+      user.resume = null;
+      await user.save();
+      console.log(`Chemin de résumé invalide détecté et nettoyé pour l'utilisateur ${user._id}`);
+    }
+    
+    // Assurez-vous que tous les champs sont bien renvoyés
+    console.log("Données utilisateur à renvoyer:", {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      resume: user.resume,
+      picture: user.picture
+    });
+    
+    res.json(user);
+  } catch (error) {
+    console.error("Erreur lors de la récupération de l'utilisateur:", error);
+    res.status(500).json({ message: "Erreur serveur", error: error.message });
+  }
+});
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir); 
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${req.body.userId}-${Date.now()}${path.extname(file.originalname)}`);
+  },
+});
+
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error("Format de fichier non supporté"), false);
+  }
+};
+
+const upload = multer({ 
+  storage, 
+  fileFilter,
+  limits: { 
+    fileSize: 10 * 1024 * 1024 // 10MB max pour le fichier
+  }
+});
+
+app.post("/Frontend/upload-resume", upload.single("resume"), async (req, res) => {
+  try {
+    const { userId } = req.body;
+    console.log("📥 Requête reçue pour l'upload de CV");
+    console.log("👤 User ID :", userId);
+    console.log("📂 Fichier reçu :", req.file);
+
+    if (!req.file) {
+      console.error("❌ Aucun fichier reçu !");
+      return res.status(400).json({ error: "Aucun fichier envoyé." });
+    }
+
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      console.error("❌ Utilisateur non trouvé !");
+      return res.status(404).json({ error: "Utilisateur non trouvé." });
+    }
+
+    // Enregistrez le chemin du CV dans la base de données
+    user.resume = `/uploads/${req.file.filename}`;
+    await user.save(); // Sauvegarde l'utilisateur avec le lien du CV
+
+    console.log("✅ CV sauvegardé :", user.resume);
+    // Renvoi de l'URL du CV
+    res.status(200).json({ message: "CV téléchargé avec succès !", resumeUrl: user.resume });
+  } catch (error) {
+    console.error("❌ Erreur lors du téléchargement du CV", error);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+
+// Configurer Multer pour l'upload d'image de profil
+const profileStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadPicsDir); 
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${req.body.userId}-profile-${Date.now()}${path.extname(file.originalname)}`);
+  },
+});
+
+const profileUpload = multer({   
+  storage: profileStorage, 
+  limits: { 
+    fileSize: 5 * 1024 * 1024 // 5MB max pour l'image de profil
+  }
+}); 
+
+app.post("/Frontend/upload-profile", profileUpload.single("picture"), async (req, res) => {
+  try {
+    console.log("📥 Requête reçue pour l'upload d'image");
+    console.log("📂 Fichier reçu :", req.file);
+    console.log("👤 User ID :", req.body.userId);
+
+    if (!req.file) {
+      console.error("❌ Aucune image reçue !");
+      return res.status(400).json({ error: "Aucune image envoyée." });
+    }
+
+    const { userId } = req.body;
+    if (!userId) {
+      console.error("❌ User ID manquant !");
+      return res.status(400).json({ error: "User ID manquant." });
+    }
+
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      console.error("❌ Utilisateur non trouvé !");
+      return res.status(404).json({ error: "Utilisateur non trouvé." });
+    }
+
+    user.picture = `/uploadsPics/${req.file.filename}`;
+    await user.save();
+
+    console.log("✅ Image sauvegardée :", user.picture);
+    res.status(200).json({ message: "Photo de profil importée avec succès !", pictureUrl: user.picture });
+  } catch (error) {
+    console.error("❌ Erreur serveur :", error);
+    res.status(500).json({ error: "Erreur serveur.", details: error.message });
+  }
+});
+
+app.put("/Frontend/updateUser/:id", async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const updatedData = req.body;
+
+    const user = await UserModel.findByIdAndUpdate(userId, updatedData, { new: true });
+
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    res.json({ message: "Profil mis à jour avec succès", user });
+  } catch (error) {
+    res.status(500).json({ message: "Erreur lors de la mise à jour du profil", error: error.message });
+  }
 });
 
 

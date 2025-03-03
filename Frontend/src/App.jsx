@@ -1,12 +1,9 @@
-import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { AuthProvider } from "./context/AuthContext";   
 import { GoogleOAuthProvider } from "@react-oauth/google";  // ✅ Import GoogleOAuthProvider
 
 // Components
-import Navbar from "./components/Navbar/Navbar";
-import Footer from "./components/Footer/Footer";
 
 // Pages
 import Home from "./pages/Home/Home";
@@ -20,6 +17,8 @@ import VerifyEmail from "./login/assets/VerifyEmail";
 import VerifyEmailPending from "./login/assets/VerifyEmailPending";
 import ForgotPassword from "./login/assets/ForgotPassword";
 import ResetPassword from "./login/assets/ResetPassword";
+import Profile from './profileFront/profile'
+import EditProfile from "./profileFront/EditProfile";
 
 const CLIENT_ID = "122105051479-dna9hfi1gskvlbobkhkpboiml67i4gl7.apps.googleusercontent.com"; // 🔴 Remplace par ton vrai Client ID Google
 
@@ -41,7 +40,11 @@ function App() {
             <Route path="/verify-email-pending" element={<VerifyEmailPending />} />
             <Route path="/forgotPassword" element={<ForgotPassword />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
+            <Route path='/profile/:id' element={<Profile />}></Route>
+           <Route path="/edit-profile/:id" element={<EditProfile />} /> {/* Route pour la modification */}
+
             <Route path="*" element={<Navigate to="/home" />} />
+
           </Routes>
         </BrowserRouter>
       </AuthProvider>

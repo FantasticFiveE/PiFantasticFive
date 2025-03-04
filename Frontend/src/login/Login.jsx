@@ -51,31 +51,32 @@ function Login() {
 
   const handleGoogleSuccess = async (response) => {
     const decoded = jwtDecode(response.credential);
-    console.log("Google Profile:", decoded);
+    console.log("✅ Google Profile Decoded:", decoded);
 
     try {
-      const result = await axios.post("http://localhost:3001/auth/google", {
-        email: decoded.email,
-        name: decoded.name,
-        googleId: decoded.sub,
-    });
-    
-    
-    
+        const result = await axios.post("http://localhost:3001/auth/google", {
+            email: decoded.email,
+            name: decoded.name,
+            googleId: decoded.sub,
+        });
 
-      if (result.data.status) {
-        localStorage.setItem("token", result.data.token);
-        localStorage.setItem("role", result.data.role);
-        login(result.data.role);
-        navigate("/home");
-      } else {
-        setError(result.data.message || "Google login failed.");
-      }
+        if (result.data.status) {
+            localStorage.setItem("token", result.data.token);
+            localStorage.setItem("userId", result.data.userId);  // ✅ Make sure you store this!
+            localStorage.setItem("role", result.data.role);
+            
+            login(result.data.role);  // Make sure this updates your AuthContext
+
+            navigate(result.data.role === "ENTERPRISE" ? "/enterprise-dashboard" : "/home");
+        } else {
+            setError(result.data.message || "Google login failed.");
+        }
     } catch (err) {
-      console.error("Google Login Error:", err);
-      setError("Google login failed. Please try again.");
+        console.error("❌ Google Login Error:", err);
+        setError("Google login failed. Please try again.");
     }
-  };
+};
+
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 

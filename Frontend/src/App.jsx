@@ -31,26 +31,25 @@ import ResetPassword from "./login/assets/ResetPassword";
 import Profile from "./profileFront/profile";
 import EditProfile from "./profileFront/EditProfile";
 
-import ProtectedRoute from "./Dashboard/layouts/ProtectedRoute"; // Import the ProtectedRoute component
+import ProtectedRoute from "./Dashboard/layouts/ProtectedRoute"; // Protect backoffice routes
 
-const CLIENT_ID = "122105051479-dna9hfi1gskvlbobkhkpboiml67i4gl7.apps.googleusercontent.com"; // Replace with your Google Client ID
+// Replace this with your actual Google OAuth Client ID
+const CLIENT_ID = "122105051479-dna9hfi1gskvlbobkhkpboiml67i4gl7.apps.googleusercontent.com";
 
-// Layout component for the dashboard
-const DashboardLayoutWrapper = () => {
-  return (
-    <div className="app">
-      <TopNav />
-      <div className="row w-100 mt-4">
-        <div className="col-1">
-          <SideNav />
-        </div>
-        <div className="col-11 p-0">
-          <Outlet /> {/* This is where nested routes will be rendered */}
-        </div>
+// Dashboard Layout Wrapper
+const DashboardLayoutWrapper = () => (
+  <div className="app">
+    <TopNav />
+    <div className="row w-100 mt-4">
+      <div className="col-1">
+        <SideNav />
+      </div>
+      <div className="col-11 p-0">
+        <Outlet /> {/* This will render the nested routes inside /dashboard */}
       </div>
     </div>
-  );
-};
+  </div>
+);
 
 function App() {
   return (
@@ -58,7 +57,7 @@ function App() {
       <AuthProvider>
         <Router>
           <Routes>
-            {/* Front Office Routes */}
+            {/* Front Office Routes (Public Pages) */}
             <Route path="/" element={<Home />} />
             <Route path="/home" element={<Home />} />
             <Route path="/about" element={<About />} />
@@ -74,16 +73,19 @@ function App() {
             <Route path="/profile/:id" element={<Profile />} />
             <Route path="/edit-profile/:id" element={<EditProfile />} />
 
-            {/* Back Office Routes */}
-            <Route
-              path="/dashboard"
+            {/* Back Office (Dashboard) Routes */}
+            <Route path="/dashboard/login" element={<LoginPage />} />
+            
+            {/* Protected Dashboard Layout with Nested Routes */}
+            <Route 
+              path="/dashboard" 
               element={
                 <ProtectedRoute>
                   <DashboardLayoutWrapper />
                 </ProtectedRoute>
               }
             >
-              <Route index element={<DashboardLayout />} /> {/* Default route for /dashboard */}
+              <Route index element={<DashboardLayout />} />
               <Route path="manage-candidates" element={<ManageCandidates />} />
               <Route path="manage-employees" element={<ManageEmployees />} />
               <Route path="application-info" element={<ApplicationInfo />} />
@@ -92,10 +94,7 @@ function App() {
               <Route path="jobs" element={<AllJobs />} />
             </Route>
 
-            {/* Login Route */}
-            <Route path="/dashboard/login" element={<LoginPage />} />
-
-            {/* Default Route */}
+            {/* Fallback for 404 (Redirect to home) */}
             <Route path="*" element={<Navigate to="/home" />} />
           </Routes>
         </Router>

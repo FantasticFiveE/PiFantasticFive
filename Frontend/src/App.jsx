@@ -1,11 +1,22 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import React from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { AuthProvider } from "./context/AuthContext";   
-import { GoogleOAuthProvider } from "@react-oauth/google";  // ✅ Import GoogleOAuthProvider
+import { AuthProvider } from "./context/AuthContext";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
-// Components
+// Dashboard (Back Office) Components
+import DashboardLayout from "./Dashboard/layouts/DashboardLayout";
+import ManageCandidates from "./Dashboard/layouts/ManageCandidates";
+import ManageEmployees from "./Dashboard/layouts/ManageEmployees";
+import ApplicationInfo from "./Dashboard/components/Sections/ApplicationInfo";
+import SideNav from "./Dashboard/components/NavBars/SideNav";
+import TopNav from "./Dashboard/components/NavBars/TopNav";
+import LoginPage from "./Dashboard/layouts/LoginPage";
+import SettingsPage from "./Dashboard/layouts/SettingsPage";
+import CalendarView from "./Dashboard/layouts/CalendarView";
+import AllJobs from "./Dashboard/layouts/AllJobs";
 
-// Pages
+// Front Office Pages
 import Home from "./pages/Home/Home";
 import About from "./pages/About/About";
 import Service from "./pages/Service/Service";
@@ -17,17 +28,37 @@ import VerifyEmail from "./login/assets/VerifyEmail";
 import VerifyEmailPending from "./login/assets/VerifyEmailPending";
 import ForgotPassword from "./login/assets/ForgotPassword";
 import ResetPassword from "./login/assets/ResetPassword";
-import Profile from './profileFront/profile'
+import Profile from "./profileFront/profile";
 import EditProfile from "./profileFront/EditProfile";
 
-const CLIENT_ID = "122105051479-dna9hfi1gskvlbobkhkpboiml67i4gl7.apps.googleusercontent.com"; // 🔴 Remplace par ton vrai Client ID Google
+import ProtectedRoute from "./Dashboard/layouts/ProtectedRoute"; // Import the ProtectedRoute component
+
+const CLIENT_ID = "122105051479-dna9hfi1gskvlbobkhkpboiml67i4gl7.apps.googleusercontent.com"; // Replace with your Google Client ID
+
+// Layout component for the dashboard
+const DashboardLayoutWrapper = () => {
+  return (
+    <div className="app">
+      <TopNav />
+      <div className="row w-100 mt-4">
+        <div className="col-1">
+          <SideNav />
+        </div>
+        <div className="col-11 p-0">
+          <Outlet /> {/* This is where nested routes will be rendered */}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 function App() {
   return (
-    <GoogleOAuthProvider clientId={CLIENT_ID}> {/* ✅ Ajout ici */}
-      <AuthProvider> 
-        <BrowserRouter>
+    <GoogleOAuthProvider clientId={CLIENT_ID}>
+      <AuthProvider>
+        <Router>
           <Routes>
+            {/* Front Office Routes */}
             <Route path="/" element={<Home />} />
             <Route path="/home" element={<Home />} />
             <Route path="/about" element={<About />} />
@@ -40,13 +71,34 @@ function App() {
             <Route path="/verify-email-pending" element={<VerifyEmailPending />} />
             <Route path="/forgotPassword" element={<ForgotPassword />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
-            <Route path='/profile/:id' element={<Profile />}></Route>
-           <Route path="/edit-profile/:id" element={<EditProfile />} /> {/* Route pour la modification */}
+            <Route path="/profile/:id" element={<Profile />} />
+            <Route path="/edit-profile/:id" element={<EditProfile />} />
 
+            {/* Back Office Routes */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayoutWrapper />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<DashboardLayout />} /> {/* Default route for /dashboard */}
+              <Route path="manage-candidates" element={<ManageCandidates />} />
+              <Route path="manage-employees" element={<ManageEmployees />} />
+              <Route path="application-info" element={<ApplicationInfo />} />
+              <Route path="settings" element={<SettingsPage />} />
+              <Route path="calendar" element={<CalendarView />} />
+              <Route path="jobs" element={<AllJobs />} />
+            </Route>
+
+            {/* Login Route */}
+            <Route path="/dashboard/login" element={<LoginPage />} />
+
+            {/* Default Route */}
             <Route path="*" element={<Navigate to="/home" />} />
-
           </Routes>
-        </BrowserRouter>
+        </Router>
       </AuthProvider>
     </GoogleOAuthProvider>
   );

@@ -22,7 +22,7 @@ app.use(cookieParser());
 // CORS Configuration
 const allowedOrigins = [
     "http://localhost:5173",
-    "http://localhost:5175", // Frontend running on port 5173
+    // Frontend running on port 5173
     // Add more if needed
 ];
 
@@ -84,6 +84,58 @@ passport.deserializeUser(async(id, done) => {
     const user = await UserModel.findById(id);
     done(null, user);
 });
+const { OAuth2Client } = require('google-auth-library');
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+app.post("/auth/google", async (req, res) => {
+    const { credential } = req.body;
+
+    try {
+        const ticket = await client.verifyIdToken({
+            idToken: credential,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+
+        const payload = ticket.getPayload();
+        const email = payload.email;
+        const name = payload.name;
+        const googleId = payload.sub;
+
+        let user = await UserModel.findOne({ email });
+
+        if (!user) {
+            user = new UserModel({
+                email,
+                name,
+                googleId,
+                emailVerified: true,
+                role: "CANDIDATE",
+                // No password required for Google users
+            });
+
+            await user.save();
+        }
+
+        const token = jwt.sign(
+            { id: user._id, email: user.email },
+            process.env.JWT_SECRET_KEY,
+            { expiresIn: "1h" }
+        );
+
+        res.status(200).json({
+            status: true,
+            message: "Google login successful",
+            token,
+            userId: user._id,
+            role: user.role,
+        });
+
+    } catch (error) {
+        console.error("❌ Google Auth Error:", error);
+        res.status(500).json({ message: "Google authentication failed." });
+    }
+});
+
 
 // Routes
 const userRoutes = require('./routes/userRoute');
@@ -122,7 +174,7 @@ app.post("/Frontend/login", async(req, res) => {
             });
         }
 
-        const token = jwt.sign({ id: user._id, email: user.email }, process.env.SECRET_KEY, {
+        const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET_KEY, {
             expiresIn: "1h",
         });
 
@@ -346,6 +398,71 @@ app.put("/Frontend/updateUser/:id", async(req, res) => {
     } catch (error) {
         res.status(500).json({ message: "Erreur lors de la mise à jour du profil", error: error.message });
     }
+});
+
+app.post("/forgot-password", async (req, res) => {
+   const { email } = req.body;
+
+   try {
+       const user = await UserModel.findOne({ email });
+       if (!user) return res.status(404).json({ message: "User not found." });
+
+       const resetToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
+
+       user.resetPasswordToken = resetToken;
+       user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+       await user.save();
+
+       const resetLink = `http://localhost:5173/reset-password/${resetToken}`;
+
+       const transporter = nodemailer.createTransport({
+           service: "gmail",
+           auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+       });
+
+       await transporter.sendMail({
+           from: process.env.EMAIL_USER,
+           to: email,
+           subject: "Password Reset Request",
+           text: `Click this link to reset your password: ${resetLink}`
+       });
+
+       res.json({ message: "✅ Password reset email sent." });
+
+   } catch (error) {
+       console.error("❌ Forgot Password Error:", error);
+       res.status(500).json({ message: "Server error." });
+   }
+});
+
+
+app.post("/reset-password/:token", async (req, res) => {
+   const { token } = req.params;
+   const { password } = req.body;
+
+   try {
+       const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+       const user = await UserModel.findById(decoded.id);
+
+       if (!user || user.resetPasswordToken !== token) {
+           return res.status(400).json({ message: "Invalid or expired reset token." });
+       }
+
+       if (user.resetPasswordExpires < Date.now()) {
+           return res.status(400).json({ message: "Password reset link has expired." });
+       }
+
+       user.password = await bcrypt.hash(password, 10);
+       user.resetPasswordToken = undefined;
+       user.resetPasswordExpires = undefined;
+
+       await user.save();
+
+       res.json({ message: "✅ Password reset successfully." });
+   } catch (error) {
+       console.error("❌ Reset Password Error:", error);
+       res.status(500).json({ message: "Server error." });
+   }
 });
 
 // Serveur en écoute

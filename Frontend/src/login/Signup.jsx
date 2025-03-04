@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from 'axios';
-import React from "react";
 import './Signup.css';
 import { FaUser, FaBuilding, FaEye, FaEyeSlash } from 'react-icons/fa';
 
@@ -63,12 +62,12 @@ function Signup() {
 
     const cleanFormData = (formData) => {
         if (formData.role !== "ENTERPRISE") {
-            const { enterprise, ...cleanedData } = formData;
-            return cleanedData;  // Supprime `enterprise` si ce n'est pas une entreprise
+            const cleanedData = { ...formData };
+            delete cleanedData.enterprise;
+            return cleanedData;
         }
-        return formData;  // Sinon, laisse tel quel
-    };
-
+        return formData;
+    }; 
     const handleSubmit = async (e) => {
         e.preventDefault();
 

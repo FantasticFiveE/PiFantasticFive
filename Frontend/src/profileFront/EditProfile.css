@@ -1,0 +1,110 @@
+.profile-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 1rem;
+  }
+  
+  .card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .card-header {
+    padding: 20px;
+    background: #007bff;
+    color: white;
+    border-radius: 10px 10px 0 0;
+  }
+  
+  .header-content {
+    text-align: center;
+  }
+  
+  .avatar-container {
+    position: relative;
+    margin-bottom: 1rem;
+  }
+  
+  .avatar {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    border: 5px solid white;
+    object-fit: cover;
+  }
+  
+  .camera-icon {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: #007bff;
+    color: white;
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  
+  .confirm-cancel-container {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 10px;
+  }
+  
+  .confirm-button,
+  .cancel-button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  
+  .confirm-button {
+    background: #28a745;
+    color: white;
+  }
+  
+  .cancel-button {
+    background: #dc3545;
+    color: white;
+  }
+  
+  .edit-input,
+  .edit-textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+    margin-top: 0.5rem;
+  }
+  
+  .edit-textarea {
+    resize: vertical;
+    min-height: 100px;
+  }
+  
+  .save-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.75rem;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 1rem;
+  }
+  
+  .save-button:hover {
+    background: #0056b3;
+  }

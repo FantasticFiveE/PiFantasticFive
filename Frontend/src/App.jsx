@@ -16,6 +16,7 @@ import SettingsPage from "./Dashboard/layouts/SettingsPage";
 import CalendarView from "./Dashboard/layouts/CalendarView";
 import AllJobs from "./Dashboard/layouts/AllJobs";
 
+
 // Front Office Pages
 import Home from "./pages/Home/Home";
 import About from "./pages/About/About";

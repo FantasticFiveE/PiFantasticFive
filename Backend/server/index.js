@@ -13,6 +13,7 @@ const path = require('path');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const UserModel = require('./models/user'); // Changed to User model
 
+
 const app = express();
 
 // Middleware
@@ -93,7 +94,7 @@ const interviewRoutes = require('./routes/interviewRoute');
 app.use('/api', userRoutes);
 app.use('/api', jobRoutes);
 app.use('/api', interviewRoutes);
-
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 // Authentication Routes
 app.post("/Frontend/login", async(req, res) => {
     try {
@@ -122,7 +123,7 @@ app.post("/Frontend/login", async(req, res) => {
             });
         }
 
-        const token = jwt.sign({ id: user._id, email: user.email }, process.env.SECRET_KEY, {
+        const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET_KEY, {
             expiresIn: "1h",
         });
 

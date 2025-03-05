@@ -1,16 +1,22 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 function ProfileInfo() {
   const navigate = useNavigate();
+  const [adminUser, setAdminUser] = useState(null); // State to manage admin user data
 
-  // Fetch admin data from localStorage
-  const adminUser = JSON.parse(localStorage.getItem("admin"));
+  // Fetch admin data from localStorage on component mount
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("admin"));
+    if (user) {
+      setAdminUser(user);
+    }
+  }, []); // Add empty dependency array
 
   // Handle log out
   const handleLogout = () => {
     localStorage.removeItem("admin"); // Remove admin data from localStorage
-    navigate("/login"); // Redirect to the login page
+    navigate("/dashboard/login"); // Redirect to the login page
   };
 
   if (!adminUser) {
@@ -21,7 +27,7 @@ function ProfileInfo() {
     <div style={styles.profileInfoContainer}>
       <div style={styles.profileHeader}>
         <img
-          src={adminUser.picture}
+          src={adminUser.picture || "https://via.placeholder.com/50"} // Fallback image if no picture is set
           alt="Admin Profile"
           style={styles.profilePicture}
         />
@@ -40,7 +46,9 @@ function ProfileInfo() {
         </p>
         <p style={styles.detailItem}>
           <strong>Last Login:</strong>{" "}
-          {new Date(adminUser.lastLogin.$date).toLocaleDateString()}
+          {adminUser.lastLogin
+            ? new Date(adminUser.lastLogin).toLocaleString()
+            : "N/A"}
         </p>
       </div>
 

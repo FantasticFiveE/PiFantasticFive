@@ -163,6 +163,9 @@ const Profile = () => {
       const response = await fetch("http://localhost:3001/Frontend/upload-profile", {
         method: "POST",
         body: formData,
+        headers: {
+          "x-user-id": id,  // Passe l'userId dans le header
+      },
       });
 
       if (!response.ok) {

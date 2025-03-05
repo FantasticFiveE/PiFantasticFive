@@ -1,0 +1,76 @@
+/* Existing styles remain the same, updating header styles */
+.custom-card-header {
+    background: linear-gradient(
+      135deg, 
+      #6a11cb 0%, 
+      #2575fc 50%, 
+      #36d1dc 100%
+    );
+    color: white;
+    padding: 20px 24px;
+    position: relative;
+    background-size: 200% 200%;
+    animation: gradientFlow 10s ease infinite;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  @keyframes gradientFlow {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+  
+  .card-header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    z-index: 2;
+  }
+  
+  .card-header-icon {
+    margin-right: 15px;
+    display: flex;
+    align-items: center;
+    color: rgba(255, 255, 255, 0.8);
+    transition: transform 0.3s ease;
+  }
+  
+  .card-header-icon:hover {
+    transform: rotate(15deg) scale(1.1);
+  }
+  
+  .card-header-text {
+    flex-grow: 1;
+    font-size: 1.3rem;
+    font-weight: 700;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+    letter-spacing: 0.5px;
+  }
+  
+  .card-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  /* Overlay effect for additional depth */
+  .custom-card-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      rgba(255, 255, 255, 0.1), 
+      rgba(255, 255, 255, 0)
+    );
+    z-index: 1;
+  }

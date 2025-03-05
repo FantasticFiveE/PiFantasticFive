@@ -2,8 +2,6 @@ const express = require("express");
 const User = require("../models/user");
 const router = express.Router();
 const bcrypt = require("bcrypt"); // For password hashing
-const multer = require("multer");
-
 
 // Get all users
 router.get("/users", async(req, res) => {
@@ -60,31 +58,36 @@ router.delete("/users/:id", async(req, res) => {
 });
 
 // Change password
-router.post("/users/change-password", async(req, res) => {
+router.post("/change-password", async(req, res) => {
     const { userId, currentPassword, newPassword } = req.body;
 
     try {
         // Find the user by ID
         const user = await User.findById(userId);
         if (!user) {
-            return res.status(404).json({ message: "User not found." });
+            return res.status(404).json({ message: "User not found" });
         }
 
-        // Verify the current password (plain text comparison)
-        if (currentPassword !== user.password) {
-            return res.status(400).json({ message: "Current password is incorrect." });
+        // Verify the current password
+        const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+        if (!isPasswordValid) {
+            return res.status(400).json({ message: "Current password is incorrect" });
         }
 
-        // Update the user's password (save in plain text)
-        user.password = newPassword;
+        // Hash the new password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        // Update the user's password
+        user.password = hashedPassword;
         await user.save();
 
         res.status(200).json({ message: "Password changed successfully" });
-    } catch (error) {
-        console.error("Error changing password:", error);
-        res.status(500).json({ message: "An error occurred. Please try again." });
+    } catch (err) {
+        res.status(500).json({ message: "Error changing password", error: err.message });
     }
 });
+
 router.get('/approved-candidates', async(req, res) => {
     try {
         // Fetch all candidates with approved applications
@@ -131,78 +134,6 @@ router.get('/approved-candidates', async(req, res) => {
         res.json(approvedCandidates); // Return approved candidates
     } catch (err) {
         res.status(500).json({ message: err.message }); // Handle errors
-    }
-});
-router.post("/login", async(req, res) => {
-    const { email, password } = req.body;
-
-    try {
-        // Find the user by email
-        const user = await User.findOne({ email: email.trim().toLowerCase() });
-        if (!user) {
-            return res.status(404).json({ message: "User not found." });
-        }
-
-        // Compare the provided password with the plain text password in the database
-        if (password !== user.password) {
-            return res.status(400).json({ message: "Invalid email or password." });
-        }
-
-        // If everything is correct, log the user in
-        res.status(200).json({ message: "Login successful!", user });
-    } catch (error) {
-        console.error("Login error:", error);
-        res.status(500).json({ message: "An error occurred. Please try again." });
-    }
-});
-
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, "uploads/"); // Save files in the 'uploads' folder
-    },
-    filename: (req, file, cb) => {
-        cb(null, `${Date.now()}-${file.originalname}`); // Unique filename
-    },
-});
-
-const upload = multer({ storage });
-
-// API endpoint for picture upload
-router.post("/upload-picture", upload.single("picture"), async(req, res) => {
-    try {
-        const { userId } = req.body;
-        const pictureURL = `/uploads/${req.file.filename}`; // URL to access the uploaded file
-
-        // Update the user's picture in the database
-        const updatedUser = await User.findByIdAndUpdate(
-            userId, { picture: pictureURL }, { new: true } // Return the updated user
-        );
-
-        res.status(200).json({
-            message: "Picture uploaded successfully",
-            pictureURL: updatedUser.picture,
-            user: updatedUser, // Return the entire updated user object
-        });
-    } catch (error) {
-        res.status(500).json({ message: "Failed to upload picture", error: error.message });
-    }
-});
-app.put("/api/users/:id/last-login", async(req, res) => {
-    try {
-        const { id } = req.params;
-        const user = await UserModel.findByIdAndUpdate(
-            id, { lastLogin: new Date() }, // Update lastLogin to the current timestamp
-            { new: true }
-        );
-
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
-
-        res.status(200).json({ message: "Last login updated", user });
-    } catch (error) {
-        console.error("Error updating last login:", error);
-        res.status(500).json({ message: "Server error" });
     }
 });
 module.exports = router;

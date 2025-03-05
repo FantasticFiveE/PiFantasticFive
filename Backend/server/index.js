@@ -84,6 +84,58 @@ passport.deserializeUser(async(id, done) => {
     const user = await UserModel.findById(id);
     done(null, user);
 });
+const { OAuth2Client } = require('google-auth-library');
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+app.post("/auth/google", async (req, res) => {
+    const { credential } = req.body;
+
+    try {
+        const ticket = await client.verifyIdToken({
+            idToken: credential,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+
+        const payload = ticket.getPayload();
+        const email = payload.email;
+        const name = payload.name;
+        const googleId = payload.sub;
+
+        let user = await UserModel.findOne({ email });
+
+        if (!user) {
+            user = new UserModel({
+                email,
+                name,
+                googleId,
+                emailVerified: true,
+                role: "CANDIDATE",
+                // No password required for Google users
+            });
+
+            await user.save();
+        }
+
+        const token = jwt.sign(
+            { id: user._id, email: user.email },
+            process.env.JWT_SECRET_KEY,
+            { expiresIn: "1h" }
+        );
+
+        res.status(200).json({
+            status: true,
+            message: "Google login successful",
+            token,
+            userId: user._id,
+            role: user.role,
+        });
+
+    } catch (error) {
+        console.error("❌ Google Auth Error:", error);
+        res.status(500).json({ message: "Google authentication failed." });
+    }
+});
+
 
 // Routes
 const userRoutes = require('./routes/userRoute');
@@ -122,7 +174,7 @@ app.post("/Frontend/login", async(req, res) => {
             });
         }
 
-        const token = jwt.sign({ id: user._id, email: user.email }, process.env.SECRET_KEY, {
+        const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET_KEY, {
             expiresIn: "1h",
         });
 
@@ -240,14 +292,48 @@ if (!fs.existsSync(uploadPicsDir)) {
 app.use("/uploads", express.static(uploadDir));
 app.use("/uploadsPics", express.static(uploadPicsDir));
 
-const storage = multer.diskStorage({
+app.get("/Frontend/getUser/:id", async (req, res) => {
+    try {
+      const user = await UserModel.findById(req.params.id);
+      if (!user) {
+        return res.status(404).json({ message: "Utilisateur non trouvé" });
+      }
+      
+      // Nettoyer les chemins de résumé invalides
+      if (user.resume && (user.resume.startsWith("file://") || user.resume === "")) {
+        user.resume = null;
+        await user.save();
+        console.log(`Chemin de résumé invalide détecté et nettoyé pour l'utilisateur ${user._id}`);
+      }
+      
+      // Assurez-vous que tous les champs sont bien renvoyés
+      console.log("Données utilisateur à renvoyer:", {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        resume: user.resume,
+        picture: user.picture
+      });
+      
+      res.json(user);
+    } catch (error) {
+      console.error("Erreur lors de la récupération de l'utilisateur:", error);
+      res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
+  });
+
+  const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
-        cb(null, `${req.body.userId}-${Date.now()}${path.extname(file.originalname)}`);
+        // Nom temporaire (sans userId au début)
+        cb(null, `temp-${Date.now()}${path.extname(file.originalname)}`);
     },
 });
+
+
 
 const fileFilter = (req, file, cb) => {
     const allowedTypes = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
@@ -259,16 +345,22 @@ const fileFilter = (req, file, cb) => {
 };
 
 const upload = multer({
-    storage,
-    fileFilter,
-    limits: {
-        fileSize: 10 * 1024 * 1024 // 10MB max pour le fichier
-    }
+    storage: multer.diskStorage({
+        destination: uploadDir,
+        filename: (req, file, cb) => {
+            // Nom temporaire au cas où userId est absent
+            cb(null, `temp-${Date.now()}${path.extname(file.originalname)}`);
+        }
+    }),
 });
 
-app.post("/Frontend/upload-resume", upload.single("resume"), async(req, res) => {
+app.post("/Frontend/upload-resume", upload.single("resume"), async (req, res) => {
     try {
         const { userId } = req.body;
+
+        if (!userId) {
+            return res.status(400).json({ error: "userId est requis." });
+        }
 
         if (!req.file) {
             return res.status(400).json({ error: "Aucun fichier envoyé." });
@@ -279,22 +371,39 @@ app.post("/Frontend/upload-resume", upload.single("resume"), async(req, res) => 
             return res.status(404).json({ error: "Utilisateur non trouvé." });
         }
 
-        user.resume = `/uploads/${req.file.filename}`;
+        // Nouveau nom de fichier basé sur userId
+        const newFilename = `${userId}-${Date.now()}${path.extname(req.file.originalname)}`;
+        const newPath = path.join(req.file.destination, newFilename);
+
+        // Renommer le fichier après upload
+        const fs = require('fs').promises;
+        await fs.rename(req.file.path, newPath);
+
+        // Mise à jour du chemin de résumé dans la base
+        user.resume = `/uploads/${newFilename}`;
         await user.save();
 
-        res.status(200).json({ message: "CV téléchargé avec succès !", resumeUrl: user.resume });
+        console.log("✅ CV mis à jour pour l'utilisateur:", user);
+
+        res.status(200).json({
+            message: "CV téléchargé avec succès !",
+            resumeUrl: user.resume
+        });
+
     } catch (error) {
-        console.error("❌ Erreur lors du téléchargement du CV", error);
+        console.error("❌ Erreur serveur lors de l'upload du CV:", error);
         res.status(500).json({ error: "Erreur serveur." });
     }
 });
+
 
 const profileStorage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, uploadPicsDir);
     },
     filename: (req, file, cb) => {
-        cb(null, `${req.body.userId}-profile-${Date.now()}${path.extname(file.originalname)}`);
+        const userId = req.headers['x-user-id'] || 'unknown';
+        cb(null, `${userId}-profile-${Date.now()}${path.extname(file.originalname)}`);
     },
 });
 
@@ -346,6 +455,71 @@ app.put("/Frontend/updateUser/:id", async(req, res) => {
     } catch (error) {
         res.status(500).json({ message: "Erreur lors de la mise à jour du profil", error: error.message });
     }
+});
+
+app.post("/forgot-password", async (req, res) => {
+   const { email } = req.body;
+
+   try {
+       const user = await UserModel.findOne({ email });
+       if (!user) return res.status(404).json({ message: "User not found." });
+
+       const resetToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
+
+       user.resetPasswordToken = resetToken;
+       user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+       await user.save();
+
+       const resetLink = `http://localhost:5173/reset-password/${resetToken}`;
+
+       const transporter = nodemailer.createTransport({
+           service: "gmail",
+           auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+       });
+
+       await transporter.sendMail({
+           from: process.env.EMAIL_USER,
+           to: email,
+           subject: "Password Reset Request",
+           text: `Click this link to reset your password: ${resetLink}`
+       });
+
+       res.json({ message: "✅ Password reset email sent." });
+
+   } catch (error) {
+       console.error("❌ Forgot Password Error:", error);
+       res.status(500).json({ message: "Server error." });
+   }
+});
+
+
+app.post("/reset-password/:token", async (req, res) => {
+   const { token } = req.params;
+   const { password } = req.body;
+
+   try {
+       const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+       const user = await UserModel.findById(decoded.id);
+
+       if (!user || user.resetPasswordToken !== token) {
+           return res.status(400).json({ message: "Invalid or expired reset token." });
+       }
+
+       if (user.resetPasswordExpires < Date.now()) {
+           return res.status(400).json({ message: "Password reset link has expired." });
+       }
+
+       user.password = await bcrypt.hash(password, 10);
+       user.resetPasswordToken = undefined;
+       user.resetPasswordExpires = undefined;
+
+       await user.save();
+
+       res.json({ message: "✅ Password reset successfully." });
+   } catch (error) {
+       console.error("❌ Reset Password Error:", error);
+       res.status(500).json({ message: "Server error." });
+   }
 });
 
 // Serveur en écoute

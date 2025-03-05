@@ -50,6 +50,7 @@ function Login() {
   };
 
   const handleGoogleSuccess = async (response) => {
+<<<<<<< HEAD
     const decoded = jwtDecode(response.credential);
     console.log("✅ Google Profile Decoded:", decoded);
 
@@ -58,10 +59,16 @@ function Login() {
             email: decoded.email,
             name: decoded.name,
             googleId: decoded.sub,
+=======
+    try {
+        const result = await axios.post("http://localhost:3001/auth/google", {
+            credential: response.credential // ✅ Send only `credential`, not separate email/name
+>>>>>>> signup
         });
 
         if (result.data.status) {
             localStorage.setItem("token", result.data.token);
+<<<<<<< HEAD
             localStorage.setItem("userId", result.data.userId);  // ✅ Make sure you store this!
             localStorage.setItem("role", result.data.role);
             
@@ -76,6 +83,19 @@ function Login() {
         setError("Google login failed. Please try again.");
     }
 };
+=======
+            localStorage.setItem("role", result.data.role);
+            login(result.data.role);
+            navigate("/home");
+        }
+    } catch (err) {
+        console.error("Google Login Error:", err);
+    }
+};
+
+
+
+>>>>>>> signup
 
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
@@ -147,10 +167,16 @@ function Login() {
             <button type="submit" className="futuristic-login-button">Login</button>
 
             <GoogleLogin
+<<<<<<< HEAD
               onSuccess={handleGoogleSuccess}
               onError={() => setError("Google Login Failed")}
             />
 
+=======
+                onSuccess={handleGoogleSuccess}
+                onError={() => console.error("Google Login Failed")}
+/>
+>>>>>>> signup
             <div className="futuristic-register-option">
               <p>New Here?</p>
               <Link to="/register" className="futuristic-register-link">Sign Up</Link>

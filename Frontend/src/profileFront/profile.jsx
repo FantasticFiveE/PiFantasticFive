@@ -7,6 +7,7 @@ import { FaCamera, FaCheckCircle, FaTimesCircle, FaUpload, FaFilePdf, FaCog } fr
 import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar/Navbar";
 import Footer from "../components/Footer/Footer";
+
 const Profile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -31,7 +32,7 @@ const Profile = () => {
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Erreur chargement user:", err);
+        console.error("Error loading user:", err);
         setLoading(false);
       });
   }, [id]);
@@ -45,7 +46,7 @@ const Profile = () => {
   };
 
   const handleFileUpload = async () => {
-    if (!file) return alert("Veuillez sélectionner un fichier.");
+    if (!file) return alert("Please select a file.");
     const formData = new FormData();
     formData.append("resume", file);
     formData.append("userId", id);
@@ -57,10 +58,10 @@ const Profile = () => {
       });
       const data = await res.json();
       setResumeUrl(data.resumeUrl);
-      setUploadStatus("CV uploaded successfully!");
+      setUploadStatus("Resume uploaded successfully!");
       setFile(null);
     } catch (err) {
-      setUploadStatus("Erreur lors de l'upload du CV.");
+      setUploadStatus("Error uploading resume.");
       console.error(err);
     }
   };
@@ -95,7 +96,7 @@ const Profile = () => {
       setNewPicture(null);
       setFile(null);
     } catch (err) {
-      console.error("Erreur image upload:", err);
+      console.error("Error uploading image:", err);
     }
   };
 
@@ -109,13 +110,13 @@ const Profile = () => {
   };
 
   if (loading) return <Skeleton className="w-full h-64" />;
-  if (!user) return <p className="text-center text-red-500">Utilisateur introuvable.</p>;
+  if (!user) return <p className="text-center text-red-500">User not found.</p>;
 
   const pictureSrc = !picture || pictureError ? "/images/team-1.jpg" : `http://localhost:3001${picture}`;
 
   return (
     <>
-      <Navbar /> {/* Ajout du Navbar ici */}
+      <Navbar />
 
       <div className="profile-container">
         <Card className="card">
@@ -142,10 +143,10 @@ const Profile = () => {
             {newPicture && !isPictureConfirmed && (
               <div className="confirm-cancel-container">
                 <button className="confirm-button" onClick={handlePictureConfirm}>
-                  <FaCheckCircle /> Confirmer
+                  <FaCheckCircle /> Confirm
                 </button>
                 <button className="cancel-button" onClick={handlePictureCancel}>
-                  <FaTimesCircle /> Annuler
+                  <FaTimesCircle /> Cancel
                 </button>
               </div>
             )}
@@ -153,7 +154,7 @@ const Profile = () => {
             <h2 className="name">{user.name}</h2>
             <p className="email">{user.email}</p>
             <button className="edit-profile-button" onClick={handleEditProfile}>
-              <FaCog /> Modifier le profil
+              <FaCog /> Edit Profile
             </button>
           </CardHeader>
 
@@ -162,7 +163,7 @@ const Profile = () => {
 
             {user.role === "CANDIDATE" && (
               <>
-                <p><strong>Disponibilité:</strong> {user.profile?.availability}</p>
+                <p><strong>Availability:</strong> {user.profile?.availability}</p>
                 <div className="skills">
                   {user.profile?.skills.map((skill, index) => (
                     <span key={index} className="skill-badge">{skill}</span>
@@ -171,8 +172,8 @@ const Profile = () => {
                 {user.profile?.experience?.map((exp, idx) => (
                   <div key={idx} className="experience-card">
                     <h4>{exp.title}</h4>
-                    <p><strong>Entreprise:</strong> {exp.company}</p>
-                    <p><strong>Durée:</strong> {exp.duration}</p>
+                    <p><strong>Company:</strong> {exp.company}</p>
+                    <p><strong>Duration:</strong> {exp.duration}</p>
                     <p>{exp.description}</p>
                   </div>
                 ))}
@@ -180,14 +181,14 @@ const Profile = () => {
                   {resumeUrl ? (
                     <p className="cv-link">
                       <a href={`http://localhost:3001${resumeUrl}`} target="_blank" rel="noopener noreferrer">
-                        <FaFilePdf /> Voir CV
+                        <FaFilePdf /> View Resume
                       </a>
                     </p>
                   ) : (
                     <>
                       <label className="upload-button">
                         <input type="file" onChange={handleFileChange} accept=".pdf,.doc,.docx" hidden />
-                        <FaUpload /> Ajouter CV
+                        <FaUpload /> Add Resume
                       </label>
                       {file && (
                         <button className="upload-btn" onClick={handleFileUpload}>
@@ -204,7 +205,7 @@ const Profile = () => {
         </Card>
       </div>
 
-      <Footer /> {/* Ajout du Footer ici */}
+      <Footer />
     </>
   );
 };

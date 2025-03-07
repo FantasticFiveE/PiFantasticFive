@@ -16,8 +16,8 @@ import "./Team.css";
 const Team = () => {
   const teamMembers = [
     { name: "Yassin Nouri", role: "Marketing Head", img: "images/yassin.jpg" },
-    { name: "Nancy White", role: "Marketing Head", img: "images/team-2.jpg" },
-    { name: "Earl Martinez", role: "Marketing Head", img: "images/team-3.jpg" },
+    { name: "Aziz Salmi", role: "Marketing Head", img: "images/team-2.jpg" },
+    { name: "Hamouda chkir", role: "Marketing Head", img: "images/team-3.jpg" },
     { name: "Josephine Allard", role: "Marketing Head", img: "images/team-4.jpg" },
   ];
 

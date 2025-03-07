@@ -6,7 +6,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEnvelope, faLock, faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import AuthContext from "../context/AuthContext";
 import { GoogleLogin } from "@react-oauth/google";
-import { jwtDecode } from "jwt-decode";
 
 function Login() {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -50,53 +49,27 @@ function Login() {
   };
 
   const handleGoogleSuccess = async (response) => {
-<<<<<<< HEAD
-    const decoded = jwtDecode(response.credential);
-    console.log("✅ Google Profile Decoded:", decoded);
-
     try {
-        const result = await axios.post("http://localhost:3001/auth/google", {
-            email: decoded.email,
-            name: decoded.name,
-            googleId: decoded.sub,
-=======
-    try {
-        const result = await axios.post("http://localhost:3001/auth/google", {
-            credential: response.credential // ✅ Send only `credential`, not separate email/name
->>>>>>> signup
-        });
+      const result = await axios.post("http://localhost:3001/auth/google", {
+        credential: response.credential // Send only `credential`, not separate email/name
+      });
 
-        if (result.data.status) {
-            localStorage.setItem("token", result.data.token);
-<<<<<<< HEAD
-            localStorage.setItem("userId", result.data.userId);  // ✅ Make sure you store this!
-            localStorage.setItem("role", result.data.role);
-            
-            login(result.data.role);  // Make sure this updates your AuthContext
+      if (result.data.status) {
+        localStorage.setItem("token", result.data.token);
+        localStorage.setItem("userId", result.data.userId);
+        localStorage.setItem("role", result.data.role);
 
-            navigate(result.data.role === "ENTERPRISE" ? "/enterprise-dashboard" : "/home");
-        } else {
-            setError(result.data.message || "Google login failed.");
-        }
+        login(result.data.role);
+
+        navigate(result.data.role === "ENTERPRISE" ? "/enterprise-dashboard" : "/home");
+      } else {
+        setError(result.data.message || "Google login failed.");
+      }
     } catch (err) {
-        console.error("❌ Google Login Error:", err);
-        setError("Google login failed. Please try again.");
+      console.error("Google Login Error:", err);
+      setError("Google login failed. Please try again.");
     }
-};
-=======
-            localStorage.setItem("role", result.data.role);
-            login(result.data.role);
-            navigate("/home");
-        }
-    } catch (err) {
-        console.error("Google Login Error:", err);
-    }
-};
-
-
-
->>>>>>> signup
-
+  };
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
@@ -167,16 +140,10 @@ function Login() {
             <button type="submit" className="futuristic-login-button">Login</button>
 
             <GoogleLogin
-<<<<<<< HEAD
               onSuccess={handleGoogleSuccess}
               onError={() => setError("Google Login Failed")}
             />
 
-=======
-                onSuccess={handleGoogleSuccess}
-                onError={() => console.error("Google Login Failed")}
-/>
->>>>>>> signup
             <div className="futuristic-register-option">
               <p>New Here?</p>
               <Link to="/register" className="futuristic-register-link">Sign Up</Link>

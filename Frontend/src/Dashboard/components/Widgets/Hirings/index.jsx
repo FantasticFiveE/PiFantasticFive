@@ -51,7 +51,7 @@ function Hirings() {
         >
           Hiring Candidates
         </Heading>
-        <Button variant={"link"}>View All</Button>
+        
       </div>
       <div className="d-flex flex-column gap-2">
         {hiringList.map((candidate, idx) => {

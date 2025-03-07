@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom"; // Import useNavigate
+import { Link } from "react-router-dom"; // Import useNavigate
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import Slider from "react-slick";
@@ -7,8 +7,6 @@ import "slick-carousel/slick/slick-theme.css";
 import "./Home.css"; // Our updated style
 
 const Home = () => {
-  const navigate = useNavigate();
-  const userId = "123"; // Remplace par l'ID réel de l'utilisateur connecté
 
   // Slick carousel settings
   const carouselSettings = {
@@ -49,13 +47,7 @@ const Home = () => {
       </section>
 
       {/* Bouton Edit Profile */}
-      <section className="edit-profile-section">
-        <div className="container">
-          <button className="edit-profile-btn" onClick={() => navigate(`/profile/${userId}`)}>
-            Edit Profile
-          </button>
-        </div>
-      </section>
+    
 
       {/* Image Carousel Section */}
       <section className="carousel_section">

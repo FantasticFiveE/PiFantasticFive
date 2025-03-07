@@ -1,21 +1,35 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios"; // For making API calls
 
 function SettingsPage() {
   // Fetch admin data from localStorage
-  const adminUser = JSON.parse(localStorage.getItem("admin"));
+  const adminData = localStorage.getItem("admin");
+  const adminUser = adminData ? JSON.parse(adminData) : null;
 
-  // State to manage form inputs
+  // State to manage form inputs for password change
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
     newPassword: "",
     confirmNewPassword: "",
   });
 
+  // State to manage notification preferences
+  const [notificationPreferences, setNotificationPreferences] = useState({
+    emailNotifications: true,
+    pushNotifications: true,
+  });
+
+  // State to manage theme selection
+  const [theme, setTheme] = useState("light");
+
   // State to manage success/error messages
   const [message, setMessage] = useState("");
 
-  // Handle input changes
+  // State for picture upload
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewURL, setPreviewURL] = useState(adminUser?.picture || "");
+
+  // Handle input changes for password form
   const handleInputChange = (e) => {
     const { id, value } = e.target;
     setPasswordData((prevData) => ({
@@ -24,27 +38,106 @@ function SettingsPage() {
     }));
   };
 
-  // Handle form submission
+  // Handle notification preference changes
+  const handleNotificationChange = (e) => {
+    const { id, checked } = e.target;
+    setNotificationPreferences((prevPreferences) => ({
+      ...prevPreferences,
+      [id]: checked,
+    }));
+  };
+
+  // Handle theme selection changes
+  const handleThemeChange = (e) => {
+    setTheme(e.target.value);
+    // Apply the selected theme to the app (optional)
+    document.body.setAttribute("data-theme", e.target.value);
+  };
+
+  // Handle file selection for picture upload
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+      setPreviewURL(URL.createObjectURL(file)); // Generate preview URL
+    }
+  };
+
+  // Handle picture upload
+  const handlePictureUpload = async () => {
+    if (!selectedFile) {
+      setMessage("Please select a file to upload.");
+      return;
+    }
+
+    if (!adminUser) {
+      setMessage("Admin data not found. Please log in.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("picture", selectedFile);
+    formData.append("userId", adminUser._id); // Include the user ID
+
+    try {
+      const response = await axios.post(
+        "http://localhost:3001/api/upload-picture",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      if (response.data.message === "Picture uploaded successfully") {
+        setMessage("Picture uploaded successfully!");
+        
+        // Update the adminUser object in localStorage
+        const updatedUser = response.data.user; // Updated user data from the backend
+        localStorage.setItem("admin", JSON.stringify(updatedUser));
+
+        // Dispatch a custom event to notify other components
+        window.dispatchEvent(new Event("localStorageUpdated"));
+
+        // Update the state to trigger a re-render
+        setAdminUser(updatedUser);
+        setPreviewURL(updatedUser.picture); // Update preview URL
+      } else {
+        setMessage(response.data.message || "Failed to upload picture.");
+      }
+    } catch (error) {
+      setMessage(
+        error.response?.data?.message || "An error occurred. Please try again."
+      );
+    }
+  };
+
+  // Handle form submission for password change
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     // Validate inputs
     if (passwordData.newPassword !== passwordData.confirmNewPassword) {
       setMessage("New passwords do not match.");
       return;
     }
-  
+
     try {
       // Get the logged-in admin user from localStorage
       const adminUser = JSON.parse(localStorage.getItem("admin"));
-  
+      if (!adminUser) {
+        setMessage("Admin data not found. Please log in.");
+        return;
+      }
+
       // Send a POST request to the backend API
       const response = await axios.post("http://localhost:3001/api/change-password", {
-        userId: adminUser._id.$oid, // Use the admin's ID from localStorage
+        userId: adminUser._id, // Use the admin's ID from localStorage
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword,
       });
-  
+
       // Handle success response
       if (response.data.message === "Password changed successfully") {
         setMessage("Password changed successfully!");
@@ -63,8 +156,21 @@ function SettingsPage() {
       );
     }
   };
+
+  // Handle contact support button click
+  const handleContactSupport = () => {
+    alert("Contact support clicked. Redirecting to support page...");
+    // Redirect to support page or open a support modal
+  };
+
+  // Handle report a bug button click
+  const handleReportBug = () => {
+    alert("Report a bug clicked. Redirecting to bug report page...");
+    // Redirect to bug report page or open a bug report modal
+  };
+
   if (!adminUser) {
-    return null; // Don't render anything if admin data is not available
+    return <div>No admin data found. Please log in.</div>; // Render a message if admin data is not available
   }
 
   return (
@@ -83,6 +189,40 @@ function SettingsPage() {
               {message}
             </div>
           )}
+
+          {/* Profile Picture Section */}
+          <div className="card mb-4 shadow-sm">
+            <div className="card-body">
+              <h2 className="card-title mb-4">Profile Picture</h2>
+              <div className="d-flex align-items-center">
+                {/* Display current or preview picture */}
+                {previewURL && (
+                  <img
+                    src={previewURL}
+                    alt="Profile Preview"
+                    className="rounded-circle me-3"
+                    style={{ width: "100px", height: "100px", objectFit: "cover" }}
+                  />
+                )}
+                {/* File input for picture upload */}
+                <div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="form-control mb-2"
+                  />
+                  <button
+                    className="btn btn-primary"
+                    onClick={handlePictureUpload}
+                    disabled={!selectedFile}
+                  >
+                    Upload Picture
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Change Password Section */}
           <div className="card mb-4 shadow-sm">
@@ -147,7 +287,8 @@ function SettingsPage() {
                   className="form-check-input"
                   type="checkbox"
                   id="emailNotifications"
-                  defaultChecked
+                  checked={notificationPreferences.emailNotifications}
+                  onChange={handleNotificationChange}
                 />
                 <label className="form-check-label" htmlFor="emailNotifications">
                   Email Notifications
@@ -158,7 +299,8 @@ function SettingsPage() {
                   className="form-check-input"
                   type="checkbox"
                   id="pushNotifications"
-                  defaultChecked
+                  checked={notificationPreferences.pushNotifications}
+                  onChange={handleNotificationChange}
                 />
                 <label className="form-check-label" htmlFor="pushNotifications">
                   Push Notifications
@@ -175,7 +317,12 @@ function SettingsPage() {
                 <label htmlFor="themeSelect" className="form-label">
                   Theme
                 </label>
-                <select className="form-select" id="themeSelect">
+                <select
+                  className="form-select"
+                  id="themeSelect"
+                  value={theme}
+                  onChange={handleThemeChange}
+                >
                   <option value="light">Light Mode</option>
                   <option value="dark">Dark Mode</option>
                 </select>
@@ -189,13 +336,13 @@ function SettingsPage() {
               <h2 className="card-title mb-4">Help and Support</h2>
               <button
                 className="btn btn-outline-primary me-2"
-                onClick={() => alert("Contact support clicked")}
+                onClick={handleContactSupport}
               >
                 Contact Support
               </button>
               <button
                 className="btn btn-outline-danger"
-                onClick={() => alert("Report a bug clicked")}
+                onClick={handleReportBug}
               >
                 Report a Bug
               </button>

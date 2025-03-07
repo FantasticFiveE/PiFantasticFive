@@ -4,15 +4,19 @@ const { Schema } = mongoose;
 const UserSchema = new Schema({
     email: { type: String, required: true, unique: true },
     name: { type: String, required: true },
-    role: { type: String, required: true, enum: ['ADMIN', 'ENTERPRISE', 'CANDIDATE'] },
+    role: {
+        type: String,
+        required: true,
+        enum: ['ADMIN', 'ENTERPRISE', 'CANDIDATE']
+    },
     password: {
         type: String,
-        required: function () {
+        required: function() {
             return !this.googleId; // Only require password if it's not a Google user
         }
     },
-    googleId: { type: String }, // Make sure this exists
-    
+    googleId: { type: String }, // For Google authentication
+
     isActive: { type: Boolean, default: true },
     createdDate: { type: Date, default: Date.now },
     lastLogin: { type: Date },
@@ -40,8 +44,50 @@ const UserSchema = new Schema({
     },
     picture: { type: String },
     verificationCode: { type: Number },
-    resetPasswordToken: { type: String },  // ✅ Added
-    resetPasswordExpires: { type: Date }    // ✅ Added
+
+    // Password Reset fields
+    resetPasswordToken: { type: String }, // Added for password reset functionality
+    resetPasswordExpires: { type: Date }, // Added for password reset expiration
+
+    // Enterprise Information (only relevant for 'ENTERPRISE' role)
+    enterprise: {
+        name: { type: String },
+        industry: { type: String },
+        location: { type: String },
+        website: { type: String },
+        description: { type: String },
+        employeeCount: { type: Number },
+    },
+
+    // Jobs and applications (for 'ENTERPRISE' role)
+    jobsPosted: [{
+        jobId: { type: Schema.Types.ObjectId, ref: 'Job' },
+        title: { type: String },
+        status: { type: String, enum: ['OPEN', 'CLOSED'], default: 'OPEN' },
+        createdDate: { type: Date, default: Date.now },
+    }],
+    applications: [{
+        jobId: { type: Schema.Types.ObjectId, ref: 'Job' },
+        enterpriseId: { type: Schema.Types.ObjectId, ref: 'User' },
+        status: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
+        dateSubmitted: { type: Date, default: Date.now },
+        notes: { type: String },
+    }],
+    interviews: [{
+        jobId: { type: Schema.Types.ObjectId, ref: 'Job' },
+        enterpriseId: { type: Schema.Types.ObjectId, ref: 'User' },
+        date: { type: Date },
+        status: { type: String, enum: ['Scheduled', 'Completed', 'Cancelled'], default: 'Scheduled' },
+        meeting: {
+            type: { type: String, enum: ['In-person', 'Virtual', 'TBD'] },
+            link: { type: String },
+            details: { type: String },
+        },
+        feedback: {
+            rating: { type: Number, min: 1, max: 5 }, // Ensures rating is between 1 and 5
+            comments: { type: String },
+        },
+    }]
 });
 
 module.exports = mongoose.models.User || mongoose.model('User', UserSchema);

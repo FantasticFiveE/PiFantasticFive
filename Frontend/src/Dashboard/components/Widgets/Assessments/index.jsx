@@ -15,8 +15,8 @@ function Assessments() {
               <img src={AssessmentIcon} width={"45px"} alt="assessment-icon" />
             </div>
             <div className="d-flex flex-column gap-2 mt-4">
-              <p className="m-0 assessment-count fw-bold text-white">0033</p>
-              <p className="m-0 assessment-text text-white">New Assessment's</p>
+              <p className="m-0 assessment-count fw-bold text-white">Next Hire</p>
+              
             </div>
           </div>
         </div>
@@ -34,16 +34,7 @@ function Assessments() {
                 <img src={OfficeGirl2X} width={"70%"} alt="office girl 2x" />
               </div>
             </div>
-            <Button
-              style={{
-                fontSize: "14px",
-                fontWeight: 500,
-                alignSelf: "end",
-              }}
-              variant={"secondary"}
-            >
-              View Details
-            </Button>
+          
           </div>
         </div>
       </div>

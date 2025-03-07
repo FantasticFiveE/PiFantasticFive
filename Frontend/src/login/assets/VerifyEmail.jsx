@@ -35,13 +35,13 @@ function VerifyEmail() {
       });
 
       setStatus("success");
-      setMessage("✅ Vérification réussie ! Redirection vers la connexion...");
+      setMessage("✅ Verification successful! Redirecting to login...");
 
       // Redirect to login page after successful verification
       setTimeout(() => navigate("/login"), 3000);
     } catch (err) {
       setStatus("error");
-      setMessage("❌ Code incorrect. Veuillez réessayer.");
+      setMessage("❌ Incorrect code. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -50,16 +50,16 @@ function VerifyEmail() {
   return (
     <div className="verify-email-container">
       <div className="verify-email-card">
-        <h2 className="verify-email-title">Vérification de l'Email</h2>
+        <h2 className="verify-email-title">Email Verification</h2>
         <p className="verify-email-subtitle">
-          <FaEnvelope className="email-icon" /> Un code de vérification a été envoyé à votre adresse email.
+          <FaEnvelope className="email-icon" /> A verification code has been sent to your email address.
         </p>
 
         <form className="verify-email-form" onSubmit={handleSubmit}>
           <div className="verify-email-input-container">
             <input
               type="email"
-              placeholder="Votre Email"
+              placeholder="Your Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -72,7 +72,7 @@ function VerifyEmail() {
             <FaLock className="input-icon" />
             <input
               type="text"
-              placeholder="Code de vérification"
+              placeholder="Verification Code"
               value={code}
               onChange={(e) => setCode(e.target.value)}
               required
@@ -81,7 +81,7 @@ function VerifyEmail() {
           </div>
 
           <button type="submit" className={`verify-email-button ${loading ? "loading" : ""}`} disabled={loading}>
-            {loading ? "Vérification en cours..." : "Vérifier"}
+            {loading ? "Verifying..." : "Verify"}
           </button>
         </form>
 

@@ -311,38 +311,38 @@ if (!fs.existsSync(uploadPicsDir)) {
 app.use("/uploads", express.static(uploadDir));
 app.use("/uploadsPics", express.static(uploadPicsDir));
 
-app.get("/Frontend/getUser/:id", async(req, res) => {
+app.get("/Frontend/getUser/:id", async (req, res) => {
     try {
-        const user = await UserModel.findById(req.params.id);
-        if (!user) {
-            return res.status(404).json({ message: "Utilisateur non trouvé" });
-        }
-
-        // Nettoyer les chemins de résumé invalides
-        if (user.resume && (user.resume.startsWith("file://") || user.resume === "")) {
-            user.resume = null;
-            await user.save();
-            console.log(`Chemin de résumé invalide détecté et nettoyé pour l'utilisateur ${user._id}`);
-        }
-
-        // Assurez-vous que tous les champs sont bien renvoyés
-        console.log("Données utilisateur à renvoyer:", {
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            resume: user.resume,
-            picture: user.picture
-        });
-
-        res.json(user);
+      const user = await UserModel.findById(req.params.id);
+      if (!user) {
+        return res.status(404).json({ message: "Utilisateur non trouvé" });
+      }
+      
+      // Nettoyer les chemins de résumé invalides
+      if (user.resume && (user.resume.startsWith("file://") || user.resume === "")) {
+        user.resume = null;
+        await user.save();
+        console.log(`Chemin de résumé invalide détecté et nettoyé pour l'utilisateur ${user._id}`);
+      }
+      
+      // Assurez-vous que tous les champs sont bien renvoyés
+      console.log("Données utilisateur à renvoyer:", {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        resume: user.resume,
+        picture: user.picture
+      });
+      
+      res.json(user);
     } catch (error) {
-        console.error("Erreur lors de la récupération de l'utilisateur:", error);
-        res.status(500).json({ message: "Erreur serveur", error: error.message });
+      console.error("Erreur lors de la récupération de l'utilisateur:", error);
+      res.status(500).json({ message: "Erreur serveur", error: error.message });
     }
-});
+  });
 
-const storage = multer.diskStorage({
+  const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, uploadDir);
     },
@@ -373,8 +373,7 @@ const upload = multer({
     }),
 });
 
-
-app.post("/Frontend/upload-resume", upload.single("resume"), async(req, res) => {
+app.post("/Frontend/upload-resume", upload.single("resume"), async (req, res) => {
     try {
         const { userId } = req.body;
 
@@ -474,41 +473,6 @@ app.put("/Frontend/updateUser/:id", async(req, res) => {
         res.json({ message: "Profil mis à jour avec succès", user });
     } catch (error) {
         res.status(500).json({ message: "Erreur lors de la mise à jour du profil", error: error.message });
-    }
-});
-
-app.post("/forgot-password", async(req, res) => {
-    const { email } = req.body;
-
-    try {
-        const user = await UserModel.findOne({ email });
-        if (!user) return res.status(404).json({ message: "User not found." });
-
-        const resetToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
-
-        user.resetPasswordToken = resetToken;
-        user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
-        await user.save();
-
-        const resetLink = `http://localhost:5173/reset-password/${resetToken}`;
-
-        const transporter = nodemailer.createTransport({
-            service: "gmail",
-            auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
-        });
-
-        await transporter.sendMail({
-            from: process.env.EMAIL_USER,
-            to: email,
-            subject: "Password Reset Request",
-            text: `Click this link to reset your password: ${resetLink}`
-        });
-
-        res.json({ message: "✅ Password reset email sent." });
-
-    } catch (error) {
-        console.error("❌ Forgot Password Error:", error);
-        res.status(500).json({ message: "Server error." });
     }
 });
 

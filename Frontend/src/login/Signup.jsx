@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from 'axios';
 import './Signup.css';
-import { FaUser, FaBuilding, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaUser, FaBuilding, FaEye, FaEyeSlash, FaFileUpload } from 'react-icons/fa';
 
 function Signup() {
     const [formData, setFormData] = useState({
@@ -10,6 +10,7 @@ function Signup() {
         email: "",
         password: "",
         role: "CANDIDATE",
+        resume: null,
         enterprise: {
             name: "",
             industry: "",
@@ -24,6 +25,7 @@ function Signup() {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [confirmationMessage, setConfirmationMessage] = useState("");
+    const [resumeData, setResumeData] = useState(null); // ✅ Stockage des données extraites du CV
     const navigate = useNavigate();
 
     const handleChange = (e) => {
@@ -39,6 +41,10 @@ function Signup() {
         } else {
             setFormData({ ...formData, [name]: value });
         }
+    };
+
+    const handleFileChange = (e) => {
+        setFormData({ ...formData, resume: e.target.files[0] });
     };
 
     const validateForm = () => {
@@ -67,7 +73,8 @@ function Signup() {
             return cleanedData;
         }
         return formData;
-    }; 
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -80,11 +87,36 @@ function Signup() {
         setIsLoading(true);
 
         try {
-            const cleanedData = cleanFormData(formData); // Nettoyage
-            const result = await axios.post('http://localhost:3001/Frontend/register', cleanedData);
-            console.log(result);
+            const cleanedData = cleanFormData(formData);
+            const formDataToSend = new FormData();
+            formDataToSend.append('name', cleanedData.name);
+            formDataToSend.append('email', cleanedData.email);
+            formDataToSend.append('password', cleanedData.password);
+            formDataToSend.append('role', cleanedData.role);
+
+            if (cleanedData.resume) {
+                formDataToSend.append('resume', cleanedData.resume);
+            }
+
+            // 🚀 Envoie du formulaire d'inscription
+            const result = await axios.post('http://localhost:3001/Frontend/register', formDataToSend, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
 
             setConfirmationMessage("A verification code has been sent to your email.");
+
+            // ✅ Récupérer les données du CV après l'analyse par le backend
+            if (cleanedData.resume) {
+                const formDataResume = new FormData();
+                formDataResume.append('resume', cleanedData.resume);
+
+                const resumeResponse = await axios.post('http://127.0.0.1:5002/upload', formDataResume, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                });
+
+                setResumeData(resumeResponse.data); // 💾 Stocker les données du CV dans l'état
+            }
+
             setTimeout(() => {
                 navigate(`/verify-email?email=${formData.email}`);
             }, 3000);
@@ -100,23 +132,8 @@ function Signup() {
         <div className="futuristic-signup-container">
             <div className="animated-bg-overlay"></div>
 
-            <div className="futuristic-signup-left">
-                <div className="futuristic-signup-left-content floating-brand fade-in-left">
-                    <img 
-                        src="/images/nexthire.png"
-                        alt="NextHire Logo"
-                        className="futuristic-company-logo"
-                        onError={(e) => { e.target.src = 'https://placehold.co/80x80'; }}
-                    />
-                    <h1 className="futuristic-signup-brand">NextHire</h1>
-                    <p className="futuristic-signup-text">
-                        Join our platform to connect with opportunities and talents in a seamless experience.
-                    </p>
-                </div>
-            </div>
-
             <div className="futuristic-signup-right">
-                <div className="futuristic-signup-card float-up fade-in-right">
+                <div className="futuristic-signup-card">
                     <h2 className="futuristic-signup-heading">Create Account</h2>
 
                     {confirmationMessage && (
@@ -148,9 +165,9 @@ function Signup() {
                             </div>
                         </div>
 
-                        {/* Standard Fields */}
                         <input type="text" placeholder="Full Name" name="name" value={formData.name} onChange={handleChange} />
                         <input type="email" placeholder="Email" name="email" value={formData.email} onChange={handleChange} />
+
                         <div className="password-container">
                             <input 
                                 type={showPassword ? "text" : "password"} 
@@ -164,24 +181,36 @@ function Signup() {
                             </span>
                         </div>
 
-                        {/* Enterprise Fields */}
-                        {formData.role === "ENTERPRISE" && (
-                            <>
-                                <input type="text" placeholder="Enterprise Name" name="enterprise.name" value={formData.enterprise.name} onChange={handleChange} />
-                                <input type="text" placeholder="Industry" name="enterprise.industry" value={formData.enterprise.industry} onChange={handleChange} />
-                                <input type="text" placeholder="Location" name="enterprise.location" value={formData.enterprise.location} onChange={handleChange} />
-                                <input type="text" placeholder="Website" name="enterprise.website" value={formData.enterprise.website} onChange={handleChange} />
-                                <textarea placeholder="Description" name="enterprise.description" value={formData.enterprise.description} onChange={handleChange}></textarea>
-                                <input type="number" placeholder="Employee Count" name="enterprise.employeeCount" value={formData.enterprise.employeeCount} onChange={handleChange} />
-                            </>
-                        )}
+                        {/* Resume Upload */}
+                        <div className="futuristic-form-group">
+                            <label htmlFor="resume" className="futuristic-file-upload-label">
+                                <FaFileUpload /> Upload Resume (PDF)
+                            </label>
+                            <input 
+                                type="file" 
+                                id="resume" 
+                                name="resume" 
+                                accept="application/pdf" 
+                                onChange={handleFileChange} 
+                                className="futuristic-file-input"
+                            />
+                        </div>
 
                         <button type="submit" className={`futuristic-signup-button ${isLoading ? 'loading' : ''}`} disabled={isLoading}>
                             {isLoading ? "Creating Account..." : "Create Account"}
                         </button>
-
-                        <p>Already have an account? <Link to="/login">Login now</Link></p>
                     </form>
+
+                    {/* ✅ Affichage des données extraites du CV */}
+                    {resumeData && (
+                        <div className="resume-data">
+                            <h3>📄 Extracted Resume Data</h3>
+                            <p><strong>Email:</strong> {resumeData.email || "Not found"}</p>
+                            <p><strong>Phone:</strong> {resumeData.phone || "Not found"}</p>
+                            <p><strong>Skills:</strong> {resumeData.skills?.join(', ') || "Not found"}</p>
+                            <p><strong>Languages:</strong> {resumeData.languages?.join(', ') || "Not found"}</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

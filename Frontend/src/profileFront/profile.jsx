@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Card, CardContent, CardHeader } from "./card";
 import { Avatar } from "./avatar";
 import { Skeleton } from "./skeleton";
@@ -11,24 +11,24 @@ import Footer from "../components/Footer/Footer";
 const Profile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const fileInputRef = useRef(null); // ✅ File input reference
 
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [resumeUrl, setResumeUrl] = useState("");
-  const [file, setFile] = useState(null);
-  const [uploadStatus, setUploadStatus] = useState("");
-  const [pictureError, setPictureError] = useState(false);
   const [picture, setPicture] = useState(null);
   const [newPicture, setNewPicture] = useState(null);
-  const [isPictureConfirmed, setIsPictureConfirmed] = useState(false);
+  const [file, setFile] = useState(null);
+  const [uploadStatus, setUploadStatus] = useState("");
+  const [pictureStatus, setPictureStatus] = useState(""); // ✅ Picture upload status
 
   useEffect(() => {
     fetch(`http://localhost:3001/Frontend/getUser/${id}`)
       .then((res) => res.json())
       .then((data) => {
         setUser(data);
-        setResumeUrl(data.resume || "");
-        setPicture(data.picture || "/images/team-1.jpg");
+        setResumeUrl(data.profile?.resume || ""); // ✅ Fetch existing CV
+        setPicture(data.picture || "/images/team-1.jpg"); // ✅ Load existing profile picture
         setLoading(false);
       })
       .catch((err) => {
@@ -38,6 +38,57 @@ const Profile = () => {
   }, [id]);
 
   const handleEditProfile = () => navigate(`/edit-profile/${id}`);
+
+  // ✅ Open file selector
+  const handleCameraClick = () => {
+    fileInputRef.current.click();
+  };
+
+  // ✅ Handle profile picture selection and preview
+  const handlePictureChange = (event) => {
+    const selectedFile = event.target.files[0];
+    if (!selectedFile) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setNewPicture(reader.result); // ✅ Show preview
+    };
+    reader.readAsDataURL(selectedFile);
+
+    setFile(selectedFile);
+  };
+
+  // ✅ Confirm and upload new profile picture
+  const handlePictureConfirm = async () => {
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("userId", id);
+    formData.append("picture", file);
+
+    try {
+      const res = await fetch("http://localhost:3001/Frontend/upload-profile", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+
+      setPicture(data.pictureUrl); // ✅ Update profile picture after upload
+      setNewPicture(null);
+      setFile(null);
+      setPictureStatus("✔️ Profile picture updated successfully!");
+    } catch (err) {
+      console.error("❌ Error uploading picture:", err);
+      setPictureStatus("❌ Upload failed. Try again.");
+    }
+  };
+
+  // ✅ Cancel profile picture change
+  const handlePictureCancel = () => {
+    setNewPicture(null);
+    setFile(null);
+    setPictureStatus("");
+  };
 
   const handleFileChange = (event) => {
     const selectedFile = event.target.files[0];
@@ -58,101 +109,70 @@ const Profile = () => {
       });
       const data = await res.json();
       setResumeUrl(data.resumeUrl);
-      setUploadStatus("Resume uploaded successfully!");
+      setUploadStatus("CV uploaded successfully!");
       setFile(null);
     } catch (err) {
-      setUploadStatus("Error uploading resume.");
+      setUploadStatus("Error uploading CV.");
       console.error(err);
     }
-  };
-
-  const handleImageChange = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setNewPicture(reader.result);
-      setIsPictureConfirmed(false);
-    };
-    reader.readAsDataURL(file);
-
-    setFile(file);
-  };
-
-  const handlePictureConfirm = async () => {
-    const formData = new FormData();
-    formData.append("userId", id);
-    formData.append("picture", file);
-
-    try {
-      const res = await fetch("http://localhost:3001/Frontend/upload-profile", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      setPicture(data.pictureUrl);
-      setIsPictureConfirmed(true);
-      setNewPicture(null);
-      setFile(null);
-    } catch (err) {
-      console.error("Error uploading image:", err);
-    }
-  };
-
-  const handlePictureCancel = () => {
-    setNewPicture(null);
-    setIsPictureConfirmed(false);
-  };
-
-  const handleImageError = () => {
-    setPictureError(true);
   };
 
   if (loading) return <Skeleton className="w-full h-64" />;
   if (!user) return <p className="text-center text-red-500">User not found.</p>;
 
-  const pictureSrc = !picture || pictureError ? "/images/team-1.jpg" : `http://localhost:3001${picture}`;
-
   return (
     <>
-      <Navbar />
+      <Navbar /> {/* 🏠 Navbar */}
 
       <div className="profile-container">
         <Card className="card">
           <CardHeader className="card-header">
+            {/* 🖼️ Profile Picture */}
             <div className="avatar-container">
-              <Avatar
+              <img
+                src={newPicture || `http://localhost:3001${user.picture}`} // ✅ Preview or current image
                 className="avatar"
-                src={isPictureConfirmed ? pictureSrc : newPicture || pictureSrc}
-                alt={user.name}
-                onError={handleImageError}
+                alt="Profile Picture"
               />
-              <label htmlFor="profile-upload" className="camera-icon">
+              <label className="camera-icon" onClick={handleCameraClick}>
                 <FaCamera />
               </label>
               <input
                 type="file"
-                id="profile-upload"
+                ref={fileInputRef} // ✅ File input reference
+                className="hidden-input"
+                onChange={handlePictureChange}
                 accept="image/*"
-                style={{ display: "none" }}
-                onChange={handleImageChange}
+                style={{ display: "none" }} // Hidden
               />
             </div>
 
-            {newPicture && !isPictureConfirmed && (
-              <div className="confirm-cancel-container">
-                <button className="confirm-button" onClick={handlePictureConfirm}>
-                  <FaCheckCircle /> Confirm
-                </button>
-                <button className="cancel-button" onClick={handlePictureCancel}>
-                  <FaTimesCircle /> Cancel
-                </button>
+            {/* ✅ Picture Upload Status Message */}
+            {pictureStatus && (
+              <p className={pictureStatus.includes("✔️") ? "upload-success" : "upload-error"}>
+                {pictureStatus}
+              </p>
+            )}
+
+            {/* ✅ Picture Confirmation Buttons */}
+            {newPicture && (
+              <div className="picture-confirmation">
+                <div className="confirmation-buttons">
+                  <button onClick={handlePictureConfirm} className="confirm-button">
+                    <FaCheckCircle /> Confirm
+                  </button>
+                  <button onClick={handlePictureCancel} className="cancel-button">
+                    <FaTimesCircle /> Cancel
+                  </button>
+                </div>
               </div>
             )}
 
             <h2 className="name">{user.name}</h2>
             <p className="email">{user.email}</p>
+            <p className="phone"><strong>📞 Phone:</strong> {user.profile.phone || "Not provided"}</p>
+            
+
             <button className="edit-profile-button" onClick={handleEditProfile}>
               <FaCog /> Edit Profile
             </button>
@@ -161,51 +181,61 @@ const Profile = () => {
           <CardContent className="card-body">
             <p className="role">{user.role}</p>
 
-            {user.role === "CANDIDATE" && (
-              <>
-                <p><strong>Availability:</strong> {user.profile?.availability}</p>
-                <div className="skills">
-                  {user.profile?.skills.map((skill, index) => (
-                    <span key={index} className="skill-badge">{skill}</span>
-                  ))}
-                </div>
-                {user.profile?.experience?.map((exp, idx) => (
-                  <div key={idx} className="experience-card">
-                    <h4>{exp.title}</h4>
-                    <p><strong>Company:</strong> {exp.company}</p>
-                    <p><strong>Duration:</strong> {exp.duration}</p>
-                    <p>{exp.description}</p>
-                  </div>
-                ))}
-                <div className="upload-container">
-                  {resumeUrl ? (
-                    <p className="cv-link">
-                      <a href={`http://localhost:3001${resumeUrl}`} target="_blank" rel="noopener noreferrer">
-                        <FaFilePdf /> View Resume
-                      </a>
-                    </p>
-                  ) : (
-                    <>
-                      <label className="upload-button">
-                        <input type="file" onChange={handleFileChange} accept=".pdf,.doc,.docx" hidden />
-                        <FaUpload /> Add Resume
-                      </label>
-                      {file && (
-                        <button className="upload-btn" onClick={handleFileUpload}>
-                          <FaUpload /> Upload
-                        </button>
-                      )}
-                      {uploadStatus && <p>{uploadStatus}</p>}
-                    </>
+            {/* 🛠️ Skills */}
+            <div className="skills">
+              <p><strong>🛠️ Skills:</strong></p>
+              {user.profile?.skills.length > 0 ? (
+                user.profile.skills.map((skill, index) => (
+                  <span key={index} className="skill-badge">{skill}</span>
+                ))
+              ) : (
+                <p>Not provided</p>
+              )}
+            </div>
+
+            {/* 🌍 Languages */}
+            <div className="languages">
+              <p><strong>🌍 Languages:</strong></p>
+              {user.profile?.languages.length > 0 ? (
+                user.profile.languages.map((language, index) => (
+                  <span key={index} className="language-badge">{language}</span>
+                ))
+              ) : (
+                <p>Not provided</p>
+              )}
+            </div>
+
+            {/* 📄 Experience */}
+            <p><strong>📄 Experience:</strong> {user.profile?.experience || "Not provided"}</p>
+
+            {/* 📂 CV */}
+            <div className="upload-container">
+              {resumeUrl ? (
+                <p className="cv-link">
+                  <a href={`http://localhost:3001${resumeUrl}`} target="_blank" rel="noopener noreferrer">
+                    <FaFilePdf /> View CV
+                  </a>
+                </p>
+              ) : (
+                <>
+                  <label className="upload-button">
+                    <input type="file" onChange={handleFileChange} accept=".pdf,.doc,.docx" hidden />
+                    <FaUpload /> Upload CV
+                  </label>
+                  {file && (
+                    <button className="upload-btn" onClick={handleFileUpload}>
+                      <FaUpload /> Upload
+                    </button>
                   )}
-                </div>
-              </>
-            )}
+                  {uploadStatus && <p>{uploadStatus}</p>}
+                </>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      <Footer />
+      <Footer /> {/* 📜 Footer */}
     </>
   );
 };

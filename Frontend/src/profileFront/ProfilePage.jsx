@@ -5,7 +5,6 @@ import { Card, CardHeader, CardContent, CardFooter } from "./card";
 import { FaCamera, FaFilePdf, FaUpload } from "react-icons/fa";
 import { useParams } from "react-router-dom";
 import "./ProfilePage.css";
-import Navbar from "../../layout/Navbar";
 
 const ProfilePage = () => {
   const { id } = useParams();
@@ -18,22 +17,25 @@ const ProfilePage = () => {
       .then((res) => res.json())
       .then((data) => {
         setUser(data);
-        setResumeUrl(data.resume || "");
+        setResumeUrl(data.profile?.resume || ""); // Ensure profile exists before accessing resume
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((error) => {
+        console.error("❌ Error loading user:", error);
+        setLoading(false);
+      });
   }, [id]);
 
-  if (loading) return <div>Loading...</div>;
-  if (!user) return <div>User not found</div>;
+  if (loading) return <div className="loading">Loading...</div>;
+  if (!user) return <div className="error">User not found</div>;
 
-  const hasValidResume = resumeUrl && resumeUrl.trim() !== "";
+  const hasValidResume = resumeUrl.trim() !== "";
 
   return (
     <div className="profile-page-container">
       <Navbar />
 
-      {/* Hero Section */}
+      {/* 🔹 Hero Section */}
       <section className="profile-hero-section">
         <div className="profile-hero-overlay">
           <h1>Profile Details</h1>
@@ -41,10 +43,11 @@ const ProfilePage = () => {
         </div>
       </section>
 
-      {/* Profile Card Section */}
+      {/* 🔹 Profile Card Section */}
       <section className="profile-main">
         <Card className="profile-card">
           <CardHeader className="profile-card-header">
+            {/* Profile Image */}
             <div className="avatar-container">
               <img
                 src={user.picture || "/images/default-avatar.png"}
@@ -56,28 +59,51 @@ const ProfilePage = () => {
               </label>
               <input type="file" id="profile-upload" hidden />
             </div>
+
             <h2 className="profile-name">{user.name}</h2>
             <p className="profile-email">{user.email}</p>
           </CardHeader>
 
           <CardContent className="profile-card-content">
-            <p><strong>Disponibilité:</strong> {user.profile?.availability || "N/A"}</p>
+            <p><strong>📅 Disponibilité:</strong> {user.profile?.availability || "N/A"}</p>
+            
+            {/* Skills Section */}
             <div className="skills">
-              {user.profile?.skills?.map((skill, index) => (
-                <span key={index} className="skill">{skill}</span>
-              ))}
+              <p><strong>🛠️ Compétences:</strong></p>
+              {user.profile?.skills && user.profile.skills.length > 0 ? (
+                user.profile.skills.map((skill, index) => (
+                  <span key={index} className="skill-badge">{skill}</span>
+                ))
+              ) : (
+                <p>Aucune compétence renseignée</p>
+              )}
             </div>
-            <p><strong>Expérience:</strong> {user.profile?.experience?.length > 0 ? "Voir ci-dessous" : "Aucune expérience disponible."}</p>
+
+            {/* Experience Section */}
+            <p><strong>🏢 Expérience:</strong></p>
+            {user.profile?.experience && user.profile.experience.length > 0 ? (
+              user.profile.experience.map((exp, idx) => (
+                <div key={idx} className="experience-card">
+                  <h4>{exp.title}</h4>
+                  <p><strong>Entreprise:</strong> {exp.company}</p>
+                  <p><strong>Durée:</strong> {exp.duration}</p>
+                  <p>{exp.description}</p>
+                </div>
+              ))
+            ) : (
+              <p>Aucune expérience disponible.</p>
+            )}
           </CardContent>
 
           <CardFooter className="profile-card-footer">
+            {/* Resume Section */}
             {hasValidResume ? (
-              <a href={resumeUrl} target="_blank" rel="noopener noreferrer" className="futuristic-button">
-                <FaFilePdf /> View Resume
+              <a href={`http://localhost:3001${resumeUrl}`} target="_blank" rel="noopener noreferrer" className="futuristic-button">
+                <FaFilePdf /> Voir CV
               </a>
             ) : (
               <label htmlFor="resume-upload" className="futuristic-button">
-                <FaUpload /> Add Resume
+                <FaUpload /> Ajouter CV
                 <input type="file" id="resume-upload" hidden />
               </label>
             )}

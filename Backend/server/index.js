@@ -14,6 +14,10 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const UserModel = require('./models/user'); // Changed to User model
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
+const axios = require('axios'); // ✅ Add this line
+const fetch = require("node-fetch");
+const dotenv = require("dotenv");
+
 
 const app = express();
 // Swagger Configuration
@@ -164,6 +168,18 @@ const interviewRoutes = require('./routes/interviewRoute');
 app.use('/api', userRoutes);
 app.use('/api', jobRoutes);
 app.use('/api', interviewRoutes);
+const uploadDir = path.join(__dirname, 'uploads');
+
+const resumeUpload = multer({
+    storage: multer.diskStorage({
+        destination: uploadDir,
+        filename: (req, file, cb) => cb(null, `resume-${Date.now()}${path.extname(file.originalname)}`)
+    }),
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+        allowedTypes.includes(file.mimetype) ? cb(null, true) : cb(new Error("Unsupported file format."), false);
+    }
+});
 
 // Authentication Routes
 app.post("/Frontend/login", async(req, res) => {
@@ -216,33 +232,72 @@ app.post("/Frontend/login", async(req, res) => {
     }
 });
 
-app.post("/Frontend/register", async(req, res) => {
+
+app.post('/Frontend/register', resumeUpload.single('resume'), async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
-
         if (!email || !password || !role) {
-            return res.status(400).json({ message: "Email, mot de passe et rôle sont requis" });
+            return res.status(400).json({ message: 'Email, password, and role are required' });
         }
 
         const existingUser = await UserModel.findOne({ email });
         if (existingUser) {
-            return res.status(400).json({ message: "Cet email est déjà utilisé." });
+            return res.status(400).json({ message: 'Email already in use.' });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const verificationCode = Math.floor(100000 + Math.random() * 900000);
 
-        const newUser = await UserModel.create({
+        // ✅ Création du nouvel utilisateur avec un profil initialisé
+        const newUser = new UserModel({
             email,
             name,
             password: hashedPassword,
             role,
             emailVerified: false,
             verificationCode: verificationCode,
+            profile: { resume: "", skills: [], languages: [], phone: "", experience: [] } // ✅ Correction
         });
+        // ✅ Traitement du CV si un fichier est envoyé
+        if (req.file) {
+            const filePath = path.join(uploadDir, req.file.filename);
 
+            // ✅ Vérification de la bibliothèque FormData
+            const FormData = require('form-data');
+            const form = new FormData();
+            form.append('resume', fs.createReadStream(filePath));
+
+            try {
+                // ✅ Envoi du CV au serveur Python pour analyse
+                const pythonResponse = await axios.post('http://127.0.0.1:5002/upload', form, {
+                    headers: {
+                        ...form.getHeaders(),
+                    },
+                });
+
+                const resumeData = pythonResponse.data;
+                console.log("📄 Réponse du serveur Python :", resumeData);
+
+                // ✅ Mise à jour du profil avec les données extraites
+                newUser.profile.resume = `/uploads/${req.file.filename}`;
+                newUser.profile.skills = resumeData.skills || [];
+                newUser.profile.languages = resumeData.languages || [];
+                newUser.profile.phone = resumeData.phone || ''; // ✅ Correction ici
+                newUser.profile.experience = resumeData.experience || [];
+
+                if (resumeData.name) newUser.name = resumeData.name;
+            } catch (error) {
+                console.error("❌ Erreur lors de l'analyse du CV :", error);
+                return res.status(500).json({ message: "Erreur lors de l'analyse du CV." });
+            }
+        }
+
+        // ✅ Sauvegarde de l'utilisateur dans la base de données
+        await newUser.save();
+
+        // ✅ Envoi du mail de vérification
         const transporter = nodemailer.createTransport({
-            service: "gmail",
+            service: 'gmail',
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS,
@@ -252,18 +307,19 @@ app.post("/Frontend/register", async(req, res) => {
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: email,
-            subject: "🔐 Code de vérification",
-            text: `Bonjour,\n\nVotre code de vérification est : ${verificationCode}\n\nVeuillez entrer ce code sur la page de vérification.`,
+            subject: '🔐 Verification Code',
+            text: `Hello,\n\nYour verification code is: ${verificationCode}\n\nPlease enter this code on the verification page.`,
         };
 
         await transporter.sendMail(mailOptions);
+        res.json({ message: 'User created. A verification code has been sent to your email.' });
 
-        res.json({ message: "Utilisateur créé. Un code de vérification a été envoyé par email." });
     } catch (err) {
-        console.error("❌ Erreur lors de l'enregistrement :", err);
-        res.status(500).json({ message: "Erreur serveur" });
+        console.error('❌ Registration error:', err);
+        res.status(500).json({ message: 'Server error' });
     }
 });
+
 
 app.post("/Frontend/verify-email", async(req, res) => {
     try {
@@ -297,7 +353,6 @@ app.post("/Frontend/verify-email", async(req, res) => {
 });
 
 // File Upload Configuration
-const uploadDir = path.join(__dirname, 'uploads');
 const uploadPicsDir = path.join(__dirname, 'uploadsPics');
 
 if (!fs.existsSync(uploadDir)) {
@@ -310,6 +365,41 @@ if (!fs.existsSync(uploadPicsDir)) {
 
 app.use("/uploads", express.static(uploadDir));
 app.use("/uploadsPics", express.static(uploadPicsDir));
+// Resume Upload Configuration
+const resumeStorage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, uploadDir),
+    filename: (req, file, cb) => cb(null, `temp-${Date.now()}${path.extname(file.originalname)}`),
+});
+const resumeFileFilter = (req, file, cb) => {
+    const allowedTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
+    if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error('Unsupported file format.'), false);
+    }
+};
+
+// Profile Picture Upload Configuration
+const profileStorage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, uploadPicsDir),
+    filename: (req, file, cb) => {
+        const userId = req.body.userId || 'unknown';
+        cb(null, `${userId}-profile-${Date.now()}${path.extname(file.originalname)}`);
+    },
+});
+const profileFileFilter = (req, file, cb) => {
+    const allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (allowedImageTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error('Only JPEG, PNG, and GIF formats are supported.'), false);
+    }
+};
+
 
 app.get("/Frontend/getUser/:id", async (req, res) => {
     try {
@@ -373,58 +463,62 @@ const upload = multer({
     }),
 });
 
-app.post("/Frontend/upload-resume", upload.single("resume"), async (req, res) => {
+app.post('/Frontend/upload-resume', resumeUpload.single('resume'), async (req, res) => {
     try {
         const { userId } = req.body;
-
         if (!userId) {
-            return res.status(400).json({ error: "userId est requis." });
+            return res.status(400).json({ error: 'User ID is required.' });
         }
 
         if (!req.file) {
-            return res.status(400).json({ error: "Aucun fichier envoyé." });
+            return res.status(400).json({ error: 'No file uploaded.' });
         }
 
         const user = await UserModel.findById(userId);
         if (!user) {
-            return res.status(404).json({ error: "Utilisateur non trouvé." });
+            return res.status(404).json({ error: 'User not found.' });
         }
 
-        // Nouveau nom de fichier basé sur userId
         const newFilename = `${userId}-${Date.now()}${path.extname(req.file.originalname)}`;
         const newPath = path.join(req.file.destination, newFilename);
 
-        // Renommer le fichier après upload
-        const fs = require('fs').promises;
-        await fs.rename(req.file.path, newPath);
+        const fsPromises = require('fs').promises;
+        await fsPromises.rename(req.file.path, newPath);
 
-        // Mise à jour du chemin de résumé dans la base
-        user.resume = `/uploads/${newFilename}`;
-        await user.save();
-
-        console.log("✅ CV mis à jour pour l'utilisateur:", user);
-
-        res.status(200).json({
-            message: "CV téléchargé avec succès !",
-            resumeUrl: user.resume
+        const form = new FormData();
+        form.append('resume', fs.createReadStream(newPath));
+        const pythonResponse = await axios.post('http://localhost:5002/upload', form, {
+            headers: {
+                ...form.getHeaders(),
+            },
         });
 
+        const resumeData = pythonResponse.data;
+
+        user.resume = `/uploads/${newFilename}`;
+        user.email = user.email || resumeData.email;
+        user.phone = resumeData.phone || user.phone;
+        user.skills = resumeData.skills || user.skills || [];
+        user.languages = resumeData.languages || user.languages || [];
+        if (resumeData.name) user.name = user.name || resumeData.name;
+
+        await user.save();
+
+        console.log('✅ Resume updated for user:', user);
+        res.status(200).json({
+            message: 'Resume uploaded and analyzed successfully!',
+            resumeUrl: user.resume,
+            extractedData: resumeData,
+        });
     } catch (error) {
-        console.error("❌ Erreur serveur lors de l'upload du CV:", error);
-        res.status(500).json({ error: "Erreur serveur." });
+        console.error('❌ Server error during resume upload:', error);
+        res.status(500).json({ error: 'Server error.', details: error.message });
     }
 });
 
 
-const profileStorage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadPicsDir);
-    },
-    filename: (req, file, cb) => {
-        const userId = req.headers['x-user-id'] || 'unknown';
-        cb(null, `${userId}-profile-${Date.now()}${path.extname(file.originalname)}`);
-    },
-});
+
+
 
 const profileUpload = multer({
     storage: profileStorage,
@@ -459,23 +553,69 @@ app.post("/Frontend/upload-profile", profileUpload.single("picture"), async(req,
     }
 });
 
-app.put("/Frontend/updateUser/:id", async(req, res) => {
+app.put("/Frontend/updateUser/:id", async (req, res) => {
     try {
-        const userId = req.params.id;
-        const updatedData = req.body;
+        console.log("📥 Données reçues du Frontend:", req.body);
 
-        const user = await UserModel.findByIdAndUpdate(userId, updatedData, { new: true });
+        const { name, email, phone, profile } = req.body;
 
+        let user = await UserModel.findById(req.params.id);
         if (!user) {
-            return res.status(404).json({ message: "Utilisateur non trouvé" });
+            return res.status(404).json({ error: "Utilisateur non trouvé" });
         }
 
-        res.json({ message: "Profil mis à jour avec succès", user });
+        // ✅ Mise à jour des champs du profil utilisateur
+        user.name = name || user.name;
+        user.email = email || user.email;
+        user.profile.phone = profile.phone || user.profile.phone;
+        user.profile.resume = profile.resume || user.profile.resume; // ✅ Correction Résumé
+        user.profile.availability = profile.availability || user.profile.availability; // ✅ Correction Disponibilité
+        user.profile.skills = profile.skills || user.profile.skills; // ✅ Correction Compétences
+        user.profile.languages = profile.languages || user.profile.languages; // ✅ Correction Langues
+        user.profile.experience = profile.experience || user.profile.experience; // ✅ Correction Expérience            
+        user.password = profile.password ? await bcrypt.hash(profile.password, 10) : user.password; // ✅ Correction Mot de passe
+        await user.save();
+        console.log("✅ Utilisateur mis à jour avec succès:", user);
+        res.status(200).json(user);
     } catch (error) {
-        res.status(500).json({ message: "Erreur lors de la mise à jour du profil", error: error.message });
-    }
+        console.error("❌ Erreur mise à jour utilisateur:", error);
+        res.status(500).json({ error: "Erreur interne du serveur." });
+     }
 });
+app.post("/forgot-password", async (req, res) => {
+    const { email } = req.body;
 
+    try {
+        const user = await UserModel.findOne({ email });
+        if (!user) return res.status(404).json({ message: "User not found." });
+ 
+        const resetToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
+ 
+        user.resetPasswordToken = resetToken;
+        user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+        await user.save();
+ 
+        const resetLink = `http://localhost:5173/reset-password/${resetToken}`;
+ 
+        const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+        });
+ 
+        await transporter.sendMail({
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: "Password Reset Request",
+            text: `Click this link to reset your password: ${resetLink}`
+        });
+ 
+        res.json({ message: "✅ Password reset email sent." });
+ 
+    } catch (error) {
+        console.error("❌ Forgot Password Error:", error);
+        res.status(500).json({ message: "Server error." });
+    }
+ });
 
 app.post("/reset-password/:token", async(req, res) => {
     const { token } = req.params;
@@ -505,6 +645,88 @@ app.post("/reset-password/:token", async(req, res) => {
         res.status(500).json({ message: "Server error." });
     }
 });
+
+
+// ✅ OpenAI API for Experience Correction
+app.post("/api/openai", async (req, res) => {
+    try {
+        const { prompt } = req.body;
+        if (!prompt) {
+            return res.status(400).json({ error: "Le prompt est requis." });
+        }
+
+        const response = await fetch("https://api-inference.huggingface.co/models/vennify/t5-base-grammar-correction", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${process.env.HF_API_KEY}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ inputs: prompt }),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("❌ Erreur Hugging Face API:", errorText);
+            return res.status(response.status).json({ error: "Erreur Hugging Face API", details: errorText });
+        }
+
+        const data = await response.json();
+        res.json({ correctedText: data[0]?.generated_text || prompt });
+    } catch (error) {
+        console.error("❌ Erreur Hugging Face API:", error);
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
+
+
+
+
+
+// 📂 Configuration du stockage des fichiers audio
+const audioStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const audioDir = path.join(__dirname, "uploads/audio");
+        if (!fs.existsSync(audioDir)) {
+            fs.mkdirSync(audioDir, { recursive: true });
+        }
+        cb(null, audioDir);
+    },
+    filename: (req, file, cb) => {
+        cb(null, `audio-${Date.now()}${path.extname(file.originalname)}`);
+    },
+});
+
+const audioUpload = multer({ storage: audioStorage });
+
+// 📡 Endpoint pour la transcription avec Whisper AI
+app.post("/Frontend/transcribe-audio", audioUpload.single("audio"), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: "Aucun fichier audio envoyé." });
+        }
+
+        const audioPath = path.join(__dirname, req.file.path);
+
+        console.log(`🔊 Fichier audio reçu : ${audioPath}`);
+
+        // 📢 Exécuter Whisper AI pour transcrire l'audio
+        exec(`whisper "${audioPath}" --model medium`, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`❌ Erreur Whisper: ${error.message}`);
+                return res.status(500).json({ error: "Erreur lors de la transcription." });
+            }
+
+            console.log("✅ Transcription réussie :", stdout);
+            res.json({ transcript: stdout.trim() });
+        });
+
+    } catch (error) {
+        console.error("❌ Erreur transcription audio:", error);
+        res.status(500).json({ error: "Erreur interne du serveur." });
+    }
+});
+
+
 
 // Serveur en écoute
 const PORT = process.env.PORT || 3001; // Updated to port 3001

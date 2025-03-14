@@ -2,7 +2,63 @@ const express = require("express");
 const User = require("../models/user");
 const router = express.Router();
 const bcrypt = require("bcrypt"); // For password hashing
+const jwt = require("jsonwebtoken"); // Import JWT
 
+router.post("/auth/login", async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({ message: "Email et mot de passe requis" });
+        }
+
+        const user = await User.findOne({ email, role: "ADMIN" });
+        if (!user) {
+            return res.status(401).json({ message: "Email ou mot de passe incorrect!" });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(401).json({ message: "Email ou mot de passe incorrect!" });
+        }
+
+        if (!user.verificationStatus?.emailVerified || user.verificationStatus.status !== 'APPROVED') {
+            return res.status(401).json({
+                message: "Veuillez vérifier votre email avant de vous connecter.",
+                emailVerified: false
+            });
+        }
+
+        if (!process.env.JWT_SECRET_KEY) {
+            console.error("❌ ERREUR: JWT_SECRET_KEY non défini dans .env !");
+            return res.status(500).json({ message: "Erreur serveur : JWT non configuré" });
+        }
+
+        const token = jwt.sign(
+            { id: user._id, email: user.email },
+            process.env.JWT_SECRET_KEY,
+            { expiresIn: "1h" }
+        );
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            maxAge: 3600000,
+            sameSite: "strict",
+        });
+
+        return res.json({
+            status: true,
+            message: "Login successful",
+            token,
+            userId: user._id,
+            emailVerified: true
+        });
+
+    } catch (err) {
+        console.error("❌ Login Error:", err);
+        return res.status(500).json({ message: "Erreur serveur", error: err.message });
+    }
+});
 // Get all users
 router.get("/users", async(req, res) => {
     try {
@@ -24,14 +80,43 @@ router.get("/users/:id", async(req, res) => {
     }
 });
 
-// Create new user
-router.post("/users", async(req, res) => {
+// Route pour ajouter un administrateur
+router.post("/admin", async (req, res) => {
     try {
-        const user = new User(req.body);
-        const newUser = await user.save();
-        res.status(201).json(newUser);
-    } catch (err) {
-        res.status(400).json({ message: "Failed to create user", error: err.message });
+        const { email, name, password } = req.body;
+
+        // Vérifier si l'utilisateur existe déjà
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ message: "Cet email est déjà utilisé." });
+        }
+
+        // Hachage du mot de passe
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Création du nouvel administrateur
+        const admin = new User({
+            email,
+            name,
+            role: "ADMIN",
+            password: hashedPassword,
+            permissions: {
+                canManageUsers: true,
+                canControlPermissions: true,
+                canOverseeSystem: true,
+            },
+            verificationStatus: {
+                status: "APPROVED",
+                emailVerified: true,
+            }
+        });
+
+        // Sauvegarde dans la base de données
+        const newAdmin = await admin.save();
+
+        res.status(201).json({ message: "Administrateur ajouté avec succès", admin: newAdmin });
+    } catch (error) {
+        res.status(500).json({ message: "Erreur lors de la création de l'administrateur", error: error.message });
     }
 });
 
@@ -136,4 +221,6 @@ router.get('/approved-candidates', async(req, res) => {
         res.status(500).json({ message: err.message }); // Handle errors
     }
 });
+
+
 module.exports = router;

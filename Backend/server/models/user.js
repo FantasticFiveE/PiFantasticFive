@@ -35,14 +35,18 @@ const UserSchema = new Schema({
     profile: {
         resume: { type: String },
         skills: [{ type: String }],
-        availability: { type: String, enum: ['Full-time', 'Part-time', 'Contract', 'Freelance'] },
-        experience: [{
+        phone: { type: String },
+        languages: [{ type: String }],
+        availability: { type: String, enum: ["Full-time", "Part-time", "Contract", "Freelance"] },
+        experience: [{ 
             title: { type: String },
             company: { type: String },
             duration: { type: String },
             description: { type: String },
         }],
     },
+    
+
 
     picture: { type: String },
 

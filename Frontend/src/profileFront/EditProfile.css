@@ -1,110 +1,243 @@
+/* Profile Container */
 .profile-container {
-    max-width: 800px;
-    margin: 2rem auto;
-    padding: 1rem;
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  background: #f9f9f9;
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
 }
 
+/* Card */
 .card {
-    background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
 }
 
+/* Card Header */
 .card-header {
-    padding: 20px;
-    background: #007bff;
-    color: white;
-    border-radius: 10px 10px 0 0;
+  padding: 20px;
+  background: #007bff;
+  color: white;
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-align: center;
+  border-radius: 10px 10px 0 0;
 }
 
-.header-content {
-    text-align: center;
+/* Input fields */
+input[type="text"],
+input[type="email"],
+textarea {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1rem;
 }
 
-.avatar-container {
-    position: relative;
-    margin-bottom: 1rem;
+/* Textarea */
+textarea {
+  resize: vertical;
+  min-height: 80px;
 }
 
-.avatar {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    border: 5px solid white;
-    object-fit: cover;
+/* Role Display */
+.role {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: #333;
+  text-align: center;
+  margin-bottom: 15px;
 }
 
-.camera-icon {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    background: #007bff;
-    color: white;
-    padding: 8px;
-    border-radius: 50%;
-    cursor: pointer;
+/* Form Groups */
+.form-group {
+  margin-bottom: 15px;
 }
 
-.confirm-cancel-container {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    margin-top: 10px;
-}
-
-.confirm-button,
-.cancel-button {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.confirm-button {
-    background: #28a745;
-    color: white;
-}
-
-.cancel-button {
-    background: #dc3545;
-    color: white;
-}
-
-.edit-input,
-.edit-textarea {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 1rem;
-    margin-top: 0.5rem;
-}
-
-.edit-textarea {
-    resize: vertical;
-    min-height: 100px;
-}
-
+/* Save Button */
 .save-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    width: 100%;
-    padding: 0.75rem;
-    background: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: background 0.3s ease-in-out;
 }
 
 .save-button:hover {
-    background: #0056b3;
+  background: #0056b3;
+}
+
+/* Avatar Container */
+.avatar-container {
+  position: relative;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* Avatar Image */
+.avatar {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 4px solid white;
+  object-fit: cover;
+  transition: transform 0.3s ease-in-out;
+}
+
+.avatar:hover {
+  transform: scale(1.05);
+}
+
+/* Camera Icon */
+.camera-icon {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: #007bff;
+  color: white;
+  padding: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.3s ease-in-out;
+}
+
+.camera-icon:hover {
+  background: #0056b3;
+}
+
+/* Voice Input AI Button */
+.voice-input button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.voice-input button:hover {
+  background: #0056b3;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+  .profile-container {
+    padding: 1rem;
+  }
+
+  .card-header {
+    font-size: 1rem;
+  }
+
+  .save-button {
+    font-size: 0.9rem;
+  }
+}
+.profile-container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 1rem;
+}
+
+.card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  padding: 20px;
+  background: #007bff;
+  color: white;
+  border-radius: 10px 10px 0 0;
+  text-align: center;
+}
+
+.avatar-container {
+  position: relative;
+  margin: 1rem auto;
+  text-align: center;
+}
+
+.avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 4px solid white;
+  object-fit: cover;
+  background: #eee;
+}
+
+.camera-icon {
+  position: absolute;
+  bottom: 5px;
+  right: 10px;
+  background: #007bff;
+  color: white;
+  padding: 6px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.card-body {
+  padding: 20px;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+label {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 5px;
+}
+
+input, textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+.save-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+
+.save-button:hover {
+  background: #0056b3;
 }

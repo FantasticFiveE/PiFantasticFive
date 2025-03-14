@@ -1,11 +1,11 @@
 function VerifyEmailPending() {
-  return (
-    <div>
-      <h2>Verification Pending</h2>
-      <p>A confirmation email has been sent. Please check your inbox.</p>
-      <button onClick={() => navigate("/login")}>Log In</button>
-    </div>
-  );
-}
-
-export default VerifyEmailPending;
+    return (
+      <div>
+        <h2>Vérification en attente</h2>
+        <p>Un email de confirmation vous a été envoyé. Veuillez vérifier votre boîte mail.</p>
+        <button onClick={() => navigate("/login")}>Se connecter</button>
+      </div>
+    );
+  }
+  export default VerifyEmailPending;
+  

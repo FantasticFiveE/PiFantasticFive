@@ -1,165 +1,152 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: "Poppins", sans-serif;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
 }
 
 .profile-page-container {
-    background: linear-gradient(135deg, #0f1923, #2e2f3e);
-    color: white;
-    min-height: 100vh;
+  background: linear-gradient(135deg, #0f1923, #2e2f3e);
+  color: white;
+  min-height: 100vh;
 }
 
-
 /* Hero Section */
-
 .profile-hero-section {
-    height: 50vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: url('/images/hero-bg.png') center/cover;
-    position: relative;
-    text-align: center;
+  height: 50vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: url('/images/hero-bg.png') center/cover;
+  position: relative;
+  text-align: center;
 }
 
 .profile-hero-overlay {
-    background: rgba(0, 0, 0, 0.6);
-    padding: 40px 60px;
-    backdrop-filter: blur(6px);
-    border-radius: 12px;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 40px 60px;
+  backdrop-filter: blur(6px);
+  border-radius: 12px;
 }
 
 .profile-hero-overlay h1 {
-    font-size: 2.5rem;
-    margin-bottom: 10px;
+  font-size: 2.5rem;
+  margin-bottom: 10px;
 }
 
 .profile-hero-overlay p {
-    font-size: 1rem;
+  font-size: 1rem;
 }
-
 
 /* Main Section */
-
 .profile-main {
-    display: flex;
-    justify-content: center;
-    padding: 50px 20px;
+  display: flex;
+  justify-content: center;
+  padding: 50px 20px;
 }
 
-
 /* Avatar */
-
 .avatar-container {
-    position: relative;
-    margin-top: -70px;
+  position: relative;
+  margin-top: -70px;
 }
 
 .avatar {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 4px solid white;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid white;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
 }
 
 .camera-icon {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    background: #007bff;
-    color: white;
-    border-radius: 50%;
-    padding: 8px;
-    cursor: pointer;
-    font-size: 14px;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: #007bff;
+  color: white;
+  border-radius: 50%;
+  padding: 8px;
+  cursor: pointer;
+  font-size: 14px;
 }
-
 
 /* Profile Card */
-
 .profile-card {
-    max-width: 700px;
-    width: 100%;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(15px);
-    border-radius: 15px;
-    overflow: hidden;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  max-width: 700px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(15px);
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
-
 /* Header */
-
 .profile-card-header {
-    background: linear-gradient(135deg, #6a11cb, #2575fc);
-    text-align: center;
-    padding: 30px 20px;
-    color: white;
+  background: linear-gradient(135deg, #6a11cb, #2575fc);
+  text-align: center;
+  padding: 30px 20px;
+  color: white;
 }
 
 .profile-name {
-    font-size: 1.8rem;
-    margin: 10px 0 5px;
+  font-size: 1.8rem;
+  margin: 10px 0 5px;
 }
 
 .profile-email {
-    font-size: 1rem;
-    opacity: 0.8;
+  font-size: 1rem;
+  opacity: 0.8;
 }
 
-
 /* Content */
-
 .profile-card-content {
-    padding: 20px;
-    color: white;
+  padding: 20px;
+  color: white;
 }
 
 .skills {
-    margin: 10px 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
+  margin: 10px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .skill {
-    background: rgba(255, 255, 255, 0.15);
-    padding: 6px 12px;
-    border-radius: 15px;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 6px 12px;
+  border-radius: 15px;
 }
 
-
 /* Footer */
-
 .profile-card-footer {
-    padding: 15px;
-    background: rgba(255, 255, 255, 0.1);
-    display: flex;
-    justify-content: center;
-    gap: 15px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: center;
+  gap: 15px;
 }
 
 .futuristic-button {
-    background: linear-gradient(135deg, #007bff, #00c6ff);
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 25px;
-    cursor: pointer;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  background: linear-gradient(135deg, #007bff, #00c6ff);
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .futuristic-button:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 15px rgba(0, 198, 255, 0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 15px rgba(0, 198, 255, 0.4);
 }

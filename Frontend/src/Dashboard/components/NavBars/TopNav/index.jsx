@@ -41,7 +41,7 @@ function TopNav() {
       navigate(`/search?q=${encodeURIComponent(query)}`);
     } else {
       // If the query is empty, navigate back to the home page or a default page
-      navigate("/dashboard");
+      navigate("/");
     }
   };
 
@@ -49,7 +49,7 @@ function TopNav() {
     <div className="d-flex justify-content-between align-items-center p-3 shadow mb-4 position-relative">
       <div className="d-flex justify-content-start align-items-center gap-2">
         <img src={Logo} alt="logo" width={"15%"} className="me-4" />
-
+        <SearchBox onSearch={handleSearch} /> {/* Pass handleSearch as prop */}
         <button className="btn">
           <i className="fs-3 d-sm-display d-md-none bi bi-list"></i>
         </button>
@@ -64,7 +64,7 @@ function TopNav() {
         </button>
 
         {/* Settings Icon */}
-        <button className="btn p-0" onClick={() => navigate("/dashboard/settings")}>
+        <button className="btn p-0" onClick={() => navigate("/settings")}>
           <img src={SettingsIcon} alt="Settings Icon" width={"20px"} />
         </button>
 

@@ -45,6 +45,10 @@ const Home = () => {
           </div>
         </div>
       </section>
+
+      {/* Bouton Edit Profile */}
+    
+
       {/* Image Carousel Section */}
       <section className="carousel_section">
         <div className="container">

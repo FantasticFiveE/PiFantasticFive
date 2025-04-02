@@ -63,20 +63,22 @@ function Login() {
 
   const handleGoogleSuccess = async (response) => {
     try {
-        const result = await axios.post("http://localhost:3001/auth/google", {
-            credential: response.credential // ✅ Send only `credential`, not separate email/name
-        });
-
-        if (result.data.status) {
-            localStorage.setItem("token", result.data.token);
-            localStorage.setItem("role", result.data.role);
-            login(result.data.role);
-            navigate("/home");
-        }
+      const result = await axios.post("http://localhost:3001/auth/google", {
+        credential: response.credential
+      });
+  
+      if (result.data.status) {
+        localStorage.setItem("token", result.data.token);
+        localStorage.setItem("userId", result.data.userId); // ✅ Add this line
+        localStorage.setItem("role", result.data.role);
+        login(result.data.role);
+        navigate("/home");
+      }
     } catch (err) {
-        console.error("Google Login Error:", err);
+      console.error("Google Login Error:", err);
     }
-};
+  };
+  
 
 
 

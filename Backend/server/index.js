@@ -407,30 +407,32 @@ app.get("/Frontend/getUser/:id", async (req, res) => {
       if (!user) {
         return res.status(404).json({ message: "Utilisateur non trouvé" });
       }
-      
-      // Nettoyer les chemins de résumé invalides
-      if (user.resume && (user.resume.startsWith("file://") || user.resume === "")) {
-        user.resume = null;
-        await user.save();
-        console.log(`Chemin de résumé invalide détecté et nettoyé pour l'utilisateur ${user._id}`);
-      }
-      
-      // Assurez-vous que tous les champs sont bien renvoyés
-      console.log("Données utilisateur à renvoyer:", {
+  
+      // ✅ Make sure full profile is returned to frontend
+      const responseUser = {
         _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
-        resume: user.resume,
-        picture: user.picture
-      });
-      
-      res.json(user);
+        picture: user.picture,
+        profile: {
+          phone: user.profile?.phone || "",
+          resume: user.profile?.resume || "",
+          skills: user.profile?.skills || [],
+          languages: user.profile?.languages || [],
+          experience: user.profile?.experience || [],
+          availability: user.profile?.availability || "Full-time"
+        }
+      };
+  
+      console.log("📤 Données utilisateur à renvoyer:", responseUser);
+      res.json(responseUser);
     } catch (error) {
-      console.error("Erreur lors de la récupération de l'utilisateur:", error);
+      console.error("❌ Erreur lors de la récupération de l'utilisateur:", error);
       res.status(500).json({ message: "Erreur serveur", error: error.message });
     }
   });
+  
 
   const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -555,33 +557,46 @@ app.post("/Frontend/upload-profile", profileUpload.single("picture"), async(req,
 
 app.put("/Frontend/updateUser/:id", async (req, res) => {
     try {
-        console.log("📥 Données reçues du Frontend:", req.body);
-
-        const { name, email, phone, profile } = req.body;
-
-        let user = await UserModel.findById(req.params.id);
-        if (!user) {
-            return res.status(404).json({ error: "Utilisateur non trouvé" });
-        }
-
-        // ✅ Mise à jour des champs du profil utilisateur
-        user.name = name || user.name;
-        user.email = email || user.email;
-        user.profile.phone = profile.phone || user.profile.phone;
-        user.profile.resume = profile.resume || user.profile.resume; // ✅ Correction Résumé
-        user.profile.availability = profile.availability || user.profile.availability; // ✅ Correction Disponibilité
-        user.profile.skills = profile.skills || user.profile.skills; // ✅ Correction Compétences
-        user.profile.languages = profile.languages || user.profile.languages; // ✅ Correction Langues
-        user.profile.experience = profile.experience || user.profile.experience; // ✅ Correction Expérience            
-        user.password = profile.password ? await bcrypt.hash(profile.password, 10) : user.password; // ✅ Correction Mot de passe
-        await user.save();
-        console.log("✅ Utilisateur mis à jour avec succès:", user);
-        res.status(200).json(user);
+      console.log("📥 Received PUT data:", req.body);
+  
+      const user = await UserModel.findById(req.params.id);
+      if (!user) return res.status(404).json({ error: "Utilisateur non trouvé" });
+  
+      // Update top-level fields
+      user.name = req.body.name || user.name;
+      user.email = req.body.email || user.email;
+  
+      // Update password if provided and valid
+      if (req.body.password && req.body.password.length > 4) {
+        const hashedPassword = await bcrypt.hash(req.body.password, 10);
+        user.password = hashedPassword;
+      }
+  
+      // ✅ Ensure profile exists
+      if (!user.profile) user.profile = {};
+  
+      // Update nested profile fields
+      const profile = req.body.profile || {};
+      user.profile.phone = profile.phone ?? user.profile.phone;
+      user.profile.resume = profile.resume ?? user.profile.resume;
+      user.profile.availability = profile.availability ?? user.profile.availability;
+      user.profile.skills = profile.skills ?? user.profile.skills;
+      user.profile.languages = profile.languages ?? user.profile.languages;
+      user.profile.experience = profile.experience ?? user.profile.experience;
+  
+      // 🧠 Important when modifying nested objects in Mongoose
+      user.markModified("profile");
+  
+      await user.save();
+      console.log("✅ User updated:", user);
+      return res.status(200).json(user);
     } catch (error) {
-        console.error("❌ Erreur mise à jour utilisateur:", error);
-        res.status(500).json({ error: "Erreur interne du serveur." });
-     }
-});
+      console.error("❌ Erreur mise à jour utilisateur:", error);
+      return res.status(500).json({ error: "Erreur interne du serveur." });
+    }
+  });
+  
+  
 app.post("/forgot-password", async (req, res) => {
     const { email } = req.body;
 

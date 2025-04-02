@@ -72,13 +72,14 @@ const Navbar = () => {
               <>
                 {/* Profile Link */}
                 <li className="nav-item">
-                  {userId ? (
-                    <Link className="nav-link futuristic-nav-link" to={`/profile/${userId}`}>
-                      Mon Profil
-                    </Link>
-                  ) : (
-                    <span>Loading...</span> // Affiche un message de chargement si l'ID n'est pas encore récupéré
-                  )}
+                {userId ? (
+                <Link className="nav-link futuristic-nav-link" to={`/profile/${userId}`}>
+                  Mon Profil
+                </Link>
+              ) : (
+                <span>Loading...</span>
+              )}
+
                 </li>
                 {/* Logout Button */}
                 <li className="nav-item">

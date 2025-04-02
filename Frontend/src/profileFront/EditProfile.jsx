@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "./card";
-import { FaCamera, FaSave, FaUpload, FaTrash, FaLock, FaFilePdf } from "react-icons/fa";
+import { FaCamera, FaSave } from "react-icons/fa";
 import Select from "react-select";
 import "./EditProfile.css"; 
 import Navbar from "../components/Navbar/Navbar";
@@ -28,8 +28,6 @@ const EditProfile = () => {
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({});
   const [oldPassword, setOldPassword] = useState("");
-  const [file, setFile] = useState(null);
-  const [uploadStatus, setUploadStatus] = useState("");
 
   useEffect(() => {
     fetch(`http://localhost:3001/Frontend/getUser/${id}`)
@@ -39,7 +37,6 @@ const EditProfile = () => {
         setFormData({
           name: data.name || "",
           email: data.email || "",
-        
           password: "",
           profile: {
             availability: data.profile?.availability ?? "Full-time",
@@ -48,7 +45,6 @@ const EditProfile = () => {
             experience: data.profile?.experience ?? "",
             resume: data.profile?.resume ?? "",
             phone: data.profile?.phone ?? "",
-
           },
         });
         setLoading(false);
@@ -57,8 +53,8 @@ const EditProfile = () => {
         console.error("Error loading user:", error);
         setLoading(false);
       });
-      
   }, [id]);
+
   const handleSave = async () => {
     console.log("📡 Sending Data to API:", formData);
 
@@ -70,8 +66,8 @@ const EditProfile = () => {
           ...formData,
           profile: {
             ...formData.profile,
-            experience: formData.profile.experience || [],
-          },
+            experience: formData.profile.experience || "",
+          }
         }),
       });
 
@@ -84,12 +80,25 @@ const EditProfile = () => {
       console.error("❌ Erreur mise à jour du profil :", error);
     }
   };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+
+    // Special handling for phone inside profile
+    if (name === "phone") {
+      setFormData((prev) => ({
+        ...prev,
+        profile: {
+          ...prev.profile,
+          phone: value,
+        },
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   const handleSkillSelection = (selectedOptions) => {
@@ -107,9 +116,9 @@ const EditProfile = () => {
       ...prev,
       profile: { ...prev.profile, experience: text },
     }));
-  
+
     if (!text.trim()) return;
-  
+
     clearTimeout(window.correctionTimeout);
     window.correctionTimeout = setTimeout(async () => {
       try {
@@ -118,26 +127,26 @@ const EditProfile = () => {
           console.error("❌ OpenAI API Key is missing. Check your .env file!");
           return;
         }
-  
+
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
           method: "POST",
-          headers: { 
-            "Authorization": `Bearer ${apiKey}`, // Ensure API key is correct
-            "Content-Type": "application/json"
+          headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             model: "gpt-4",
             messages: [{ role: "user", content: `Improve this experience description:\n\n${text}` }],
-            temperature: 0.7
+            temperature: 0.7,
           }),
         });
-  
+
         if (!response.ok) {
           const errorText = await response.text();
           console.error("❌ OpenAI API Error:", errorText);
           return;
         }
-  
+
         const data = await response.json();
         if (data.choices?.[0]?.message?.content) {
           setFormData((prev) => ({
@@ -150,74 +159,105 @@ const EditProfile = () => {
       }
     }, 1000);
   };
-  
-  
-
-
-  
 
   if (loading) return <p>Loading...</p>;
   if (!user) return <p>User not found.</p>;
 
   return (
-     <>
-          <Navbar /> {/* 🏠 Navbar */}
-    <div className="profile-container">
-      <Card className="card">
-        <CardHeader className="card-header">
-          <div className="avatar-container">
-            <img src={user.picture ? `http://localhost:3001${user.picture}` : "/default-avatar.png"} alt="Profile" className="avatar" />
-            <FaCamera className="camera-icon" />
-          </div>
-        </CardHeader>
+    <>
+      <Navbar />
+      <div className="profile-container">
+        <Card className="card">
+          <CardHeader className="card-header">
+            <div className="avatar-container">
+              <img
+                src={user.picture ? `http://localhost:3001${user.picture}` : "/default-avatar.png"}
+                alt="Profile"
+                className="avatar"
+              />
+              <FaCamera className="camera-icon" />
+            </div>
+          </CardHeader>
 
-        <CardContent className="card-body">
-          <h2>Personal Information</h2>
-          <div className="form-group">
-            <label>Name:</label>
-            <input type="text" name="name" value={formData.name} onChange={handleInputChange} />
-          </div>
-          <div className="form-group">
-            <label>Email:</label>
-            <input type="email" name="email" value={formData.email} onChange={handleInputChange} />
-          </div>
-          <div className="form-group">
-            <label>Phone:</label>
-            <input type="text" name="phone" value={formData.phone} onChange={handleInputChange} />
-          </div>
+          <CardContent className="card-body">
+            <h2>Personal Information</h2>
+            <div className="form-group">
+              <label>Name:</label>
+              <input type="text" name="name" value={formData.name} onChange={handleInputChange} />
+            </div>
+            <div className="form-group">
+              <label>Email:</label>
+              <input type="email" name="email" value={formData.email} onChange={handleInputChange} />
+            </div>
+            <div className="form-group">
+              <label>Phone:</label>
+              <input
+                type="text"
+                name="phone"
+                value={formData.profile.phone}
+                onChange={handleInputChange}
+              />
+            </div>
 
-          <h2>Skills</h2>
-          <div className="form-group">
-            <Select
-              isMulti
-              options={skillsList}
-              value={skillsList.filter(skill => formData.profile.skills.includes(skill.value))}
-              onChange={handleSkillSelection}
-            />
-          </div>
+            <h2>Skills</h2>
+            <div className="form-group">
+              <Select
+                isMulti
+                options={skillsList}
+                value={skillsList.filter(skill => formData.profile.skills.includes(skill.value))}
+                onChange={handleSkillSelection}
+              />
+            </div>
 
-          <h2>Experience</h2>
-          <div className="form-group">
-            <textarea name="experience" value={formData.profile.experience} onChange={(e) => setFormData({...formData, profile: {...formData.profile, experience: e.target.value}})} />
-            <VoiceInputAI onTextChange={handleExperienceChange} />
-          </div>
+            <h2>Experience</h2>
+            <div className="form-group">
+              <textarea
+                name="experience"
+                value={formData.profile.experience}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    profile: { ...formData.profile, experience: e.target.value },
+                  })
+                }
+              />
+              <VoiceInputAI onTextChange={handleExperienceChange} />
+            </div>
 
-          <h2>Security</h2>
-          <div className="form-group">
-            <label>Old Password:</label>
-            <input type="password" name="oldPassword" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label>New Password:</label>
-            <input type="password" name="password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} />
-          </div>
+            <h2>Security</h2>
+            <div className="form-group">
+              <label>Old Password:</label>
+              <input
+                type="password"
+                name="oldPassword"
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label>New Password:</label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    password: e.target.value,
+                  }))
+                }
+              />
+            </div>
 
-          <button className="save-button" onClick={handleSave}><FaSave /> Save Changes</button>
-        </CardContent>
-      </Card>
-    </div>
-    <Footer /> {/* 📜 Footer */}
-    </>  );
+            <button className="save-button" onClick={handleSave}>
+              <FaSave /> Save Changes
+            </button>
+          </CardContent>
+        </Card>
+      </div>
+      <Footer />
+    </>
+  );
 };
 
 export default EditProfile;

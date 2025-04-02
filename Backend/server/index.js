@@ -236,6 +236,7 @@ app.post("/Frontend/login", async(req, res) => {
 app.post('/Frontend/register', resumeUpload.single('resume'), async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
+
         if (!email || !password || !role) {
             return res.status(400).json({ message: 'Email, password, and role are required' });
         }
@@ -248,54 +249,79 @@ app.post('/Frontend/register', resumeUpload.single('resume'), async (req, res) =
         const hashedPassword = await bcrypt.hash(password, 10);
         const verificationCode = Math.floor(100000 + Math.random() * 900000);
 
-        // ✅ Création du nouvel utilisateur avec un profil initialisé
-        const newUser = new UserModel({
+        // Create only common fields
+        const userData = {
             email,
             name,
             password: hashedPassword,
             role,
-            emailVerified: false,
-            verificationCode: verificationCode,
-            profile: { resume: "", skills: [], languages: [], phone: "", experience: [] } // ✅ Correction
-        });
-        // ✅ Traitement du CV si un fichier est envoyé
-        if (req.file) {
-            const filePath = path.join(uploadDir, req.file.filename);
+            isActive: true,
+            verificationCode,
+            verificationStatus: {
+                status: 'PENDING',
+                emailVerified: false
+            }
+        };
 
-            // ✅ Vérification de la bibliothèque FormData
-            const FormData = require('form-data');
-            const form = new FormData();
-            form.append('resume', fs.createReadStream(filePath));
+        // 👤 Candidate: only profile data
+        if (role === "CANDIDATE") {
+            userData.profile = {
+                resume: "",
+                skills: [],
+                phone: "",
+                languages: [],
+                availability: "Full-time",
+                experience: []
+            };
 
-            try {
-                // ✅ Envoi du CV au serveur Python pour analyse
-                const pythonResponse = await axios.post('http://127.0.0.1:5002/upload', form, {
-                    headers: {
-                        ...form.getHeaders(),
-                    },
-                });
+            if (req.file) {
+                const filePath = path.join(uploadDir, req.file.filename);
+                const FormData = require('form-data');
+                const form = new FormData();
+                form.append('resume', fs.createReadStream(filePath));
 
-                const resumeData = pythonResponse.data;
-                console.log("📄 Réponse du serveur Python :", resumeData);
+                try {
+                    const pythonResponse = await axios.post('http://127.0.0.1:5002/upload', form, {
+                        headers: {
+                            ...form.getHeaders(),
+                        },
+                    });
 
-                // ✅ Mise à jour du profil avec les données extraites
-                newUser.profile.resume = `/uploads/${req.file.filename}`;
-                newUser.profile.skills = resumeData.skills || [];
-                newUser.profile.languages = resumeData.languages || [];
-                newUser.profile.phone = resumeData.phone || ''; // ✅ Correction ici
-                newUser.profile.experience = resumeData.experience || [];
+                    const resumeData = pythonResponse.data;
 
-                if (resumeData.name) newUser.name = resumeData.name;
-            } catch (error) {
-                console.error("❌ Erreur lors de l'analyse du CV :", error);
-                return res.status(500).json({ message: "Erreur lors de l'analyse du CV." });
+                    userData.profile.resume = `/uploads/${req.file.filename}`;
+                    userData.profile.skills = resumeData.skills || [];
+                    userData.profile.languages = resumeData.languages || [];
+                    userData.profile.phone = resumeData.phone || "";
+                    userData.profile.experience = resumeData.experience || [];
+
+                    if (resumeData.name) userData.name = resumeData.name;
+                } catch (error) {
+                    console.error("❌ Resume analysis error:", error);
+                    return res.status(500).json({ message: "Error analyzing resume." });
+                }
             }
         }
 
-        // ✅ Sauvegarde de l'utilisateur dans la base de données
+        // 🏢 Enterprise: enterprise + job fields
+        if (role === "ENTERPRISE") {
+            userData.enterprise = {
+                name: req.body.enterpriseName,
+                industry: req.body.industry,
+                location: req.body.location,
+                website: req.body.website,
+                description: req.body.description,
+                employeeCount: parseInt(req.body.employeeCount || 0)
+            };
+
+            userData.jobsPosted = [];
+            userData.applications = [];
+            userData.interviews = [];
+        }
+
+        const newUser = new UserModel(userData);
         await newUser.save();
 
-        // ✅ Envoi du mail de vérification
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
@@ -319,6 +345,10 @@ app.post('/Frontend/register', resumeUpload.single('resume'), async (req, res) =
         res.status(500).json({ message: 'Server error' });
     }
 });
+
+
+
+
 
 
 app.post("/Frontend/verify-email", async(req, res) => {
@@ -403,12 +433,18 @@ const profileFileFilter = (req, file, cb) => {
 
 app.get("/Frontend/getUser/:id", async (req, res) => {
     try {
-      const user = await UserModel.findById(req.params.id);
+      // Dynamically select extra fields based on role
+      let user = await UserModel.findById(req.params.id);
+  
       if (!user) {
         return res.status(404).json({ message: "Utilisateur non trouvé" });
       }
   
-      // ✅ Make sure full profile is returned to frontend
+      // If the user is an enterprise, include additional fields manually
+      if (user.role === 'ENTERPRISE') {
+        user = await UserModel.findById(req.params.id).select('+jobsPosted +applications +interviews');
+      }
+  
       const responseUser = {
         _id: user._id,
         name: user.name,
@@ -425,13 +461,31 @@ app.get("/Frontend/getUser/:id", async (req, res) => {
         }
       };
   
+      // 🏢 Include enterprise fields if role is ENTERPRISE
+      if (user.role === 'ENTERPRISE') {
+        responseUser.enterprise = {
+          name: user.enterprise?.name || "",
+          industry: user.enterprise?.industry || "",
+          location: user.enterprise?.location || "",
+          website: user.enterprise?.website || "",
+          description: user.enterprise?.description || "",
+          employeeCount: user.enterprise?.employeeCount || 0,
+        };
+  
+        responseUser.jobsPosted = user.jobsPosted || [];
+        responseUser.applications = user.applications || [];
+        responseUser.interviews = user.interviews || [];
+      }
+  
       console.log("📤 Données utilisateur à renvoyer:", responseUser);
       res.json(responseUser);
+  
     } catch (error) {
       console.error("❌ Erreur lors de la récupération de l'utilisateur:", error);
       res.status(500).json({ message: "Erreur serveur", error: error.message });
     }
   });
+  
   
 
   const storage = multer.diskStorage({

@@ -6,7 +6,7 @@ const ExperienceSchema = new Schema({
   company: { type: String },
   duration: { type: String },
   description: { type: String },
-}, { _id: false }); // Prevents MongoDB from generating _id for subdocs
+}, { _id: false });
 
 const MeetingSchema = new Schema({
   type: { type: String, enum: ['In-person', 'Virtual', 'TBD'] },
@@ -97,14 +97,15 @@ const UserSchema = new Schema({
   picture: { type: String },
 
   verificationCode: { type: Number },
-
   resetPasswordToken: { type: String },
   resetPasswordExpires: { type: Date },
 
   enterprise: EnterpriseSchema,
-  jobsPosted: [JobPostedSchema],
-  applications: [ApplicationSchema],
-  interviews: [InterviewSchema],
+
+  // 🧼 Hide by default for CANDIDATE users
+  jobsPosted: { type: [JobPostedSchema], select: false },
+  applications: { type: [ApplicationSchema], select: false },
+  interviews: { type: [InterviewSchema], select: false },
 });
 
 module.exports = mongoose.models.User || mongoose.model('User', UserSchema);

@@ -1,31 +1,28 @@
-import  { useContext } from "react";
-import { Link, useNavigate } from "react-router-dom";  // ✅ Import useNavigate
-import AuthContext from "../../context/AuthContext";  // ✅ Import the AuthContext
+import { useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import AuthContext from "../../context/AuthContext";
 import "./Navbar.css";
 
 const Navbar = () => {
-  const userId = localStorage.getItem("userId"); // Vérifier si l'ID est bien dans le localStorage
-  console.log("userId:", userId); // Ajouter un log pour déboguer l'ID
+  const userId = localStorage.getItem("userId");
+  const rawRole = localStorage.getItem("role");
+  const userRole = (localStorage.getItem("role") || "").toUpperCase(); // 🔥 NORMALISATION MAJUSCULE
 
-  const { isAuthenticated, logout } = useContext(AuthContext);  // ✅ Accéder à l'état d'authentification
-  const navigate = useNavigate();  // ✅ Initialiser le navigate
+  const { isAuthenticated, logout } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   const handleLogout = () => {
-    logout();              // ✅ Clear auth state
-    navigate("/login");     // ✅ Rediriger vers la page de login
+    logout();
+    navigate("/login");
   };
-
-  console.log("isAuthenticated:", isAuthenticated); // Vérifier si l'utilisateur est authentifié
 
   return (
     <nav className="futuristic-navbar navbar navbar-expand-lg">
       <div className="container-fluid">
-        {/* Brand */}
         <Link className="navbar-brand futuristic-brand" to="/">
           <span>NEXTHIRE</span>
         </Link>
-
-        {/* Mobile menu toggle button */}
+  
         <button
           className="navbar-toggler futuristic-toggler"
           type="button"
@@ -37,55 +34,40 @@ const Navbar = () => {
         >
           <span className="navbar-toggler-icon"></span>
         </button>
-
-        {/* Navbar links */}
+  
         <div className="collapse navbar-collapse" id="navbarSupportedContent">
           <ul className="navbar-nav ms-auto align-items-center">
             <li className="nav-item">
-              <Link className="nav-link futuristic-nav-link" to="/home">
-                Home
-              </Link>
+              <Link className="nav-link futuristic-nav-link" to="/home">Home</Link>
             </li>
             <li className="nav-item">
-              <Link className="nav-link futuristic-nav-link" to="/about">
-                About
-              </Link>
+              <Link className="nav-link futuristic-nav-link" to="/about">About</Link>
             </li>
             <li className="nav-item">
-              <Link className="nav-link futuristic-nav-link" to="/service">
-                Services
-              </Link>
+              <Link className="nav-link futuristic-nav-link" to="/service">Services</Link>
             </li>
             <li className="nav-item">
-              <Link className="nav-link futuristic-nav-link" to="/why">
-                Why Us
-              </Link>
+              <Link className="nav-link futuristic-nav-link" to="/why">Why Us</Link>
             </li>
             <li className="nav-item">
-              <Link className="nav-link futuristic-nav-link" to="/team">
-                Team
-              </Link>
+              <Link className="nav-link futuristic-nav-link" to="/team">Team</Link>
             </li>
-
-            {/* Conditional Rendering for Authenticated/Unauthenticated Users */}
-            {isAuthenticated ? (
+  
+            {/* 🔒 Authenticated User */}
+            {isAuthenticated && userId ? (
               <>
-                {/* Profile Link */}
                 <li className="nav-item">
-                {userId ? (
-                <Link className="nav-link futuristic-nav-link" to={`/profile/${userId}`}>
-                  Mon Profil
-                </Link>
-              ) : (
-                <span>Loading...</span>
-              )}
-
+                  <Link
+                    className="nav-link futuristic-nav-link"
+                    to={userRole === "ENTERPRISE" ? `/entreprise/${userId}` : `/profile/${userId}`}
+                  >
+                    {userRole === "ENTERPRISE" ? "My Enterprise" : "Mon Profil"}
+                  </Link>
                 </li>
-                {/* Logout Button */}
                 <li className="nav-item">
                   <button
                     className="btn logout-btn"
-                    onClick={handleLogout}  // ✅ Use handleLogout instead of logout
+                    onClick={handleLogout}
                     style={{
                       background: "transparent",
                       border: "2px solid #5b86e5",
@@ -102,14 +84,10 @@ const Navbar = () => {
             ) : (
               <>
                 <li className="nav-item">
-                  <Link className="btn signin-btn mx-2" to="/login">
-                    Sign In
-                  </Link>
+                  <Link className="btn signin-btn mx-2" to="/login">Sign In</Link>
                 </li>
                 <li className="nav-item">
-                  <Link className="btn signup-btn" to="/register">
-                    Sign Up
-                  </Link>
+                  <Link className="btn signup-btn" to="/register">Sign Up</Link>
                 </li>
               </>
             )}
@@ -118,6 +96,7 @@ const Navbar = () => {
       </div>
     </nav>
   );
+  
 };
 
 export default Navbar;

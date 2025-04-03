@@ -224,6 +224,7 @@ app.post("/Frontend/login", async(req, res) => {
             message: "Login successful",
             token,
             userId: user._id,
+            role: user.role,              // ✅ Ajoute ce champ
             emailVerified: true
         });
     } catch (err) {

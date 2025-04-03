@@ -1,7 +1,3 @@
-
-
-
-
 import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -25,7 +21,7 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-  
+
     try {
       const result = await axios.post(
         "http://localhost:3001/Frontend/login",
@@ -35,14 +31,24 @@ function Login() {
           withCredentials: true,
         }
       );
-  
+
+      console.log("Backend login response:", result.data); // 👈 Debug ici
+
       if (result.data.status) {
-        localStorage.setItem("token", result.data.token);
-        localStorage.setItem("userId", result.data.userId);  // Assure-toi d'ajouter cette ligne pour l'userId
-        const userRole = result.data.role || "CANDIDATE";
+        const { token, userId, role } = result.data;
+
+        // Sécurité & validation du rôle
+        if (!role) {
+          setError("No role returned from server.");
+          return;
+        }
+
+        const userRole = role.toUpperCase();
+        localStorage.setItem("token", token);
+        localStorage.setItem("userId", userId);
         localStorage.setItem("role", userRole);
         login(userRole);
-  
+
         if (userRole === "ENTERPRISE") {
           navigate("/enterprise-dashboard");
         } else {
@@ -59,29 +65,27 @@ function Login() {
       setError(err.response?.data?.message || "Unable to login.");
     }
   };
-  
 
   const handleGoogleSuccess = async (response) => {
     try {
       const result = await axios.post("http://localhost:3001/auth/google", {
-        credential: response.credential
+        credential: response.credential,
       });
-  
+
       if (result.data.status) {
-        localStorage.setItem("token", result.data.token);
-        localStorage.setItem("userId", result.data.userId); // ✅ Add this line
-        localStorage.setItem("role", result.data.role);
-        login(result.data.role);
+        const { token, userId, role } = result.data;
+        const userRole = role.toUpperCase();
+
+        localStorage.setItem("token", token);
+        localStorage.setItem("userId", userId);
+        localStorage.setItem("role", userRole);
+        login(userRole);
         navigate("/home");
       }
     } catch (err) {
       console.error("Google Login Error:", err);
     }
   };
-  
-
-
-
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -92,13 +96,14 @@ function Login() {
       <div className="animated-bg-overlay"></div>
       <div className="futuristic-login-left">
         <div className="futuristic-brand-container floating-brand">
-        <img 
-  src="/images/nexthire.png" 
-  alt="Company Logo" 
-  className="futuristic-company-logo" 
-  onError={(e) => { e.target.src = 'https://placehold.co/80x80'; }}
-/>
-
+          <img
+            src="/images/nexthire.png"
+            alt="Company Logo"
+            className="futuristic-company-logo"
+            onError={(e) => {
+              e.target.src = "https://placehold.co/80x80";
+            }}
+          />
           <h1 className="futuristic-brand-title">NextHire</h1>
           <p className="futuristic-brand-subtitle">
             Your gateway to the future. Login to access our innovative platform.
@@ -111,6 +116,7 @@ function Login() {
           <p className="futuristic-form-subheading">Enter your credentials to continue</p>
           <form onSubmit={handleSubmit}>
             {error && <div className="futuristic-error-message">{error}</div>}
+
             <div className="futuristic-form-group">
               <label htmlFor="email" className="futuristic-label">Email Address</label>
               <div className="futuristic-input-container">
@@ -128,6 +134,7 @@ function Login() {
                 />
               </div>
             </div>
+
             <div className="futuristic-form-group">
               <label htmlFor="password" className="futuristic-label">Password</label>
               <div className="futuristic-input-container">
@@ -149,14 +156,18 @@ function Login() {
                 />
               </div>
             </div>
+
             <div className="futuristic-forgot-password">
               <Link to="/forgotPassword" className="futuristic-forgot-link">Forgot Password?</Link>
             </div>
+
             <button type="submit" className="futuristic-login-button">Login</button>
+
             <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => console.error("Google Login Failed")}
-/>
+              onSuccess={handleGoogleSuccess}
+              onError={() => console.error("Google Login Failed")}
+            />
+
             <div className="futuristic-register-option">
               <p>New Here?</p>
               <Link to="/register" className="futuristic-register-link">Sign Up</Link>

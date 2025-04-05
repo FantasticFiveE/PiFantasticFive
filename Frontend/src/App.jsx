@@ -31,6 +31,7 @@ import ResetPassword from "./login/assets/ResetPassword";
 import Profile from "./profileFront/profile";
 import EditProfile from "./profileFront/EditProfile";
 import ProtectedRoute from "./Dashboard/layouts/ProtectedRoute";
+import JobDetails from "./pages/Card/JobDetails";
 
 // ✅ Google Client ID
 const CLIENT_ID = "122105051479-dna9hfi1gskvlbobkhkpboiml67i4gl7.apps.googleusercontent.com"; 
@@ -84,6 +85,8 @@ function App() {
             <Route path="/verify-email-pending" element={<VerifyEmailPending />} />
             <Route path="/forgotPassword" element={<ForgotPassword />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
+            <Route path="/job/:id" element={<JobDetails />} />
+
             <Route path="/profile/:id" element={<Profile />} />
             <Route path="/edit-profile/:id" element={<EditProfile />} />
 

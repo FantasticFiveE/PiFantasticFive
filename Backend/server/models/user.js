@@ -31,10 +31,16 @@ const InterviewSchema = new Schema({
 const ApplicationSchema = new Schema({
   jobId: { type: Schema.Types.ObjectId, ref: 'Job' },
   enterpriseId: { type: Schema.Types.ObjectId, ref: 'User' },
+  experience: String,
+  position: String,
+  domain: String,
+  salary: String,
+  employmentTypes: [String],
   status: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
-  dateSubmitted: { type: Date, default: Date.now },
-  notes: { type: String },
+  dateSubmitted: { type: Date, default: Date.now }
 }, { _id: false });
+
+
 
 const JobPostedSchema = new Schema({
   jobId: { type: Schema.Types.ObjectId, ref: 'Job' },
@@ -102,9 +108,13 @@ const UserSchema = new Schema({
 
   enterprise: EnterpriseSchema,
 
-  // 🧼 Hide by default for CANDIDATE users
+  // 🧼 For ENTERPRISE
   jobsPosted: { type: [JobPostedSchema], select: false },
-  applications: { type: [ApplicationSchema], select: false },
+
+  // ✅ Here's your ApplicationSchema
+  applications: [ApplicationSchema],
+
+  // Optional for tracking interviews
   interviews: { type: [InterviewSchema], select: false },
 });
 

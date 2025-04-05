@@ -17,9 +17,10 @@ const swaggerJsdoc = require("swagger-jsdoc");
 const axios = require('axios'); // ✅ Add this line
 const fetch = require("node-fetch");
 const dotenv = require("dotenv");
-
+const JobModel = require('./models/job');
 
 const app = express();
+
 // Swagger Configuration
 const options = {
     definition: {
@@ -166,7 +167,7 @@ const jobRoutes = require('./routes/jobRoute');
 const interviewRoutes = require('./routes/interviewRoute');
 
 app.use('/api', userRoutes);
-app.use('/api', jobRoutes);
+app.use('/api', jobRoutes);      // ✅ now req.body will work here
 app.use('/api', interviewRoutes);
 const uploadDir = path.join(__dirname, 'uploads');
 
@@ -794,7 +795,6 @@ app.post("/Frontend/transcribe-audio", audioUpload.single("audio"), async (req, 
         res.status(500).json({ error: "Erreur interne du serveur." });
     }
 });
-
 
 
 // Serveur en écoute

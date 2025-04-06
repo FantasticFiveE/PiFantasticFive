@@ -1,5 +1,5 @@
-import { createContext, useState, useEffect } from "react";
-import PropTypes from "prop-types"; // ✅ Importer PropTypes
+import { createContext, useState, useEffect, useContext } from "react";
+import PropTypes from "prop-types";
 
 const AuthContext = createContext();
 
@@ -10,11 +10,14 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     try {
       const token = localStorage.getItem("token");
-      const savedUser = JSON.parse(localStorage.getItem("user"));
+      const savedUser = localStorage.getItem("user"); // Get user data as string
 
-      if (token && savedUser) {
-        setIsAuthenticated(true);
-        setUser(savedUser);
+      if (savedUser) {
+        const parsedUser = JSON.parse(savedUser); // Parse only if exists
+        if (token && parsedUser) {
+          setIsAuthenticated(true);
+          setUser(parsedUser); // Set user data properly
+        }
       }
     } catch (error) {
       console.error("Error reading from localStorage", error);
@@ -24,7 +27,7 @@ export const AuthProvider = ({ children }) => {
   const login = (userData, token) => {
     try {
       localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("user", JSON.stringify(userData)); // Store user data as JSON
       setIsAuthenticated(true);
       setUser(userData);
     } catch (error) {
@@ -50,7 +53,14 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// ✅ Définition des PropTypes pour éviter l'erreur ESLint
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};
+
 AuthProvider.propTypes = {
   children: PropTypes.node.isRequired,
 };

@@ -32,22 +32,18 @@ function Login() {
         }
       );
 
-      console.log("Backend login response:", result.data); // 👈 Debug ici
+      console.log("Backend login response:", result.data); // Debug
 
       if (result.data.status) {
-        const { token, userId, role } = result.data;
-
-        // Sécurité & validation du rôle
-        if (!role) {
-          setError("No role returned from server.");
-          return;
-        }
-
+        const { token, userId, role, userData } = result.data; // Expecting userData in the response
         const userRole = role.toUpperCase();
+
+        // Save both token and user data
         localStorage.setItem("token", token);
-        localStorage.setItem("userId", userId);
+        localStorage.setItem("user", JSON.stringify(userData)); // Save the full user object
         localStorage.setItem("role", userRole);
-        login(userRole);
+
+        login(userData, token); // Pass userData and token to the login function
 
         if (userRole === "ENTERPRISE") {
           navigate("/enterprise-dashboard");
@@ -73,13 +69,15 @@ function Login() {
       });
 
       if (result.data.status) {
-        const { token, userId, role } = result.data;
+        const { token, userId, role, userData } = result.data;
         const userRole = role.toUpperCase();
 
         localStorage.setItem("token", token);
-        localStorage.setItem("userId", userId);
+        localStorage.setItem("user", JSON.stringify(userData)); // Save the user data object
         localStorage.setItem("role", userRole);
-        login(userRole);
+
+        login(userData, token); // Pass userData and token to login
+
         navigate("/home");
       }
     } catch (err) {

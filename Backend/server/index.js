@@ -168,6 +168,8 @@ const interviewRoutes = require('./routes/interviewRoute');
 
 app.use('/api', userRoutes);
 app.use('/api', jobRoutes);      // ✅ now req.body will work here
+app.use("/api/ai", require("./routes/ai"));
+
 app.use('/api', interviewRoutes);
 const uploadDir = path.join(__dirname, 'uploads');
 

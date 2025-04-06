@@ -19,7 +19,7 @@ const JobDetails = () => {
     status: "Je suis à la recherche d’un stage",
   });
 
-  const userId = localStorage.getItem("userId"); // make sure to store userId in localStorage when logging in
+  const userId = localStorage.getItem("userId");
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -36,9 +36,7 @@ const JobDetails = () => {
 
   const toggleEmploymentType = (type) => {
     setEmploymentTypes((prev) =>
-      prev.includes(type)
-        ? prev.filter((t) => t !== type)
-        : [...prev, type]
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
     );
   };
 
@@ -52,9 +50,8 @@ const JobDetails = () => {
       const res = await axios.post(`http://localhost:3001/api/apply/${id}/${userId}`, {
         experience,
         employmentTypes,
-        ...form, // includes position, domain, salary, status
+        ...form,
       });
-      
       console.log("✅ Candidature envoyée:", res.data);
       alert("✅ Candidature envoyée avec succès !");
       setShowForm(false);
@@ -63,6 +60,52 @@ const JobDetails = () => {
       alert("Une erreur s'est produite. Veuillez réessayer.");
     }
   };
+
+  const [loadingAI, setLoadingAI] = useState(false);
+
+  const handleAutoFill = async () => {
+    setLoadingAI(true);
+    try {
+      const res = await axios.post("http://localhost:3001/api/ai/generate-application", {
+        resume: "Ton texte de CV ici", // we'll upgrade this in next step
+        jobTitle: job.title,
+      });
+  
+      const raw = res.data.suggestion;
+      console.log("Suggestion IA brute:\n", raw);
+  
+      const lines = raw.split("\n").filter(Boolean);
+      const parsed = {
+        experience: lines[0]?.split('. ')[1]?.trim() || "",
+        employmentTypes: lines[1]?.split('. ')[1]?.split(',').map(x => x.trim()) || [],
+        position: lines[2]?.split('. ')[1]?.trim() || "",
+        domain: lines[3]?.split('. ')[1]?.trim() || "",
+        salary: lines[4]?.split('. ')[1]?.replace(/\D/g, "") || "",
+        status: lines[5]?.split('. ')[1]?.trim() || "",
+      };
+  
+      console.log("Champs parsés:", parsed);
+  
+      setExperience(parsed.experience);
+      setEmploymentTypes(parsed.employmentTypes);
+      setForm({
+        position: parsed.position,
+        domain: parsed.domain,
+        salary: parsed.salary,
+        status: parsed.status,
+      });
+  
+      alert("✅ Formulaire rempli par l'IA !");
+    } catch (error) {
+      console.error("❌ Erreur AI:", error);
+      alert("Erreur lors de la génération AI.");
+    } finally {
+      setLoadingAI(false);
+    }
+  };
+  
+  
+  
 
   if (!job) return <p>Chargement des détails...</p>;
   if (job.notFound) return <p>❌ Job introuvable.</p>;
@@ -189,6 +232,18 @@ const JobDetails = () => {
             </div>
           </div>
 
+          {/* Remplissage automatique via IA */}
+          <button
+          type="button"
+          className="ai-generate-btn"
+          onClick={handleAutoFill}
+          disabled={loadingAI}
+        >
+          {loadingAI ? "Chargement 🤖..." : "Remplir automatiquement avec l'IA 🤖"}
+        </button>
+
+
+          {/* Bouton d'envoi */}
           <button type="submit">
             Sauvegarder et continuer
           </button>

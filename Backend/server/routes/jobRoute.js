@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/user');
 const JobModel = require('../models/job');
-
+const autoGenerateApplication = require("../services/aiService");
 // ✅ POST /api/jobs/create - Create a new job and link to enterprise
 
 router.post('/jobs/create', async (req, res) => {
@@ -186,6 +186,25 @@ router.get('/job/:id', async (req, res) => {
       console.error("❌ Failed to apply:", err);
       res.status(500).json({ message: "Server error" });
     }
+  });
+  router.post("/generate-application/:userId/:jobId", async (req, res) => {
+    const { userId, jobId } = req.params;
+    const { resume } = req.body;
+  
+    try {
+      const job = await JobModel.findById(jobId);
+      if (!job) return res.status(404).json({ message: "Job not found" });
+  
+      const suggestion = await autoGenerateApplication(resume, job.title);
+      res.status(200).json({ suggestion });
+    } catch (err) {
+      res.status(500).json({ message: "Erreur pendant la génération de la candidature" });
+    }
+  });
+  router.post("/api/ai/generate-application", async (req, res) => {
+    const { resume, jobTitle } = req.body;
+    const suggestion = await autoGenerateApplication(resume, jobTitle);
+    res.status(200).json({ suggestion });
   });
   
 

@@ -225,3 +225,31 @@ input:checked + .slider {
 input:checked + .slider:before {
   transform: translateX(20px);
 }
+.ai-generate-btn {
+  margin-top: 1rem;
+  background-color: #6366f1;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+.ai-generate-btn:hover {
+  background-color: #4f46e5;
+}
+.highlighted {
+  animation: fadeGlow 2s ease-out;
+}
+
+@keyframes fadeGlow {
+  0% {
+    background-color: #fff7c2;
+    box-shadow: 0 0 10px #ffd700;
+  }
+  100% {
+    background-color: inherit;
+    box-shadow: none;
+  }
+}

@@ -31,24 +31,21 @@ import ResetPassword from "./login/assets/ResetPassword";
 import Profile from "./profileFront/profile";
 import EditProfile from "./profileFront/EditProfile";
 import ProtectedRoute from "./Dashboard/layouts/ProtectedRoute";
+import EntrepriseProfile from "./pages/Entreprise/EntrepriseProfile";
+import JobDetails from "./pages/JobDetails/JobDetails"; // ✅ Job Details page
 
 // ✅ Google Client ID
-const CLIENT_ID = "122105051479-dna9hfi1gskvlbobkhkpboiml67i4gl7.apps.googleusercontent.com"; 
+const CLIENT_ID = "122105051479-dna9hfi1gskvlbobkhkpboiml67i4gl7.apps.googleusercontent.com";
 
 // ✅ OpenAI API Key Validation
 const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || "❌ Clé API non chargée !";
 console.log("🔑 OpenAI API Key Loaded:", OPENAI_API_KEY);
-
 
 if (!OPENAI_API_KEY) {
   console.error("❌ OpenAI API Key is missing. Check your .env file!");
 } else {
   console.log("🔑 OpenAI API Key Loaded");
 }
-
-// ✅ Test OpenAI API Connection
-
-
 
 // ✅ Dashboard Layout Wrapper
 const DashboardLayoutWrapper = () => (
@@ -59,7 +56,7 @@ const DashboardLayoutWrapper = () => (
         <SideNav />
       </div>
       <div className="col-11 p-0">
-        <Outlet /> {/* Nested routes */}
+        <Outlet />
       </div>
     </div>
   </div>
@@ -86,19 +83,19 @@ function App() {
             <Route path="/reset-password/:token" element={<ResetPassword />} />
             <Route path="/profile/:id" element={<Profile />} />
             <Route path="/edit-profile/:id" element={<EditProfile />} />
+            <Route path="/entreprise/:id" element={<EntrepriseProfile />} />
+            <Route path="/job/:id" element={<JobDetails />} /> {/* ✅ Job details route */}
 
             {/* ✅ Back Office Routes (Protected) */}
             <Route path="/dashboard" element={<ProtectedRoute><DashboardLayoutWrapper /></ProtectedRoute>}>
-            <Route index element={<DashboardLayout />} />
-            <Route path="manage-candidates" element={<ManageCandidates />} />
-            <Route path="manage-employees" element={<ManageEmployees />} />
-            <Route path="application-info" element={<ApplicationInfo />} />
-            <Route path="settings" element={<SettingsPage />} /> {/* ✅ Ensure this exists */}
-            <Route path="calendar" element={<CalendarView />} />
-            <Route path="jobs" element={<AllJobs />} />
-            
-          </Route>
-
+              <Route index element={<DashboardLayout />} />
+              <Route path="manage-candidates" element={<ManageCandidates />} />
+              <Route path="manage-employees" element={<ManageEmployees />} />
+              <Route path="application-info" element={<ApplicationInfo />} />
+              <Route path="settings" element={<SettingsPage />} />
+              <Route path="calendar" element={<CalendarView />} />
+              <Route path="jobs" element={<AllJobs />} />
+            </Route>
 
             {/* ✅ Dashboard Login Route */}
             <Route path="/dashboard/login" element={<LoginPage />} />

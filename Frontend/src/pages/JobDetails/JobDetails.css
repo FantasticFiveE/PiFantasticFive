@@ -1,0 +1,67 @@
+.job-details-container {
+    display: flex;
+    justify-content: center;
+    padding: 4rem 2rem;
+    background-color: #131c26; /* Sombre */
+    min-height: 80vh;
+  }
+  
+  .job-card-expanded {
+    background-color: #0b0c2a; /* Carte sombre */
+    padding: 2.5rem;
+    max-width: 800px;
+    width: 100%;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  }
+  
+  .job-title-centered {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #ffffff;
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  
+  .job-info p {
+    font-size: 1.05rem;
+    margin-bottom: 1.2rem;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+  }
+  
+  .icon {
+    margin-right: 10px;
+    color: #007bff;
+    font-size: 1.2rem;
+  }
+  
+  .apply-section {
+    text-align: center;
+    margin-top: 2.5rem;
+  }
+  
+  .apply-btn {
+    background-color: #28a745;
+    color: white;
+    font-weight: 600;
+    padding: 12px 30px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .apply-btn:hover {
+    background-color: #218838;
+  }
+  
+  .loading {
+    text-align: center;
+    padding: 5rem;
+    font-size: 1.5rem;
+    color: #ccc;
+  }
+  

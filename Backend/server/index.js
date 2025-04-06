@@ -11,7 +11,7 @@ const fs = require('fs');
 const multer = require('multer');
 const path = require('path');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const UserModel = require('./models/user'); // Changed to User model
+const { UserModel, JobModel } = require('./models/user');
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
 const axios = require('axios'); // ✅ Add this line
@@ -220,13 +220,13 @@ app.post("/Frontend/login", async(req, res) => {
         });
 
         return res.json({
-            status: true,
-            message: "Login successful",
-            token,
-            userId: user._id,
-            role: user.role,              // ✅ Ajoute ce champ
-            emailVerified: true
-        });
+    status: true,
+    message: "Login successful",
+    token,
+    userId: user._id,
+    role: user.role,              // ✅ Ajoute ce champ
+    emailVerified: true
+});
     } catch (err) {
         console.error("Login Error:", err);
         return res.status(500).json({ message: "Erreur serveur" });
@@ -396,6 +396,8 @@ if (!fs.existsSync(uploadPicsDir)) {
 
 app.use("/uploads", express.static(uploadDir));
 app.use("/uploadsPics", express.static(uploadPicsDir));
+app.use('/uploadsPics', express.static(path.join(__dirname, 'uploadsPics')));
+
 // Resume Upload Configuration
 const resumeStorage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, uploadDir),
@@ -612,25 +614,23 @@ app.post("/Frontend/upload-profile", profileUpload.single("picture"), async(req,
 
 app.put("/Frontend/updateUser/:id", async (req, res) => {
     try {
-      console.log("📥 Received PUT data:", req.body);
+      console.log("📥 Données reçues pour mise à jour:", req.body);
   
       const user = await UserModel.findById(req.params.id);
       if (!user) return res.status(404).json({ error: "Utilisateur non trouvé" });
   
-      // Update top-level fields
+      // 🔹 Mise à jour des champs de base
       user.name = req.body.name || user.name;
       user.email = req.body.email || user.email;
   
-      // Update password if provided and valid
+      // 🔐 Mise à jour du mot de passe si fourni
       if (req.body.password && req.body.password.length > 4) {
         const hashedPassword = await bcrypt.hash(req.body.password, 10);
         user.password = hashedPassword;
       }
   
-      // ✅ Ensure profile exists
+      // 🧩 Mise à jour du profil utilisateur
       if (!user.profile) user.profile = {};
-  
-      // Update nested profile fields
       const profile = req.body.profile || {};
       user.profile.phone = profile.phone ?? user.profile.phone;
       user.profile.resume = profile.resume ?? user.profile.resume;
@@ -638,13 +638,26 @@ app.put("/Frontend/updateUser/:id", async (req, res) => {
       user.profile.skills = profile.skills ?? user.profile.skills;
       user.profile.languages = profile.languages ?? user.profile.languages;
       user.profile.experience = profile.experience ?? user.profile.experience;
-  
-      // 🧠 Important when modifying nested objects in Mongoose
       user.markModified("profile");
   
+      // 🏢 Mise à jour des données entreprise si role === 'ENTERPRISE'
+      if (user.role === "ENTERPRISE" && req.body.enterprise) {
+        if (!user.enterprise) user.enterprise = {};
+        const ent = req.body.enterprise;
+  
+        user.enterprise.name = ent.name || user.enterprise.name;
+        user.enterprise.industry = ent.industry || user.enterprise.industry;
+        user.enterprise.location = ent.location || user.enterprise.location;
+        user.enterprise.website = ent.website || user.enterprise.website;
+        user.enterprise.description = ent.description || user.enterprise.description;
+        user.enterprise.employeeCount = ent.employeeCount ?? user.enterprise.employeeCount;
+  
+        user.markModified("enterprise");
+      }
+  
       await user.save();
-      console.log("✅ User updated:", user);
-      return res.status(200).json(user);
+      console.log("✅ Utilisateur mis à jour avec succès !");
+      return res.status(200).json({ message: "Mise à jour réussie", enterprise: user.enterprise });
     } catch (error) {
       console.error("❌ Erreur mise à jour utilisateur:", error);
       return res.status(500).json({ error: "Erreur interne du serveur." });
@@ -796,6 +809,70 @@ app.post("/Frontend/transcribe-audio", audioUpload.single("audio"), async (req, 
     }
 });
 
+app.post("/Frontend/add-job", async (req, res) => {
+    try {
+      const { title, description, location, salary, entrepriseId, languages, skills } = req.body;
+  
+      const newJob = new JobModel({
+        title,
+        description,
+        location,
+        salary,
+        entrepriseId,
+        languages, // ✅ ajouté
+        skills     // ✅ ajouté
+      });
+  
+      await newJob.save();
+  
+      const user = await UserModel.findById(entrepriseId).select('+jobsPosted');
+      if (!user) return res.status(404).json({ error: "Entreprise introuvable" });
+  
+      if (!Array.isArray(user.jobsPosted)) {
+        user.jobsPosted = [];
+      }
+  
+      user.jobsPosted.push({
+        jobId: newJob._id,
+        title: newJob.title,
+        status: "OPEN",
+        createdDate: newJob.createdAt
+      });
+  
+      user.markModified('jobsPosted');
+      await user.save();
+  
+      return res.status(201).json({ message: "Job ajouté avec succès", job: newJob });
+  
+    } catch (error) {
+      console.error("❌ Erreur lors de l'ajout du job:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+  
+  app.get("/Frontend/jobs", async (req, res) => {
+    try {
+      const jobs = await JobModel.find().sort({ createdAt: -1 }); // tri par plus récent
+      res.status(200).json(jobs);
+    } catch (error) {
+      console.error("❌ Erreur récupération jobs:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+  
+  app.get("/Frontend/jobs/:id", async (req, res) => {
+    try {
+      const job = await JobModel.findById(req.params.id);
+      if (!job) {
+        return res.status(404).json({ message: "Job non trouvé" });
+      }
+      res.status(200).json(job);
+    } catch (error) {
+      console.error("❌ Erreur lors de la récupération du job par ID:", error);
+      res.status(500).json({ message: "Erreur serveur" });
+    }
+  });
+  
 
 
 // Serveur en écoute

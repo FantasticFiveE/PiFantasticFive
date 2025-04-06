@@ -3,6 +3,7 @@
 .home-container {
   background: linear-gradient(135deg, #0f1923 0%, #2e2f3e 100%);
   color: #ffffff;
+  font-family: "Poppins", sans-serif;
 }
 
 /* Hero Section */
@@ -65,18 +66,20 @@
   cursor: pointer;
   transition: transform 0.3s ease;
 }
-/* The new background block behind the hero text */
-.hero_text_bg {
-    background: rgba(0, 0, 0, 0.5);  /* semi-transparent black overlay */
-    backdrop-filter: blur(4px);      /* frosted glass effect */
-    border-radius: 10px;
-    padding: 20px;
-    display: inline-block;
-    margin: 0 auto;
-  }
+
 .hero_cta_btn:hover {
   transform: translateY(-3px);
   box-shadow: 0 8px 15px rgba(91, 134, 229, 0.4);
+}
+
+/* The new background block behind the hero text */
+.hero_text_bg {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  border-radius: 10px;
+  padding: 20px;
+  display: inline-block;
+  margin: 0 auto;
 }
 
 /* Carousel Section */
@@ -95,7 +98,7 @@
 
 .slide_item {
   position: relative;
-  outline: none; /* Remove default focus outline from slick slides */
+  outline: none;
 }
 
 .slide_img {
@@ -178,6 +181,38 @@
   color: #fff;
 }
 
+/* 🔥 Jobs Section */
+.jobs_section {
+  padding: 3rem 2rem;
+  background-color: #f2f7ff;
+}
+
+.job-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: center;
+}
+
+.job-card {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  width: 300px;
+  transition: 0.3s ease;
+  color: #333;
+}
+
+.job-card:hover {
+  transform: translateY(-5px);
+}
+
+.job-card h3 {
+  margin-top: 0;
+  color: #007bff;
+}
+
 /* Animations */
 @keyframes fadeInUp {
   from {
@@ -209,16 +244,23 @@
   .hero_content p {
     font-size: 1rem;
   }
-
   .slide_img {
     height: 250px;
   }
-  .hero_content {
-    position: relative;
-    z-index: 2;
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 0 20px;
-    text-align: center;
-  }
+}
+
+.see-more-btn {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 8px 16px;
+  background-color: #007bff;
+  color: #fff;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.see-more-btn:hover {
+  background-color: #0056b3;
 }

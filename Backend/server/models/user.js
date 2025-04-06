@@ -1,6 +1,23 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
+// ✅ JobSchema modifié avec languages et skills
+const JobSchema = new Schema({
+  title: { type: String, required: true },
+  description: { type: String },
+  location: { type: String },
+  salary: { type: Number },
+  languages: [{ type: String }],
+skills: [{ type: String }],
+
+  createdAt: { type: Date, default: Date.now },
+  entrepriseId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+});
+
+const JobModel = mongoose.models.Job || mongoose.model("Job", JobSchema);
+
+
+// ✅ Tous les autres schémas
 const ExperienceSchema = new Schema({
   title: { type: String },
   company: { type: String },
@@ -102,10 +119,12 @@ const UserSchema = new Schema({
 
   enterprise: EnterpriseSchema,
 
-  // 🧼 Hide by default for CANDIDATE users
   jobsPosted: { type: [JobPostedSchema], select: false },
   applications: { type: [ApplicationSchema], select: false },
   interviews: { type: [InterviewSchema], select: false },
 });
 
-module.exports = mongoose.models.User || mongoose.model('User', UserSchema);
+module.exports = {
+  UserModel: mongoose.models.User || mongoose.model('User', UserSchema),
+  JobModel
+};

@@ -16,64 +16,63 @@ const VideoCall = () => {
     const [isPeerConnected, setIsPeerConnected] = useState(false);
     const [userRole, setUserRole] = useState('');
     const [initialized, setInitialized] = useState(false);
+    const [callTime, setCallTime] = useState(0);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [activeVideo, setActiveVideo] = useState(null);
     const localVideoRef = useRef(null);
     const remoteVideoRef = useRef(null);
     const socketRef = useRef(null);
     const pcRef = useRef(null);
+    const callTimerRef = useRef(null);
+    const videoGridRef = useRef(null);
 
     // Enhanced role detection
     useEffect(() => {
         if (authLoading) return;
 
-        console.log("Checking for user role...");
-        console.log("LocalStorage contents:");
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            console.log(`${key}: ${localStorage.getItem(key)}`);
-        }
-
         const determineRole = () => {
             // 1. Check primary localStorage key
             const explicitRole = localStorage.getItem('role');
-            if (explicitRole) {
-                console.log("Using explicit role from localStorage:", explicitRole);
-                return explicitRole;
-            }
+            if (explicitRole) return explicitRole;
 
             // 2. Check auth context
-            if (user?.role) {
-                console.log("Using role from auth context:", user.role);
-                return user.role;
-            }
+            if (user?.role) return user.role;
 
             // 3. Check legacy localStorage key
             const storedRole = localStorage.getItem('userRole');
-            if (storedRole) {
-                console.log("Using legacy userRole from localStorage:", storedRole);
-                return storedRole;
-            }
+            if (storedRole) return storedRole;
 
             // 4. Decode from token
             const token = localStorage.getItem('token');
             if (token) {
                 try {
                     const decoded = jwtDecode(token);
-                    console.log("Decoded role from token:", decoded.role);
                     return decoded.role || 'CANDIDATE';
                 } catch (error) {
                     console.error('Token decode error:', error);
                 }
             }
 
-            console.warn("No role found, defaulting to CANDIDATE");
             return 'CANDIDATE';
         };
 
         const role = determineRole();
-        console.log("Final determined role:", role);
         setUserRole(role);
         setInitialized(true);
     }, [user, authLoading]);
+
+    // Timer effect
+    useEffect(() => {
+        if (status === 'connected') {
+            callTimerRef.current = setInterval(() => {
+                setCallTime(prev => prev + 1);
+            }, 1000);
+        } else {
+            clearInterval(callTimerRef.current);
+        }
+
+        return () => clearInterval(callTimerRef.current);
+    }, [status]);
 
     // WebRTC and Socket.io implementation
     useEffect(() => {
@@ -172,6 +171,7 @@ const VideoCall = () => {
             if (localStream) {
                 localStream.getTracks().forEach(track => track.stop());
             }
+            clearInterval(callTimerRef.current);
         };
     }, [initialized, interviewId]);
 
@@ -256,34 +256,87 @@ const VideoCall = () => {
         }
         setStatus('disconnected');
         setIsPeerConnected(false);
+        setCallTime(0);
+    };
+
+    const toggleFullscreen = (video) => {
+        if (video === 'local') {
+            if (!isFullscreen) {
+                localVideoRef.current.requestFullscreen().catch(err => {
+                    console.error('Error attempting to enable fullscreen:', err);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+            setActiveVideo('local');
+        } else {
+            if (!isFullscreen) {
+                remoteVideoRef.current.requestFullscreen().catch(err => {
+                    console.error('Error attempting to enable fullscreen:', err);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+            setActiveVideo('remote');
+        }
+        setIsFullscreen(!isFullscreen);
+    };
+
+    const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
     if (!initialized || authLoading) {
-        return <div className="loading-container">Loading user session...</div>;
+        return (
+            <div className="loading-screen">
+                <div className="loading-spinner"></div>
+                <p>Loading user session...</p>
+            </div>
+        );
     }
 
     return (
-        <div className="video-call-container">
-            <h1 className="call-title">
-                {userRole === 'ENTERPRISE' ? 'Interview Session (Recruiter)' : 'Interview Session (Candidate)'}
-            </h1>
-            <div className="status-badge">
-                Status: <span className={`status ${status.replace(' ', '-')}`}>
-                    {status}
-                    {status === 'connected' && !isPeerConnected && ' (negotiating)'}
-                </span>
+        <div className={`video-call-container ${isFullscreen ? 'fullscreen' : ''}`}>
+            <div className="call-header">
+                <div className="header-left">
+                    <h1 className="call-title">
+                        {userRole === 'ENTERPRISE' ? 'Interview Session' : 'Interview Session'}
+                    </h1>
+                    <div className="call-info">
+                        <span className="call-id">ID: {interviewId}</span>
+                        <span className="call-role">{userRole === 'ENTERPRISE' ? 'Recruiter' : 'Candidate'}</span>
+                    </div>
+                </div>
+                <div className="header-right">
+                    <div className={`status-badge ${status.replace(' ', '-')}`}>
+                        {status === 'connected' ? formatTime(callTime) : status}
+                    </div>
+                </div>
             </div>
 
-            <div className="video-grid">
-                <div className="video-container local-video">
+            <div className="video-grid" ref={videoGridRef}>
+                <div className={`video-container local-video ${isFullscreen && activeVideo === 'local' ? 'fullscreen-video' : ''}`}>
                     <div className="video-overlay">
-                        <h3>You ({user?.name || 'User'}) - {userRole}</h3>
+                        <div className="user-info">
+                            <div className="user-name">{user?.name || 'You'}</div>
+                            <div className="user-status">
+                                {isMuted ? 'Muted' : 'Unmuted'} • {isVideoOff ? 'Camera Off' : 'Camera On'}
+                            </div>
+                        </div>
                         <div className="video-controls">
-                            <button onClick={toggleMute} className="control-btn">
-                                {isMuted ? '🔇' : '🎤'}
+                            <button onClick={toggleMute} className={`control-btn ${isMuted ? 'muted' : ''}`}>
+                                <i className={`icon-${isMuted ? 'mic-off' : 'mic'}`}></i>
                             </button>
-                            <button onClick={toggleVideo} className="control-btn">
-                                {isVideoOff ? '📷 Off' : '📷 On'}
+                            <button onClick={toggleVideo} className={`control-btn ${isVideoOff ? 'disabled' : ''}`}>
+                                <i className={`icon-${isVideoOff ? 'video-off' : 'video'}`}></i>
+                            </button>
+                            <button 
+                                onClick={() => toggleFullscreen('local')} 
+                                className="control-btn"
+                            >
+                                <i className={`icon-${isFullscreen && activeVideo === 'local' ? 'minimize' : 'maximize'}`}></i>
                             </button>
                         </div>
                     </div>
@@ -296,14 +349,24 @@ const VideoCall = () => {
                     />
                 </div>
 
-                <div className="video-container remote-video">
+                <div className={`video-container remote-video ${isFullscreen && activeVideo === 'remote' ? 'fullscreen-video' : ''}`}>
                     <div className="video-overlay">
-                        <h3>{userRole === 'ENTERPRISE' ? 'Candidate' : 'Interviewer'}</h3>
-                        {!isPeerConnected && status === 'connected' && (
-                            <div className="waiting-connection">
-                                Waiting for connection...
+                        <div className="user-info">
+                            <div className="user-name">
+                                {userRole === 'ENTERPRISE' ? 'Candidate' : 'Interviewer'}
                             </div>
-                        )}
+                            <div className="user-status">
+                                {isPeerConnected ? 'Connected' : 'Connecting...'}
+                            </div>
+                        </div>
+                        <div className="video-controls">
+                            <button 
+                                onClick={() => toggleFullscreen('remote')} 
+                                className="control-btn"
+                            >
+                                <i className={`icon-${isFullscreen && activeVideo === 'remote' ? 'minimize' : 'maximize'}`}></i>
+                            </button>
+                        </div>
                     </div>
                     <video 
                         ref={remoteVideoRef} 
@@ -311,6 +374,12 @@ const VideoCall = () => {
                         playsInline 
                         className={!isPeerConnected ? 'video-off' : ''}
                     />
+                    {!isPeerConnected && status === 'connected' && (
+                        <div className="waiting-connection">
+                            <div className="spinner"></div>
+                            <p>Waiting for {userRole === 'ENTERPRISE' ? 'candidate' : 'interviewer'} to join...</p>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -318,9 +387,10 @@ const VideoCall = () => {
                 {status === 'ready' && (
                     <button 
                         onClick={startCall} 
-                        className="control-btn primary"
+                        className="control-btn start-call"
                         data-testid="start-call-button"
                     >
+                        <i className="icon-phone"></i>
                         {userRole === 'ENTERPRISE' ? 'Start Interview' : 'Join Interview'}
                     </button>
                 )}
@@ -328,8 +398,9 @@ const VideoCall = () => {
                 {(status === 'connected' || status === 'connection-timeout') && (
                     <button 
                         onClick={endCall} 
-                        className="control-btn danger"
+                        className="control-btn end-call"
                     >
+                        <i className="icon-phone-off"></i>
                         End Call
                     </button>
                 )}
@@ -337,15 +408,26 @@ const VideoCall = () => {
                 {(status === 'error' || status === 'disconnected') && (
                     <button 
                         onClick={() => window.location.reload()} 
-                        className="control-btn"
+                        className="control-btn retry"
                     >
-                        Retry
+                        <i className="icon-refresh-cw"></i>
+                        Retry Connection
                     </button>
                 )}
+            </div>
+
+            <div className="call-footer">
+                <p className="footer-text">
+                    {userRole === 'ENTERPRISE' 
+                        ? 'Professional Interview Platform - Recruiter View'
+                        : 'Professional Interview Platform - Candidate View'}
+                </p>
+                <p className="footer-help">
+                    Having issues? <a href="#">Get help</a>
+                </p>
             </div>
         </div>
     );
 };
-console.log('Current token:', localStorage.getItem('token'));
 
 export default VideoCall;

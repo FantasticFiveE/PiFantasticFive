@@ -852,13 +852,21 @@ app.post("/Frontend/add-job", async (req, res) => {
   
   app.get("/Frontend/jobs", async (req, res) => {
     try {
-      const jobs = await JobModel.find().sort({ createdAt: -1 }); // tri par plus récent
+      const jobs = await JobModel.find()
+        .populate({
+          path: 'entrepriseId',
+          select: 'enterprise.name' // 👈 charge juste le nom
+        })
+        .sort({ createdAt: -1 });
+  
       res.status(200).json(jobs);
     } catch (error) {
       console.error("❌ Erreur récupération jobs:", error);
       res.status(500).json({ error: "Erreur serveur" });
     }
   });
+  
+  
   
   app.get("/Frontend/jobs/:id", async (req, res) => {
     try {
@@ -874,6 +882,32 @@ app.post("/Frontend/add-job", async (req, res) => {
   });
   
 
+  app.get("/Frontend/jobs-by-entreprise/:id", async (req, res) => {
+    try {
+      const jobs = await JobModel.find({ entrepriseId: req.params.id }).sort({ createdAt: -1 });
+      res.status(200).json(jobs);
+    } catch (error) {
+      console.error("❌ Erreur récupération jobs entreprise:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+  
+  app.delete("/Frontend/delete-job/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deletedJob = await JobModel.findByIdAndDelete(id);
+  
+      if (!deletedJob) {
+        return res.status(404).json({ message: "Job non trouvé" });
+      }
+  
+      res.status(200).json({ message: "Job supprimé avec succès" });
+    } catch (error) {
+      console.error("❌ Erreur lors de la suppression du job :", error);
+      res.status(500).json({ message: "Erreur serveur" });
+    }
+  });
+  
 
 // Serveur en écoute
 const PORT = process.env.PORT || 3001; // Updated to port 3001

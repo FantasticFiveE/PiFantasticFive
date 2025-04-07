@@ -8,7 +8,7 @@ const JobSchema = new Schema({
   location: { type: String },
   salary: { type: Number },
   languages: [{ type: String }],
-skills: [{ type: String }],
+  skills: [{ type: String }],
 
   createdAt: { type: Date, default: Date.now },
   entrepriseId: { type: Schema.Types.ObjectId, ref: 'User', required: true },

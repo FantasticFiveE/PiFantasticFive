@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/user');
+const { UserModel } = require('../models/user'); // ✅ Correct import
+
 const JobModel = require('../models/job');
 
 // ✅ POST /api/jobs/create - Create a new job and link to enterprise

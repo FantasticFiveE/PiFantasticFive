@@ -11,7 +11,8 @@ const fs = require('fs');
 const multer = require('multer');
 const path = require('path');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const UserModel = require('./models/user');
+const { UserModel } = require('./models/user');
+const JobModel = require('./models/job');
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
 const axios = require('axios');
@@ -19,7 +20,6 @@ const fetch = require("node-fetch");
 const http = require('http');
 const socketIO = require('socket.io');
 const { exec } = require('child_process');
-const JobModel = require('./models/job');
 
 // Create Express app and HTTP server
 const app = express();
@@ -256,7 +256,7 @@ const resumeUpload = multer({
 });
 
 // Authentication Routes
-app.post("/api/login", async(req, res) => {
+app.post("/Frontend/login", async(req, res) => {
     try {
         const { email, password } = req.body;
 
@@ -307,7 +307,7 @@ app.post("/api/login", async(req, res) => {
     }
 });
 
-app.post('/api/register', resumeUpload.single('resume'), async(req, res) => {
+app.post('/Frontend/register', resumeUpload.single('resume'), async(req, res) => {
     try {
         const { name, email, password, role } = req.body;
 
@@ -413,7 +413,7 @@ app.post('/api/register', resumeUpload.single('resume'), async(req, res) => {
     }
 });
 
-app.post("/api/verify-email", async(req, res) => {
+app.post("/Frontend/verify-email", async(req, res) => {
     try {
         const { email, verificationCode } = req.body;
         const user = await UserModel.findOne({ email });
@@ -455,6 +455,237 @@ if (!fs.existsSync(uploadPicsDir)) {
 
 app.use("/uploads", express.static(uploadDir));
 app.use("/uploadsPics", express.static(uploadPicsDir));
+app.use('/uploadsPics', express.static(path.join(__dirname, 'uploadsPics')));
+
+// Resume Upload Configuration
+const resumeStorage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, uploadDir),
+    filename: (req, file, cb) => cb(null, `temp-${Date.now()}${path.extname(file.originalname)}`),
+});
+const resumeFileFilter = (req, file, cb) => {
+    const allowedTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
+    if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error('Unsupported file format.'), false);
+    }
+};
+
+// Profile Picture Upload Configuration
+const profileStorage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, uploadPicsDir),
+    filename: (req, file, cb) => {
+        const userId = req.body.userId || 'unknown';
+        cb(null, `${userId}-profile-${Date.now()}${path.extname(file.originalname)}`);
+    },
+});
+const profileFileFilter = (req, file, cb) => {
+    const allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (allowedImageTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error('Only JPEG, PNG, and GIF formats are supported.'), false);
+    }
+};
+
+app.get("/Frontend/user/:id", async (req, res) => {
+    try {
+      console.log("📥 Données reçues pour mise à jour:", req.body);
+  
+      const user = await UserModel.findById(req.params.id);
+      if (!user) return res.status(404).json({ error: "Utilisateur non trouvé" });
+  
+      // 🔹 Mise à jour des champs de base
+      user.name = req.body.name || user.name;
+      user.email = req.body.email || user.email;
+  
+      // 🔐 Mise à jour du mot de passe si fourni
+      if (req.body.password && req.body.password.length > 4) {
+        const hashedPassword = await bcrypt.hash(req.body.password, 10);
+        user.password = hashedPassword;
+      }
+  
+      // 🧩 Mise à jour du profil utilisateur
+      if (!user.profile) user.profile = {};
+      const profile = req.body.profile || {};
+      user.profile.phone = profile.phone ?? user.profile.phone;
+      user.profile.resume = profile.resume ?? user.profile.resume;
+      user.profile.availability = profile.availability ?? user.profile.availability;
+      user.profile.skills = profile.skills ?? user.profile.skills;
+      user.profile.languages = profile.languages ?? user.profile.languages;
+      user.profile.experience = profile.experience ?? user.profile.experience;
+      user.markModified("profile");
+  
+      // 🏢 Mise à jour des données entreprise si role === 'ENTERPRISE'
+      if (user.role === "ENTERPRISE" && req.body.enterprise) {
+        if (!user.enterprise) user.enterprise = {};
+        const ent = req.body.enterprise;
+  
+        user.enterprise.name = ent.name || user.enterprise.name;
+        user.enterprise.industry = ent.industry || user.enterprise.industry;
+        user.enterprise.location = ent.location || user.enterprise.location;
+        user.enterprise.website = ent.website || user.enterprise.website;
+        user.enterprise.description = ent.description || user.enterprise.description;
+        user.enterprise.employeeCount = ent.employeeCount ?? user.enterprise.employeeCount;
+  
+        user.markModified("enterprise");
+      }
+  
+      await user.save();
+      console.log("✅ Utilisateur mis à jour avec succès !");
+      return res.status(200).json({ message: "Mise à jour réussie", enterprise: user.enterprise });
+    } catch (error) {
+      console.error("❌ Erreur lors de la récupération de l'utilisateur:", error);
+      res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
+});
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        // Nom temporaire (sans userId au début)
+        cb(null, `temp-${Date.now()}${path.extname(file.originalname)}`);
+    },
+});
+
+const fileFilter = (req, file, cb) => {
+    const allowedTypes = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+    if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error("Format de fichier non supporté"), false);
+    }
+};
+
+const upload = multer({
+    storage: multer.diskStorage({
+        destination: uploadDir,
+        filename: (req, file, cb) => {
+            // Nom temporaire au cas où userId est absent
+            cb(null, `temp-${Date.now()}${path.extname(file.originalname)}`);
+        }
+    }),
+});
+
+
+
+app.put("/Frontend/updateUser/:id", async (req, res) => {
+  try {
+    console.log("📥 Données reçues pour mise à jour:", req.body);
+
+    const user = await UserModel.findById(req.params.id);
+    if (!user) return res.status(404).json({ error: "Utilisateur non trouvé" });
+
+    // 🔹 Mise à jour des champs de base
+    user.name = req.body.name || user.name;
+    user.email = req.body.email || user.email;
+
+    // 🔐 Mise à jour du mot de passe si fourni
+    if (req.body.password && req.body.password.length > 4) {
+      const hashedPassword = await bcrypt.hash(req.body.password, 10);
+      user.password = hashedPassword;
+    }
+
+    // 🧩 Mise à jour du profil utilisateur
+    if (!user.profile) user.profile = {};
+    const profile = req.body.profile || {};
+    user.profile.phone = profile.phone ?? user.profile.phone;
+    user.profile.resume = profile.resume ?? user.profile.resume;
+    user.profile.availability = profile.availability ?? user.profile.availability;
+    user.profile.skills = profile.skills ?? user.profile.skills;
+    user.profile.languages = profile.languages ?? user.profile.languages;
+    user.profile.experience = profile.experience ?? user.profile.experience;
+    user.markModified("profile");
+
+    // 🏢 Mise à jour des données entreprise si role === 'ENTERPRISE'
+    if (user.role === "ENTERPRISE" && req.body.enterprise) {
+      if (!user.enterprise) user.enterprise = {};
+      const ent = req.body.enterprise;
+
+      user.enterprise.name = ent.name || user.enterprise.name;
+      user.enterprise.industry = ent.industry || user.enterprise.industry;
+      user.enterprise.location = ent.location || user.enterprise.location;
+      user.enterprise.website = ent.website || user.enterprise.website;
+      user.enterprise.description = ent.description || user.enterprise.description;
+      user.enterprise.employeeCount = ent.employeeCount ?? user.enterprise.employeeCount;
+
+      user.markModified("enterprise");
+    }
+
+    await user.save();
+
+    console.log("✅ Utilisateur mis à jour avec succès !");
+    return res.status(200).json({
+      message: "Mise à jour réussie",
+      enterprise: user.enterprise,
+      picture: user.picture, // 🔁 renvoie aussi la photo
+    });
+
+  } catch (error) {
+    console.error("❌ Erreur mise à jour utilisateur:", error);
+    return res.status(500).json({ error: "Erreur interne du serveur." });
+  }
+});
+
+
+app.post('/Frontend/upload-resume', resumeUpload.single('resume'), async (req, res) => {
+    try {
+        const { userId } = req.body;
+        if (!userId) {
+            return res.status(400).json({ error: 'User ID is required.' });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded.' });
+        }
+
+        const user = await UserModel.findById(userId);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found.' });
+        }
+
+        const newFilename = `${userId}-${Date.now()}${path.extname(req.file.originalname)}`;
+        const newPath = path.join(req.file.destination, newFilename);
+
+        const fsPromises = require('fs').promises;
+        await fsPromises.rename(req.file.path, newPath);
+
+        const form = new FormData();
+        form.append('resume', fs.createReadStream(newPath));
+        const pythonResponse = await axios.post('http://localhost:5002/upload', form, {
+            headers: {
+                ...form.getHeaders(),
+            },
+        });
+
+        const resumeData = pythonResponse.data;
+
+        user.resume = `/uploads/${newFilename}`;
+        user.email = user.email || resumeData.email;
+        user.phone = resumeData.phone || user.phone;
+        user.skills = resumeData.skills || user.skills || [];
+        user.languages = resumeData.languages || user.languages || [];
+        if (resumeData.name) user.name = user.name || resumeData.name;
+
+        await user.save();
+
+        console.log('✅ Resume updated for user:', user);
+        res.status(200).json({
+            message: 'Resume uploaded and analyzed successfully!',
+            resumeUrl: user.resume,
+            extractedData: resumeData,
+        });
+    } catch (error) {
+        console.error('❌ Server error during resume upload:', error);
+        res.status(500).json({ error: 'Server error.', details: error.message });
+    }
+});
 
 const profileUpload = multer({
     storage: multer.diskStorage({
@@ -469,7 +700,7 @@ const profileUpload = multer({
     }
 });
 
-app.post("/api/upload-profile", profileUpload.single("picture"), async(req, res) => {
+app.post("/Frontend/upload-profile", profileUpload.single("picture"), async(req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: "No image uploaded." });
@@ -495,56 +726,7 @@ app.post("/api/upload-profile", profileUpload.single("picture"), async(req, res)
     }
 });
 
-app.get("/api/user/:id", async(req, res) => {
-    try {
-        let user = await UserModel.findById(req.params.id);
-
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
-
-        if (user.role === 'ENTERPRISE') {
-            user = await UserModel.findById(req.params.id).select('+jobsPosted +applications +interviews');
-        }
-
-        const responseUser = {
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            picture: user.picture,
-            profile: {
-                phone: user.profile?.phone || "",
-                resume: user.profile?.resume || "",
-                skills: user.profile?.skills || [],
-                languages: user.profile?.languages || [],
-                experience: user.profile?.experience || [],
-                availability: user.profile?.availability || "Full-time"
-            }
-        };
-
-        if (user.role === 'ENTERPRISE') {
-            responseUser.enterprise = {
-                name: user.enterprise?.name || "",
-                industry: user.enterprise?.industry || "",
-                location: user.enterprise?.location || "",
-                website: user.enterprise?.website || "",
-                description: user.enterprise?.description || "",
-                employeeCount: user.enterprise?.employeeCount || 0,
-            };
-            responseUser.jobsPosted = user.jobsPosted || [];
-            responseUser.applications = user.applications || [];
-            responseUser.interviews = user.interviews || [];
-        }
-
-        res.json(responseUser);
-    } catch (error) {
-        console.error("❌ Error fetching user:", error);
-        res.status(500).json({ message: "Server error", error: error.message });
-    }
-});
-
-app.put("/api/user/:id", async(req, res) => {
+app.put("/Frontend/user/:id", async(req, res) => {
     try {
         const user = await UserModel.findById(req.params.id);
         if (!user) return res.status(404).json({ error: "User not found" });
@@ -577,7 +759,9 @@ app.put("/api/user/:id", async(req, res) => {
     }
 });
 
-app.post("/api/forgot-password", async(req, res) => {
+
+
+app.post("/Frontend/forgot-password", async(req, res) => {
     const { email } = req.body;
 
     try {
@@ -611,7 +795,7 @@ app.post("/api/forgot-password", async(req, res) => {
     }
 });
 
-app.post("/api/reset-password/:token", async(req, res) => {
+app.post("/Frontend/reset-password/:token", async(req, res) => {
     const { token } = req.params;
     const { password } = req.body;
 
@@ -684,7 +868,7 @@ const audioStorage = multer.diskStorage({
 
 const audioUpload = multer({ storage: audioStorage });
 
-app.post("/api/transcribe-audio", audioUpload.single("audio"), async(req, res) => {
+app.post("/Frontend/transcribe-audio", audioUpload.single("audio"), async(req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: "No audio file uploaded." });
@@ -701,6 +885,102 @@ app.post("/api/transcribe-audio", audioUpload.single("audio"), async(req, res) =
     } catch (error) {
         console.error("❌ Audio Transcription Error:", error);
         res.status(500).json({ error: "Server error." });
+    }
+});
+
+app.post("/Frontend/add-job", async (req, res) => {
+    try {
+      const { title, description, location, salary, entrepriseId, languages, skills } = req.body;
+  
+      const newJob = new JobModel({
+        title,
+        description,
+        location,
+        salary,
+        entrepriseId,
+        languages,
+        skills
+      });
+  
+      await newJob.save();
+  
+      const user = await UserModel.findById(entrepriseId).select('+jobsPosted');
+      if (!user) return res.status(404).json({ error: "Entreprise introuvable" });
+  
+      if (!Array.isArray(user.jobsPosted)) {
+        user.jobsPosted = [];
+      }
+  
+      user.jobsPosted.push({
+        jobId: newJob._id,
+        title: newJob.title,
+        status: "OPEN",
+        createdDate: newJob.createdAt
+      });
+  
+      user.markModified('jobsPosted');
+      await user.save();
+  
+      return res.status(201).json({ message: "Job ajouté avec succès", job: newJob });
+  
+    } catch (error) {
+      console.error("❌ Erreur lors de l'ajout du job:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+  
+app.get("/Frontend/jobs", async (req, res) => {
+    try {
+      const jobs = await JobModel.find()
+        .populate({
+          path: 'entrepriseId',
+          select: 'enterprise.name'
+        })
+        .sort({ createdAt: -1 });
+  
+      res.status(200).json(jobs);
+    } catch (error) {
+      console.error("❌ Erreur récupération jobs:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+  
+app.get("/Frontend/jobs/:id", async (req, res) => {
+    try {
+      const job = await JobModel.findById(req.params.id);
+      if (!job) {
+        return res.status(404).json({ message: "Job non trouvé" });
+      }
+      res.status(200).json(job);
+    } catch (error) {
+      console.error("❌ Erreur lors de la récupération du job par ID:", error);
+      res.status(500).json({ message: "Erreur serveur" });
+    }
+});
+
+app.get("/Frontend/jobs-by-entreprise/:id", async (req, res) => {
+    try {
+      const jobs = await JobModel.find({ entrepriseId: req.params.id }).sort({ createdAt: -1 });
+      res.status(200).json(jobs);
+    } catch (error) {
+      console.error("❌ Erreur récupération jobs entreprise:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+  
+app.delete("/Frontend/delete-job/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deletedJob = await JobModel.findByIdAndDelete(id);
+  
+      if (!deletedJob) {
+        return res.status(404).json({ message: "Job non trouvé" });
+      }
+  
+      res.status(200).json({ message: "Job supprimé avec succès" });
+    } catch (error) {
+      console.error("❌ Erreur lors de la suppression du job :", error);
+      res.status(500).json({ message: "Erreur serveur" });
     }
 });
 

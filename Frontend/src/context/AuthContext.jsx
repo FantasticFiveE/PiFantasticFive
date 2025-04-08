@@ -1,5 +1,5 @@
-import { createContext, useState, useEffect } from "react";
-import PropTypes from "prop-types"; // ✅ Importer PropTypes
+import { createContext, useState, useEffect, useContext } from "react";
+import PropTypes from "prop-types";
 
 const AuthContext = createContext();
 
@@ -10,21 +10,28 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     try {
       const token = localStorage.getItem("token");
-      const savedUser = JSON.parse(localStorage.getItem("user"));
-
-      if (token && savedUser) {
-        setIsAuthenticated(true);
-        setUser(savedUser);
+      const savedUser = localStorage.getItem("user");
+  
+      // 🛡️ Vérifie que savedUser est une chaîne JSON valide
+      if (savedUser && savedUser !== "undefined") {
+        const parsedUser = JSON.parse(savedUser);
+        if (token && parsedUser) {
+          setIsAuthenticated(true);
+          setUser(parsedUser);
+        }
       }
     } catch (error) {
       console.error("Error reading from localStorage", error);
+      // Si le JSON est corrompu, on le supprime pour éviter des erreurs futures
+      localStorage.removeItem("user");
     }
   }, []);
+  
 
   const login = (userData, token) => {
     try {
       localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("user", JSON.stringify(userData)); // Store user data as JSON
       setIsAuthenticated(true);
       setUser(userData);
     } catch (error) {
@@ -50,7 +57,14 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// ✅ Définition des PropTypes pour éviter l'erreur ESLint
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};
+
 AuthProvider.propTypes = {
   children: PropTypes.node.isRequired,
 };

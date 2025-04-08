@@ -29,8 +29,11 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "react-bootstrap": "^2.10.9",
+    "socket.io": "^4.8.1",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^11.1.0",
+    "wrtc": "^0.4.7"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"

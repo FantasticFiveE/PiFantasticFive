@@ -1,0 +1,23 @@
+.job-card {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid #5b86e5;
+    border-radius: 10px;
+    padding: 20px;
+    margin: 10px 0;
+    color: white;
+    transition: transform 0.2s ease;
+  }
+  
+  .job-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(91, 134, 229, 0.4);
+  }
+  
+  .see-more {
+    display: inline-block;
+    margin-top: 10px;
+    color: #36d1dc;
+    text-decoration: underline;
+    font-weight: bold;
+  }
+  

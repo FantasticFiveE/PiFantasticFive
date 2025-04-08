@@ -32,7 +32,8 @@ const EntrepriseProfile = () => {
   useEffect(() => {
     const fetchEntreprise = async () => {
       try {
-        const res = await axios.get(`http://localhost:3001/Frontend/getUser/${id}`);
+        const res = await axios.get(`http://localhost:3001/Frontend/user/${id}`);
+
         setEnterprise(res.data.enterprise);
         setUserPicture(res.data.picture);
         setEditedEnterprise(res.data.enterprise);
@@ -103,30 +104,32 @@ const EntrepriseProfile = () => {
       const res = await axios.put(`http://localhost:3001/Frontend/updateUser/${id}`, {
         enterprise: editedEnterprise,
       });
-
+  
       setEnterprise(res.data.enterprise);
       setIsEditing(false);
+      setUserPicture(res.data.picture || userPicture); // ajoute ça après setEnterprise
 
       if (selectedFile) {
         const formData = new FormData();
         formData.append("picture", selectedFile);
         formData.append("userId", id);
-
+  
         const uploadRes = await axios.post("http://localhost:3001/Frontend/upload-profile", formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-
+  
         if (uploadRes.data.pictureUrl) {
           setUserPicture(uploadRes.data.pictureUrl);
         }
       }
-
+  
       setImagePreview(null);
       setSelectedFile(null);
     } catch (error) {
       console.error("Erreur lors de la mise à jour :", error);
     }
   };
+  
 
   const handleJobChange = (e) => {
     const { name, value } = e.target;

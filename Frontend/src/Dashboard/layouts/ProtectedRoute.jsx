@@ -1,16 +1,37 @@
 import React from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
 
-const ProtectedRoute = ({ children }) => {
-  const isAdminLoggedIn = localStorage.getItem("admin"); // Check if admin is logged in
+const ProtectedRoute = ({ children, allowedRoles = [] }) => {
+    const location = useLocation();
+    const token = localStorage.getItem("token");
+    
+    console.log("Current token:", token);
 
-  if (!isAdminLoggedIn) {
-    // If not logged in, redirect to login
-    return <Navigate to="/dashboard/login" replace />;
-  }
+    if (!token) {
+        console.log("No token found, redirecting to login");
+        return <Navigate to="/login" state={{ from: location }} replace />;
+    }
 
-  // If logged in, render the children (protected component)
-  return children;
+    let user;
+    try {
+        user = jwtDecode(token);
+        console.log("Decoded user:", user);
+        // Store user role in localStorage for easy access
+        localStorage.setItem('userRole', user.role);
+    } catch (error) {
+        console.error("Token decode error:", error);
+        localStorage.removeItem("token");
+        localStorage.removeItem("userRole");
+        return <Navigate to="/login" replace />;
+    }
+
+    if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+        console.log(`Role ${user.role} not in allowed roles:`, allowedRoles);
+        return <Navigate to="/unauthorized" replace />;
+    }
+
+    return children;
 };
 
 export default ProtectedRoute;

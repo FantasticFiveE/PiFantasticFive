@@ -62,6 +62,7 @@ const JobDetails = () => {
   };
 
   const [loadingAI, setLoadingAI] = useState(false);
+  const [highlightedFields, setHighlightedFields] = useState([]);
 
   const handleAutoFill = async () => {
     setLoadingAI(true);
@@ -96,6 +97,10 @@ const JobDetails = () => {
       });
   
       alert("✅ Formulaire rempli par l'IA !");
+      setHighlightedFields(["position", "domain", "salary", "status"]);
+      setTimeout(() => setHighlightedFields([]), 2000);
+
+
     } catch (error) {
       console.error("❌ Erreur AI:", error);
       alert("Erreur lors de la génération AI.");
@@ -168,22 +173,23 @@ const JobDetails = () => {
           <div>
             <label className="block font-medium text-white mb-1">Quel est le nom de poste ?</label>
             <input
-              type="text"
-              name="position"
-              value={form.position}
-              onChange={handleChange}
-              placeholder="Ingénieur"
-              className="enhanced-input"
-            />
+          type="text"
+          name="position"
+          value={form.position}
+          onChange={handleChange}
+          placeholder="Ingénieur"
+          className={`enhanced-input ${highlightedFields.includes("position") ? "highlighted" : ""}`}
+        />
+
           </div>
 
           <div>
             <label className="block font-medium text-white mb-1">Domaines d'activités</label>
             <select
-              name="domain"
-              value={form.domain}
-              onChange={handleChange}
-              className="enhanced-input"
+            name="domain"
+            value={form.domain}
+            onChange={handleChange}
+            className={`enhanced-input ${highlightedFields.includes("domain") ? "highlighted" : ""}`}
             >
               <option value="">-- Sélectionner --</option>
               <option value="Informatique">Informatique</option>
@@ -199,10 +205,10 @@ const JobDetails = () => {
               name="salary"
               value={form.salary}
               onChange={handleChange}
-              className="enhanced-input"
+              className={`enhanced-input ${highlightedFields.includes("salary") ? "highlighted" : ""}`}
               placeholder="Ex: 1500"
             />
-            <p className="text-sm text-gray-400 mt-1">NB: Le montant en Dinars Tunisien</p>
+            <p>NB: Le montant en Dinars Tunisien</p>
           </div>
 
           <div>
@@ -211,7 +217,7 @@ const JobDetails = () => {
               name="status"
               value={form.status}
               onChange={handleChange}
-              className="enhanced-input"
+              className={`enhanced-input ${highlightedFields.includes("status") ? "highlighted" : ""}`}
             >
               <option>Je suis à la recherche d’un stage</option>
               <option>Je suis au chômage</option>

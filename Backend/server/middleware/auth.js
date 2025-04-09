@@ -1,12 +1,19 @@
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 
-const verifyToken = (token) => {
-    return new Promise((resolve, reject) => {
-        jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-            if (err) return reject(err);
-            resolve(decoded);
-        });
+const authenticateJWT = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.split(" ")[1];
+
+    jwt.verify(token, process.env.JWT_SECRET_KEY, (err, user) => {
+      if (err) {
+        return res.sendStatus(403); // Invalid token
+      }
+      req.user = user; // Save user info for next handler
+      next(); // Continue to next handler
     });
+  } else {
+    res.sendStatus(401); // No token
+  }
 };
-
-module.exports = { verifyToken };

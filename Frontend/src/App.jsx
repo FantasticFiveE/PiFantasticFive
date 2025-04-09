@@ -1,7 +1,8 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { AuthProvider } from "./context/AuthContext";
+import { InterviewProvider } from "./context/InterviewContext";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
 // Dashboard (Back Office) Components
@@ -31,11 +32,18 @@ import ResetPassword from "./login/assets/ResetPassword";
 import Profile from "./profileFront/profile";
 import EditProfile from "./profileFront/EditProfile";
 import VideoCallPage from "./interview/VideoCall";
+<<<<<<< Updated upstream
 import ProtectedRoute from "./Dashboard/layouts/ProtectedRoute";
 import EntrepriseProfile from "./pages/Entreprise/EntrepriseProfile";
 import JobDetails from "./pages/JobDetails/JobDetails";
 
 // ✅ Google Client ID
+=======
+import JobDetails from "./pages/Card/JobDetails";
+import InterviewsPage from "./interview/Interviews";
+import InterviewDetails from "./interview/InterviewDetails";
+
+>>>>>>> Stashed changes
 const CLIENT_ID = "122105051479-dna9hfi1gskvlbobkhkpboiml67i4gl7.apps.googleusercontent.com";
 
 // ✅ OpenAI API Key Validation
@@ -66,6 +74,7 @@ function App() {
   return (
     <GoogleOAuthProvider clientId={CLIENT_ID}>
       <AuthProvider>
+<<<<<<< Updated upstream
         <Router>
           <Routes>
             {/* Front Office Routes */}
@@ -86,25 +95,53 @@ function App() {
             <Route path="/edit-profile/:id" element={<EditProfile />} />
             <Route path="/entreprise/:id" element={<EntrepriseProfile />} />
             <Route path="/interview/:interviewId" element={<VideoCallPage />} />
+=======
+        <InterviewProvider>
+          <Router>
+            <Routes>
+              {/* Front Office Routes */}
+              <Route path="/" element={<Home />} />
+              <Route path="/home" element={<Home />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/service" element={<Service />} />
+              <Route path="/why" element={<Why />} />
+              <Route path="/team" element={<Team />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Signup />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/verify-email-pending" element={<VerifyEmailPending />} />
+              <Route path="/forgotPassword" element={<ForgotPassword />} />
+              <Route path="/reset-password/:token" element={<ResetPassword />} />
+              <Route path="/job/:id" element={<JobDetails />} />
 
-            {/* Back Office Routes (Protected) */}
-            <Route path="/dashboard" element={<ProtectedRoute><DashboardLayoutWrapper /></ProtectedRoute>}>
-              <Route index element={<DashboardLayout />} />
-              <Route path="manage-candidates" element={<ManageCandidates />} />
-              <Route path="manage-employees" element={<ManageEmployees />} />
-              <Route path="application-info" element={<ApplicationInfo />} />
-              <Route path="settings" element={<SettingsPage />} />
-              <Route path="calendar" element={<CalendarView />} />
-              <Route path="jobs" element={<AllJobs />} />
-            </Route>
+              <Route path="/profile/:id" element={<Profile />} />
+              <Route path="/edit-profile/:id" element={<EditProfile />} />
+              <Route path="/interviews" element={<InterviewsPage />} />
+              <Route path="/interview-details/:id" element={<InterviewDetails />} />
+>>>>>>> Stashed changes
 
-            {/* Dashboard Login Route */}
-            <Route path="/dashboard/login" element={<LoginPage />} />
+              {/* Video Call Route */}
+              <Route path="/interview/:interviewId" element={<VideoCallPage />} />
 
-            {/* Redirect Unknown Routes to Home */}
-            <Route path="*" element={<Navigate to="/home" />} />
-          </Routes>
-        </Router>
+              {/* Back Office Routes */}
+              <Route path="/dashboard" element={<DashboardLayoutWrapper />}>
+                <Route index element={<DashboardLayout />} />
+                <Route path="manage-candidates" element={<ManageCandidates />} />
+                <Route path="manage-employees" element={<ManageEmployees />} />
+                <Route path="application-info" element={<ApplicationInfo />} />
+                <Route path="settings" element={<SettingsPage />} />
+                <Route path="calendar" element={<CalendarView />} />
+                <Route path="jobs" element={<AllJobs />} />
+              </Route>
+
+              {/* Dashboard Login Route */}
+              <Route path="/dashboard/login" element={<LoginPage />} />
+
+              {/* Redirect Unknown Routes to Home */}
+              <Route path="*" element={<Navigate to="/home" />} />
+            </Routes>
+          </Router>
+        </InterviewProvider>
       </AuthProvider>
     </GoogleOAuthProvider>
   );

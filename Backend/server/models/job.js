@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
+<<<<<<< Updated upstream
 const JobSchema = new Schema({
   title: { type: String, required: true },
   description: { type: String },
@@ -16,3 +17,17 @@ const JobSchema = new Schema({
 const JobModel = mongoose.models.Job || mongoose.model('Job', JobSchema);
 
 module.exports = JobModel;
+=======
+const JobSchema = new mongoose.Schema({
+    title: String,
+    description: String,
+    location: String,
+    salary: String,
+    enterpriseId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+    },
+    createdAt: { type: Date, default: Date.now }
+});
+module.exports = mongoose.models.Job || mongoose.model("Job", JobSchema);
+>>>>>>> Stashed changes

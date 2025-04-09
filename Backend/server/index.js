@@ -257,56 +257,65 @@ const resumeUpload = multer({
 
 // Authentication Routes
 app.post("/Frontend/login", async(req, res) => {
+<<<<<<< Updated upstream
     try {
         const { email, password } = req.body;
+=======
+  try {
+      const { email, password } = req.body;
+>>>>>>> Stashed changes
 
-        if (!email || !password) {
-            return res.status(400).json({ message: "Email and password are required" });
-        }
+      if (!email || !password) {
+          return res.status(400).json({ message: "Email et mot de passe requis" });
+      }
 
-        const user = await UserModel.findOne({ email });
+      const user = await UserModel.findOne({ email });
 
-        if (!user) {
-            return res.status(401).json({ message: "Invalid email or password!" });
-        }
+      if (!user) {
+          return res.status(401).json({ message: "Email ou mot de passe incorrect!" });
+      }
 
-        const isMatch = await bcrypt.compare(password, user.password);
+      const isMatch = await bcrypt.compare(password, user.password);
 
-        if (!isMatch) {
-            return res.status(401).json({ message: "Invalid email or password!" });
-        }
+      if (!isMatch) {
+          return res.status(401).json({ message: "Email ou mot de passe incorrect!" });
+      }
 
-        if (!user.verificationStatus.emailVerified || user.verificationStatus.status !== 'APPROVED') {
-            return res.status(401).json({
-                message: "Please verify your email before logging in.",
-                emailVerified: false
-            });
-        }
+      if (!user.verificationStatus.emailVerified || user.verificationStatus.status !== 'APPROVED') {
+          return res.status(401).json({
+              message: "Veuillez vérifier votre email avant de vous connecter.",
+              emailVerified: false
+          });
+      }
 
-        const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET_KEY, {
-            expiresIn: "1h",
-        });
+      const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET_KEY, {
+          expiresIn: "1h",
+      });
 
-        res.cookie("token", token, {
-            httpOnly: true,
-            maxAge: 3600000,
-            sameSite: "strict",
-        });
+      res.cookie("token", token, {
+          httpOnly: true,
+          maxAge: 3600000,
+          sameSite: "strict",
+      });
 
-        return res.json({
-            status: true,
-            message: "Login successful",
-            token,
-            userId: user._id,
-            role: user.role,
-            emailVerified: true
-        });
-    } catch (err) {
-        console.error("Login Error:", err);
-        return res.status(500).json({ message: "Server error" });
-    }
+      return res.json({
+          status: true,
+          message: "Login successful",
+          token,
+          userId: user._id,
+          role: user.role,              // ✅ Ajoute ce champ
+          emailVerified: true
+      });
+  } catch (err) {
+      console.error("Login Error:", err);
+      return res.status(500).json({ message: "Erreur serveur" });
+  }
 });
 
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 app.post('/Frontend/register', resumeUpload.single('resume'), async(req, res) => {
     try {
         const { name, email, password, role } = req.body;

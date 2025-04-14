@@ -77,65 +77,55 @@ function Signup() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-    
+      
         const formErrors = validateForm();
         if (Object.keys(formErrors).length > 0) {
-            setErrors(formErrors);
-            return;
+          setErrors(formErrors);
+          return;
         }
-    
+      
         setIsLoading(true);
-    
+      
         try {
-            const formDataToSend = new FormData();
-    
-            formDataToSend.append('email', formData.email);
-            formDataToSend.append('password', formData.password);
-            formDataToSend.append('role', formData.role);
-    
-            if (formData.resume) {
-                formDataToSend.append('resume', formData.resume);
-            }
-    
-            if (formData.role === "ENTERPRISE") {
-                formDataToSend.append('name', formData.enterprise.name); // enterprise name only
-                formDataToSend.append('enterpriseName', formData.enterprise.name);
-                formDataToSend.append('industry', formData.enterprise.industry);
-                formDataToSend.append('location', formData.enterprise.location);
-                formDataToSend.append('website', formData.enterprise.website);
-                formDataToSend.append('description', formData.enterprise.description);
-                formDataToSend.append('employeeCount', formData.enterprise.employeeCount);
-            } else {
-                formDataToSend.append('name', formData.name); // candidate name
-            }
-    
-            const result = await axios.post('http://localhost:3001/Frontend/register', formDataToSend, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
-    
-            setConfirmationMessage("A verification code has been sent to your email.");
-    
-            if (formData.resume) {
-                const formDataResume = new FormData();
-                formDataResume.append('resume', formData.resume);
-    
-                const resumeResponse = await axios.post('http://127.0.0.1:5002/upload', formDataResume, {
-                    headers: { 'Content-Type': 'multipart/form-data' },
-                });
-    
-                setResumeData(resumeResponse.data);
-            }
-    
-            setTimeout(() => {
-                navigate(`/verify-email?email=${formData.email}`);
-            }, 3000);
+          const formDataToSend = new FormData();
+      
+          // Infos communes à tous
+          formDataToSend.append('name', formData.name);
+          formDataToSend.append('email', formData.email);
+          formDataToSend.append('password', formData.password);
+          formDataToSend.append('role', formData.role);
+      
+          if (formData.resume) {
+            formDataToSend.append('resume', formData.resume); // <-- le CV est bien envoyé ✅
+          }
+      
+          // Ajoute les infos entreprise seulement si ENTERPRISE
+          if (formData.role === "ENTERPRISE") {
+            formDataToSend.append('enterpriseName', formData.enterprise.name);
+            formDataToSend.append('industry', formData.enterprise.industry);
+            formDataToSend.append('location', formData.enterprise.location);
+            formDataToSend.append('website', formData.enterprise.website);
+            formDataToSend.append('description', formData.enterprise.description);
+            formDataToSend.append('employeeCount', formData.enterprise.employeeCount);
+          }
+      
+          const result = await axios.post('http://localhost:3001/Frontend/register', formDataToSend, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+      
+          setConfirmationMessage("A verification code has been sent to your email.");
+      
+          setTimeout(() => {
+            navigate(`/verify-email?email=${formData.email}`);
+          }, 3000);
         } catch (err) {
-            console.error("❌ Registration error:", err.response?.data?.message || err.message);
-            setErrors({ submit: err.response?.data?.message || "Registration error. Please try again." });
+          console.error("❌ Registration error:", err.response?.data?.message || err.message);
+          setErrors({ submit: err.response?.data?.message || "Registration error. Please try again." });
         } finally {
-            setIsLoading(false);
+          setIsLoading(false);
         }
-    };
+      };
+      
     
 
     return (

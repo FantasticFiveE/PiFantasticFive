@@ -21,7 +21,7 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
+  
     try {
       const result = await axios.post(
         "http://localhost:3001/Frontend/login",
@@ -31,20 +31,34 @@ function Login() {
           withCredentials: true,
         }
       );
-
-      console.log("Backend login response:", result.data); // Debug
-
+  
+      console.log("Backend login response:", result.data);
+  
       if (result.data.status) {
-        const { token, userId, role, userData } = result.data; // Expecting userData in the response
+        const { token, userId, role, userData } = result.data;
         const userRole = role.toUpperCase();
-
-        // Save both token and user data
+      
+        // ✅ Enregistrement immédiat
         localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(userData)); // Save the full user object
-        localStorage.setItem("role", userRole);
+        localStorage.setItem("userId", userId);
+        localStorage.setItem("role", role);
+      
+        console.log("✅ Token enregistré:", localStorage.getItem("token"));
+      
+        login(userData, token); // context
+        navigate("/home");
 
-        login(userData, token); // Pass userData and token to the login function
-
+        // ✅ Décale le navigate pour laisser le temps au localStorage
+        setTimeout(() => {
+          if (userRole === "ENTERPRISE") {
+            navigate("/enterprise-dashboard");
+          } else {
+            navigate("/home");
+          }
+        }, 200); // ⏳ donne un peu de temps à React
+        
+  
+        // ✅ Redirection selon le rôle
         if (userRole === "ENTERPRISE") {
           navigate("/enterprise-dashboard");
         } else {
@@ -61,7 +75,8 @@ function Login() {
       setError(err.response?.data?.message || "Unable to login.");
     }
   };
-
+  
+      
   const handleGoogleSuccess = async (response) => {
     try {
       const result = await axios.post("http://localhost:3001/auth/google", {
@@ -73,11 +88,11 @@ function Login() {
         const userRole = role.toUpperCase();
 
         localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(userData)); // Save the user data object
+        console.log("🎯 Token saved to localStorage:", localStorage.getItem("token"));
+                localStorage.setItem("user", JSON.stringify(userData));
         localStorage.setItem("role", userRole);
 
-        login(userData, token); // Pass userData and token to login
-
+        login(userData, token);
         navigate("/home");
       }
     } catch (err) {
@@ -108,10 +123,12 @@ function Login() {
           </p>
         </div>
       </div>
+
       <div className="futuristic-login-right fade-in">
         <div className="futuristic-form-card float-up">
           <h2 className="futuristic-form-heading">Login</h2>
           <p className="futuristic-form-subheading">Enter your credentials to continue</p>
+
           <form onSubmit={handleSubmit}>
             {error && <div className="futuristic-error-message">{error}</div>}
 
@@ -122,9 +139,9 @@ function Login() {
                 <input
                   type="email"
                   id="email"
+                  name="email"
                   placeholder="Enter your email"
                   autoComplete="off"
-                  name="email"
                   className="futuristic-input"
                   value={formData.email}
                   onChange={handleChange}
@@ -140,8 +157,8 @@ function Login() {
                 <input
                   type={showPassword ? "text" : "password"}
                   id="password"
-                  placeholder="Enter your password"
                   name="password"
+                  placeholder="Enter your password"
                   className="futuristic-input"
                   value={formData.password}
                   onChange={handleChange}
@@ -156,7 +173,9 @@ function Login() {
             </div>
 
             <div className="futuristic-forgot-password">
-              <Link to="/forgotPassword" className="futuristic-forgot-link">Forgot Password?</Link>
+              <Link to="/forgotPassword" className="futuristic-forgot-link">
+                Forgot Password?
+              </Link>
             </div>
 
             <button type="submit" className="futuristic-login-button">Login</button>

@@ -3,6 +3,7 @@ const User = require("../models/user");
 const router = express.Router();
 const bcrypt = require("bcrypt"); // For password hashing
 const jwt = require("jsonwebtoken"); // Import JWT
+const { UserModel } = require("../models/user");
 
 router.post("/auth/login", async (req, res) => {
     try {
@@ -60,14 +61,17 @@ router.post("/auth/login", async (req, res) => {
     }
 });
 // Get all users
-router.get("/users", async(req, res) => {
+router.get("/users", async (req, res) => {
     try {
-        const users = await User.find();
-        res.status(200).json(users);
+      console.log("📥 Requête reçue pour /api/users");  // debug log
+      const users = await UserModel.find(); // ⚠️ bien UserModel ici
+      res.status(200).json(users);
     } catch (err) {
-        res.status(500).json({ message: "Error retrieving users", error: err.message });
+      console.error("❌ Erreur dans /api/users:", err);  // trace exacte
+      res.status(500).json({ message: "Erreur serveur", error: err.message });
     }
-});
+  });
+  
 
 // Get single user by ID
 router.get("/users/:id", async(req, res) => {

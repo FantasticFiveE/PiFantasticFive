@@ -20,6 +20,11 @@ const fetch = require("node-fetch");
 const http = require('http');
 const socketIO = require('socket.io');
 const { exec } = require('child_process');
+const ApplicationModel = require('./models/Application'); // Chemin exact vers le model
+const uploadCV = require("./middleware/uploadCV");
+const QuizModel = require("./models/Quiz");
+const QuizResultModel = require("./models/QuizResultModel");
+const Application = require("./models/Application");
 
 // Create Express app and HTTP server
 const app = express();
@@ -256,56 +261,64 @@ const resumeUpload = multer({
 });
 
 // Authentication Routes
-app.post("/Frontend/login", async(req, res) => {
+  app.post("/Frontend/login", async (req, res) => {
     try {
-        const { email, password } = req.body;
+      const { email, password } = req.body;
 
-        if (!email || !password) {
-            return res.status(400).json({ message: "Email and password are required" });
-        }
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
 
-        const user = await UserModel.findOne({ email });
+      const user = await UserModel.findOne({ email });
 
-        if (!user) {
-            return res.status(401).json({ message: "Invalid email or password!" });
-        }
+      if (!user) {
+        return res.status(401).json({ message: "Invalid email or password!" });
+      }
 
-        const isMatch = await bcrypt.compare(password, user.password);
+      const isMatch = await bcrypt.compare(password, user.password);
 
-        if (!isMatch) {
-            return res.status(401).json({ message: "Invalid email or password!" });
-        }
+      if (!isMatch) {
+        return res.status(401).json({ message: "Invalid email or password!" });
+      }
 
-        if (!user.verificationStatus.emailVerified || user.verificationStatus.status !== 'APPROVED') {
-            return res.status(401).json({
-                message: "Please verify your email before logging in.",
-                emailVerified: false
-            });
-        }
-
-        const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET_KEY, {
-            expiresIn: "1h",
+      if (!user.verificationStatus.emailVerified || user.verificationStatus.status !== 'APPROVED') {
+        return res.status(401).json({
+          message: "Please verify your email before logging in.",
+          emailVerified: false
         });
+      }
 
-        res.cookie("token", token, {
-            httpOnly: true,
-            maxAge: 3600000,
-            sameSite: "strict",
-        });
+      const token = jwt.sign(
+        { id: user._id, email: user.email },
+        process.env.JWT_SECRET_KEY,
+        { expiresIn: "1h" }
+      );
 
-        return res.json({
-            status: true,
-            message: "Login successful",
-            token,
-            userId: user._id,
-            role: user.role,
-            emailVerified: true
-        });
+      
+      const userData = {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        profile: user.profile,
+        enterprise: user.enterprise,
+        picture: user.picture
+      };
+
+      return res.json({
+        status: true,
+        message: "Login successful",
+        token,
+        userId: user._id,
+        role: user.role,
+        emailVerified: true,
+        userData // ✅ ici tu passes bien l'objet complet
+      });
     } catch (err) {
-        console.error("Login Error:", err);
-        return res.status(500).json({ message: "Server error" });
+      console.error("Login Error:", err);
+      return res.status(500).json({ message: "Server error" });
     }
-});
+  });
 
 app.post('/Frontend/register', resumeUpload.single('resume'), async(req, res) => {
     try {
@@ -364,11 +377,39 @@ app.post('/Frontend/register', resumeUpload.single('resume'), async(req, res) =>
                     userData.profile.skills = resumeData.skills || [];
                     userData.profile.languages = resumeData.languages || [];
                     userData.profile.phone = resumeData.phone || "";
-                    userData.profile.experience = resumeData.experience || [];
+                    userData.profile.experience = Array.isArray(resumeData.experience)
+  ? resumeData.experience.map((item) => ({
+      title: "",
+      company: "",
+      duration: "",
+      description: item
+    }))
+  : [];
+
                     if (resumeData.name) userData.name = resumeData.name;
                 } catch (error) {
-                    console.error("❌ Resume analysis error:", error);
-                    return res.status(500).json({ message: "Error analyzing resume." });
+                  console.error("❌ Resume analysis error:", error.message);
+
+                  if (error.response) {
+                    console.error("📨 Erreur IA réponse:", error.response.data);
+                    return res.status(500).json({ 
+                      message: "Error analyzing resume from AI model.",
+                      details: error.response.data
+                    });
+                  } else if (error.request) {
+                    console.error("📡 Aucune réponse reçue de l'IA:", error.request);
+                    return res.status(500).json({ 
+                      message: "No response from AI model.",
+                      details: "Check if the Flask server is running on port 5002"
+                    });
+                  } else {
+                    console.error("❗ Autre erreur:", error.message);
+                    return res.status(500).json({ 
+                      message: "Unexpected error during resume analysis.",
+                      details: error.message
+                    });
+                  }
+                  
                 }
             }
         }
@@ -526,6 +567,7 @@ app.get("/Frontend/user/:id", async (req, res) => {
         const ent = req.body.enterprise;
   
         user.enterprise.name = ent.name || user.enterprise.name;
+        user.enterprise.picture = ent.picture || user.enterprise.picture;
         user.enterprise.industry = ent.industry || user.enterprise.industry;
         user.enterprise.location = ent.location || user.enterprise.location;
         user.enterprise.website = ent.website || user.enterprise.website;
@@ -537,7 +579,7 @@ app.get("/Frontend/user/:id", async (req, res) => {
   
       await user.save();
       console.log("✅ Utilisateur mis à jour avec succès !");
-      return res.status(200).json({ message: "Mise à jour réussie", enterprise: user.enterprise });
+      return res.status(200).json({ message: "Mise à jour réussie", User: user });
     } catch (error) {
       console.error("❌ Erreur lors de la récupération de l'utilisateur:", error);
       res.status(500).json({ message: "Erreur serveur", error: error.message });
@@ -572,6 +614,32 @@ const upload = multer({
         }
     }),
 });
+
+app.get("/Frontend/getUser/:id", async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    const user = await UserModel.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      picture: user.picture,
+      profile: user.profile || {},
+      enterprise: user.enterprise || {},
+    });
+  } catch (err) {
+    console.error("❌ Error fetching user:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 
 
 
@@ -635,57 +703,69 @@ app.put("/Frontend/updateUser/:id", async (req, res) => {
 
 
 app.post('/Frontend/upload-resume', resumeUpload.single('resume'), async (req, res) => {
-    try {
-        const { userId } = req.body;
-        if (!userId) {
-            return res.status(400).json({ error: 'User ID is required.' });
-        }
-
-        if (!req.file) {
-            return res.status(400).json({ error: 'No file uploaded.' });
-        }
-
-        const user = await UserModel.findById(userId);
-        if (!user) {
-            return res.status(404).json({ error: 'User not found.' });
-        }
-
-        const newFilename = `${userId}-${Date.now()}${path.extname(req.file.originalname)}`;
-        const newPath = path.join(req.file.destination, newFilename);
-
-        const fsPromises = require('fs').promises;
-        await fsPromises.rename(req.file.path, newPath);
-
-        const form = new FormData();
-        form.append('resume', fs.createReadStream(newPath));
-        const pythonResponse = await axios.post('http://localhost:5002/upload', form, {
-            headers: {
-                ...form.getHeaders(),
-            },
-        });
-
-        const resumeData = pythonResponse.data;
-
-        user.resume = `/uploads/${newFilename}`;
-        user.email = user.email || resumeData.email;
-        user.phone = resumeData.phone || user.phone;
-        user.skills = resumeData.skills || user.skills || [];
-        user.languages = resumeData.languages || user.languages || [];
-        if (resumeData.name) user.name = user.name || resumeData.name;
-
-        await user.save();
-
-        console.log('✅ Resume updated for user:', user);
-        res.status(200).json({
-            message: 'Resume uploaded and analyzed successfully!',
-            resumeUrl: user.resume,
-            extractedData: resumeData,
-        });
-    } catch (error) {
-        console.error('❌ Server error during resume upload:', error);
-        res.status(500).json({ error: 'Server error.', details: error.message });
+  try {
+    const { userId } = req.body;
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required.' });
     }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded.' });
+    }
+
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    const newFilename = `${userId}-${Date.now()}${path.extname(req.file.originalname)}`;
+    const newPath = path.join(req.file.destination, newFilename);
+
+    const fsPromises = require('fs').promises;
+    await fsPromises.rename(req.file.path, newPath);
+
+    const form = new FormData();
+    form.append('resume', fs.createReadStream(newPath));
+    const pythonResponse = await axios.post('http://localhost:5002/upload', form, {
+      headers: {
+        ...form.getHeaders(),
+      },
+    });
+
+    const resumeData = pythonResponse.data;
+
+    // ✅ Enregistrement dans le bon sous-champ
+    user.profile = user.profile || {};
+    user.profile.resume = `/uploads/${newFilename}`;
+    user.profile.phone = resumeData.phone || user.profile.phone;
+    user.profile.skills = resumeData.skills || user.profile.skills || [];
+    user.profile.languages = resumeData.languages || user.profile.languages || [];
+    user.profile.experience = Array.isArray(resumeData.experience)
+      ? resumeData.experience.map(item => ({
+          title: "",
+          company: "",
+          duration: "",
+          description: item
+        }))
+      : [];
+
+    if (resumeData.name) user.name = user.name || resumeData.name;
+
+    user.markModified("profile");
+    await user.save();
+
+    console.log('✅ Resume updated for user:', user);
+    res.status(200).json({
+      message: 'Resume uploaded and analyzed successfully!',
+      resumeUrl: user.profile.resume,
+      extractedData: resumeData,
+    });
+  } catch (error) {
+    console.error('❌ Server error during resume upload:', error);
+    res.status(500).json({ error: 'Server error.', details: error.message });
+  }
 });
+
 
 const profileUpload = multer({
     storage: multer.diskStorage({
@@ -946,17 +1026,18 @@ app.get("/Frontend/jobs", async (req, res) => {
 });
   
 app.get("/Frontend/jobs/:id", async (req, res) => {
-    try {
-      const job = await JobModel.findById(req.params.id);
-      if (!job) {
-        return res.status(404).json({ message: "Job non trouvé" });
-      }
-      res.status(200).json(job);
-    } catch (error) {
-      console.error("❌ Erreur lors de la récupération du job par ID:", error);
-      res.status(500).json({ message: "Erreur serveur" });
+  try {
+    const job = await JobModel.findById(req.params.id).populate("entrepriseId");
+    if (!job) {
+      return res.status(404).json({ message: "Job non trouvé" });
     }
+    res.status(200).json(job);
+  } catch (error) {
+    console.error("❌ Erreur lors de la récupération du job par ID:", error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
 });
+
 
 app.get("/Frontend/jobs-by-entreprise/:id", async (req, res) => {
     try {
@@ -982,6 +1063,257 @@ app.delete("/Frontend/delete-job/:id", async (req, res) => {
       console.error("❌ Erreur lors de la suppression du job :", error);
       res.status(500).json({ message: "Erreur serveur" });
     }
+});
+
+
+
+app.get("/Frontend/me", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "No token provided." });
+    }
+
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+
+    const user = await UserModel.findById(decoded.id).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("❌ Error in /Frontend/me:", error);
+    res.status(401).json({ message: "Invalid token." });
+  }
+});
+
+app.post("/Frontend/apply-job", uploadCV.single("cv"), async (req, res) => {
+  try {
+    const { jobId, enterpriseId, candidateId, fullName, email, phone } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ message: "Fichier CV manquant." });
+    }
+
+    const newApplication = new ApplicationModel({
+      jobId,
+      enterpriseId,
+      candidateId,
+      fullName,
+      email,
+      phone,
+      cv: `/uploads/cvs/${req.file.filename}` // 📎 ajoute bien le champ dans le modèle
+    });
+
+    await newApplication.save();
+
+    res.status(201).json({ message: "Candidature envoyée avec succès." });
+  } catch (error) {
+    console.error("❌ Backend error:", error);
+    res.status(500).json({ message: "Erreur interne du serveur." });
+  }
+});
+
+
+
+app.get("/Frontend/notifications/:enterpriseId", async (req, res) => {
+  try {
+    const { enterpriseId } = req.params;
+    const user = await UserModel.findById(enterpriseId).select("notifications");
+
+    if (!user) return res.status(404).json({ message: "Entreprise non trouvée" });
+
+    res.status(200).json({ notifications: user.notifications || [] });
+  } catch (err) {
+    console.error("❌ Erreur récupération notifications:", err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
+
+// 📥 Récupérer toutes les candidatures reçues pour une entreprise donnée
+app.get("/Frontend/applications/:enterpriseId", async (req, res) => {
+  try {
+    const { enterpriseId } = req.params;
+
+    const applications = await ApplicationModel.find({ enterpriseId })
+      .populate("jobId", "title")
+      .populate("candidateId", "name email profile.phone");
+
+    res.status(200).json(applications);
+  } catch (error) {
+    console.error("❌ Error fetching applications:", error);
+    res.status(500).json({ message: "Erreur serveur lors de la récupération des candidatures." });
+  }
+});
+
+app.get("/Frontend/job-applications-count/:entrepriseId", async (req, res) => {
+  try {
+    const { entrepriseId } = req.params;
+
+    const jobs = await JobModel.find({ entrepriseId }).select("_id");
+    const jobIds = jobs.map((j) => j._id);
+
+    const counts = await ApplicationModel.aggregate([
+      { $match: { jobId: { $in: jobIds } } },
+      { $group: { _id: "$jobId", count: { $sum: 1 } } }
+    ]);
+
+    const countMap = {};
+    counts.forEach(c => {
+      countMap[c._id] = c.count;
+    });
+
+    res.json(countMap);
+  } catch (err) {
+    console.error("❌ Error in job-applications-count:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+
+// ✅ Récupérer toutes les candidatures pour un job donné
+app.get("/Frontend/job-applications/:jobId", async (req, res) => {
+  try {
+    const { jobId } = req.params;
+
+    const applications = await ApplicationModel.find({ jobId })
+      .populate("candidateId", "name email profile.phone");
+
+    res.status(200).json(applications);
+  } catch (error) {
+    console.error("❌ Error fetching job applications:", error);
+    res.status(500).json({ message: "Erreur serveur lors de la récupération des candidatures." });
+  }
+});
+
+
+app.post("/Frontend/create-quiz", async (req, res) => {
+  try {
+    const { jobId, questions } = req.body;
+    const quiz = new QuizModel({ jobId, questions });
+    await quiz.save();
+    res.status(200).json({ message: "Quiz enregistré !" });
+  } catch (error) {
+    console.error("Erreur création quiz:", error);
+    res.status(500).json({ message: "Erreur serveur." });
+  }
+});
+
+
+app.get("/Frontend/quiz/:jobId", async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    const quiz = await QuizModel.findOne({ jobId });
+
+    if (!quiz) {
+      return res.status(404).json({ message: "Aucun quiz trouvé pour ce job." });
+    }
+
+    res.json(quiz);
+  } catch (err) {
+    console.error("❌ Erreur récupération quiz:", err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
+
+app.post("/Frontend/submit-quiz", async (req, res) => {
+  try {
+    const { candidateId, jobId, score } = req.body;
+
+    const result = new QuizResultModel({ candidateId, jobId, score });
+    await result.save();
+
+    res.status(201).json({ message: "Score enregistré avec succès." });
+  } catch (err) {
+    console.error("❌ Erreur enregistrement score:", err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
+
+app.get("/Frontend/quiz-results/:jobId", async (req, res) => {
+  try {
+    const results = await QuizResultModel.find({ jobId })
+      .populate("candidateId", "name email");
+
+    res.json(results);
+  } catch (err) {
+    console.error("❌ Erreur récupération des scores:", err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
+app.put("/Frontend/update-quiz-score", async (req, res) => {
+  try {
+    const { jobId, candidateId, score } = req.body;
+
+    const updated = await ApplicationModel.findOneAndUpdate(
+      { jobId, candidateId },
+      { quizScore: score },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: "Application not found" });
+    }
+
+    res.json({ message: "Quiz score updated", updated });
+  } catch (err) {
+    console.error("❌ Error updating quiz score:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+app.get("/Frontend/applications-by-candidate/:candidateId", async (req, res) => {
+  try {
+    const { candidateId } = req.params;
+
+    const applications = await ApplicationModel.find({ candidateId })
+      .populate("jobId", "title")
+      .sort({ appliedAt: -1 });
+
+    res.status(200).json(applications);
+  } catch (err) {
+    console.error("❌ Error fetching applications by candidate:", err);
+    res.status(500).json({ message: "Erreur lors de la récupération des candidatures." });
+  }
+});
+
+app.delete("/Frontend/delete-application/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    console.log("🧩 ID reçu pour suppression :", id);
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "ID invalide" });
+    }
+
+    const deleted = await Application.findByIdAndDelete(id);
+
+    if (!deleted) {
+      return res.status(404).json({ error: "Aucune candidature trouvée." });
+    }
+
+    res.status(200).json({ message: "Candidature supprimée avec succès." });
+  } catch (error) {
+    console.error("❌ Erreur lors de la suppression :", error);
+    res.status(500).json({ error: "Erreur serveur lors de la suppression." });
+  }
+});
+
+app.get('/api/users', async (req, res) => {
+  try {
+    const users = await UserModel.find().select('-password'); // ne pas envoyer le mot de passe
+    res.json(users);
+  } catch (err) {
+    console.error("❌ Erreur lors de la récupération des utilisateurs :", err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
 });
 
 // Start the server

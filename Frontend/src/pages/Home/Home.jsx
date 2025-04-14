@@ -21,6 +21,9 @@ import { faLightbulb } from "@fortawesome/free-solid-svg-icons";
 
 const Home = () => {
   const [jobs, setJobs] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+
+
 
   useEffect(() => {
     fetchJobs();
@@ -34,6 +37,11 @@ const Home = () => {
       console.error("❌ Erreur récupération jobs:", error);
     }
   };
+
+  const filteredJobs = jobs.filter((job) =>
+    job.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
 
   return (
     <div className="home-container">
@@ -143,7 +151,13 @@ const Home = () => {
     <div className="search-icon-wrapper">
     <FontAwesomeIcon icon={faMagnifyingGlass} className="search-icon" />
     </div>
-    <input type="text" placeholder="Search by job title..." />
+    <input
+  type="text"
+  placeholder="Search by job title..."
+  value={searchTerm}
+  onChange={(e) => setSearchTerm(e.target.value)}
+/>
+
     <button type="button">Search</button>
   </div>
 </div>
@@ -153,7 +167,7 @@ const Home = () => {
             {jobs.length === 0 ? (
               <p>No job offers available yet.</p>
             ) : (
-              jobs.map((job) => (
+              filteredJobs.map((job) => (
                 <div key={job._id} className="job-card-home">
                   
                   {/* ✅ Content Area */}

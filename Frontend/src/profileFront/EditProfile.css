@@ -1,178 +1,35 @@
-/* Profile Container */
+/* 🌌 Global Container */
 .profile-container {
-  max-width: 800px;
-  margin: 2rem auto;
-  padding: 1.5rem;
-  background: #f9f9f9;
-  border-radius: 10px;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  max-width: 900px;
+  margin: 3rem auto;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  box-shadow: 0px 8px 30px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(10px);
+  animation: fadeIn 0.7s ease-in-out both;
 }
 
-/* Card */
+/* 📦 Card */
 .card {
-  background: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
   overflow: hidden;
 }
 
-/* Card Header */
+/* 🔹 Header */
 .card-header {
-  padding: 20px;
-  background: #007bff;
+  padding: 25px;
+  background: linear-gradient(135deg, #007bff, #00c6ff);
   color: white;
-  font-size: 1.2rem;
-  font-weight: bold;
+  font-size: 1.6rem;
+  font-weight: 700;
   text-align: center;
-  border-radius: 10px 10px 0 0;
+  border-radius: 16px 16px 0 0;
 }
 
-/* Input fields */
-input[type="text"],
-input[type="email"],
-textarea {
-  width: 100%;
-  padding: 10px;
-  margin-top: 5px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 1rem;
-}
-
-/* Textarea */
-textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-/* Role Display */
-.role {
-  font-weight: bold;
-  font-size: 1.1rem;
-  color: #333;
-  text-align: center;
-  margin-bottom: 15px;
-}
-
-/* Form Groups */
-.form-group {
-  margin-bottom: 15px;
-}
-
-/* Save Button */
-.save-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 12px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 1rem;
-  transition: background 0.3s ease-in-out;
-}
-
-.save-button:hover {
-  background: #0056b3;
-}
-
-/* Avatar Container */
-.avatar-container {
-  position: relative;
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-/* Avatar Image */
-.avatar {
-  width: 140px;
-  height: 140px;
-  border-radius: 50%;
-  border: 4px solid white;
-  object-fit: cover;
-  transition: transform 0.3s ease-in-out;
-}
-
-.avatar:hover {
-  transform: scale(1.05);
-}
-
-/* Camera Icon */
-.camera-icon {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  background: #007bff;
-  color: white;
-  padding: 8px;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: background 0.3s ease-in-out;
-}
-
-.camera-icon:hover {
-  background: #0056b3;
-}
-
-/* Voice Input AI Button */
-.voice-input button {
-  background: #007bff;
-  color: white;
-  border: none;
-  padding: 10px 15px;
-  border-radius: 5px;
-  font-size: 1rem;
-  cursor: pointer;
-  margin-top: 10px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.voice-input button:hover {
-  background: #0056b3;
-}
-
-/* Responsive Design */
-@media (max-width: 600px) {
-  .profile-container {
-    padding: 1rem;
-  }
-
-  .card-header {
-    font-size: 1rem;
-  }
-
-  .save-button {
-    font-size: 0.9rem;
-  }
-}
-.profile-container {
-  max-width: 800px;
-  margin: 2rem auto;
-  padding: 1rem;
-}
-
-.card {
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-}
-
-.card-header {
-  padding: 20px;
-  background: #007bff;
-  color: white;
-  border-radius: 10px 10px 0 0;
-  text-align: center;
-}
-
+/* 👤 Avatar */
 .avatar-container {
   position: relative;
   margin: 1rem auto;
@@ -180,64 +37,168 @@ textarea {
 }
 
 .avatar {
-  width: 120px;
-  height: 120px;
+  width: 140px;
+  height: 140px;
   border-radius: 50%;
-  border: 4px solid white;
+  border: 5px solid white;
   object-fit: cover;
-  background: #eee;
+  background: #f2f2f2;
+  transition: transform 0.3s ease;
 }
 
+.avatar:hover {
+  transform: scale(1.06);
+}
+
+/* 📷 Camera icon */
 .camera-icon {
   position: absolute;
-  bottom: 5px;
-  right: 10px;
+  bottom: 10px;
+  right: 115px;
   background: #007bff;
   color: white;
-  padding: 6px;
+  padding: 8px;
   border-radius: 50%;
   cursor: pointer;
+  transition: all 0.3s ease-in-out;
 }
 
-.card-body {
-  padding: 20px;
+.camera-icon:hover {
+  background: #0056b3;
 }
 
-.form-group {
-  margin-bottom: 1rem;
-}
-
-label {
-  font-weight: bold;
-  display: block;
-  margin-bottom: 5px;
-}
-
-input, textarea {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 1rem;
-}
-
-.save-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 0.75rem;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
+/* 📄 Resume Upload & View */
+.upload-container {
+  text-align: center;
   margin-top: 1rem;
 }
 
-.save-button:hover {
+.upload-button,
+.upload-btn {
+  background: #007bff;
+  border: none;
+  color: white;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.upload-button:hover,
+.upload-btn:hover {
   background: #0056b3;
+}
+
+.cv-link a {
+  color: #0056b3;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cv-link a:hover {
+  text-decoration: underline;
+}
+
+/* 🛠️ Info section */
+.card-body {
+  padding: 20px;
+  font-size: 1rem;
+  color: #333;
+}
+
+/* 🧾 Labels & Inputs */
+label {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+input,
+textarea {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  background-color: #fff;
+  transition: border-color 0.3s;
+}
+
+input:focus,
+textarea:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+/* 📍 Role */
+.role {
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #444;
+  margin-top: 1rem;
+}
+
+/* 💾 Save Button */
+.save-button {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(45deg, #007bff, #00c6ff);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.save-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 123, 255, 0.4);
+}
+
+/* 🟢 Status Messages */
+.upload-success {
+  color: #28a745;
+  font-weight: 600;
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+.upload-error {
+  color: #dc3545;
+  font-weight: 600;
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+/* 🎨 Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 📱 Responsive */
+@media (max-width: 768px) {
+  .profile-container {
+    padding: 1.5rem;
+  }
+
+  .card-header {
+    font-size: 1.2rem;
+  }
+
+  .avatar {
+    width: 120px;
+    height: 120px;
+  }
 }

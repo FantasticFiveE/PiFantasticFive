@@ -1,26 +1,22 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-// ✅ Job Schema
-const JobSchema = new Schema({
-  title: { type: String, required: true },
-  description: { type: String },
-  location: { type: String },
-  salary: { type: Number },
-  languages: [{ type: String }],
-  skills: [{ type: String }],
-  createdAt: { type: Date, default: Date.now },
-  entrepriseId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-});
+// ✅ Subschemas d'abord
 
-const JobModel = mongoose.models.Job || mongoose.model("Job", JobSchema);
-
-// ✅ Subschemas
 const ExperienceSchema = new Schema({
   title: { type: String },
   company: { type: String },
   duration: { type: String },
   description: { type: String },
+}, { _id: false });
+
+const ProfileSchema = new Schema({
+  resume: { type: String, default: "" },
+  skills: [{ type: String }],
+  phone: { type: String, default: "" },
+  languages: [{ type: String }],
+  availability: { type: String, enum: ["Full-time", "Part-time", "Contract", "Freelance"], default: "Full-time" },
+  experience: [ExperienceSchema],
 }, { _id: false });
 
 const MeetingSchema = new Schema({
@@ -74,15 +70,6 @@ const JobPostedSchema = new Schema({
   createdDate: { type: Date, default: Date.now },
 }, { _id: false });
 
-const ProfileSchema = new Schema({
-  resume: { type: String, default: "" },
-  skills: [{ type: String }],
-  phone: { type: String, default: "" },
-  languages: [{ type: String }],
-  availability: { type: String, enum: ["Full-time", "Part-time", "Contract", "Freelance"], default: "Full-time" },
-  experience: [ExperienceSchema],
-}, { _id: false });
-
 const VerificationSchema = new Schema({
   status: { type: String, enum: ['PENDING', 'APPROVED', 'REJECTED'], default: 'PENDING' },
   updatedDate: { type: Date },
@@ -105,6 +92,20 @@ const EnterpriseSchema = new Schema({
   employeeCount: { type: Number },
 }, { _id: false });
 
+// ✅ Job Schema
+const JobSchema = new Schema({
+  title: { type: String, required: true },
+  description: { type: String },
+  location: { type: String },
+  salary: { type: Number },
+  languages: [{ type: String }],
+  skills: [{ type: String }],
+  createdAt: { type: Date, default: Date.now },
+  entrepriseId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+});
+
+const JobModel = mongoose.models.Job || mongoose.model("Job", JobSchema);
+
 // ✅ User Schema
 const UserSchema = new Schema({
   email: { type: String, required: true, unique: true },
@@ -122,7 +123,7 @@ const UserSchema = new Schema({
   lastLogin: { type: Date },
   permissions: PermissionsSchema,
   verificationStatus: VerificationSchema,
-  profile: ProfileSchema,
+  profile: ProfileSchema, // ✅ OK maintenant car défini au-dessus
   picture: { type: String },
   verificationCode: { type: Number },
   resetPasswordToken: { type: String },
@@ -130,11 +131,23 @@ const UserSchema = new Schema({
   enterprise: EnterpriseSchema,
   jobsPosted: { type: [JobPostedSchema], select: false },
   applications: { type: [ApplicationSchema], select: false },
-  interviews: { type: [InterviewSchema], select: false }
+  interviews: { type: [InterviewSchema], select: false },
+  notifications: [{
+    type: {
+      type: String,
+      enum: ['APPLICATION_RECEIVED', 'MESSAGE', 'SYSTEM', 'INTERVIEW'],
+      default: 'APPLICATION_RECEIVED'
+    },
+    message: String,
+    jobId: { type: mongoose.Schema.Types.ObjectId, ref: 'Job' },
+    seen: { type: Boolean, default: false },
+    date: { type: Date, default: Date.now }
+  }]
 });
 
-// ✅ Export both models properly
+// ✅ Export
 module.exports = {
   UserModel: mongoose.models.User || mongoose.model('User', UserSchema),
-  JobModel
+  JobModel,
+  ApplicationModel: require("./Application")
 };

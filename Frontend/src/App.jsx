@@ -34,9 +34,14 @@ import VideoCallPage from "./interview/VideoCall";
 import ProtectedRoute from "./Dashboard/layouts/ProtectedRoute";
 import EntrepriseProfile from "./pages/Entreprise/EntrepriseProfile";
 import JobDetails from "./pages/JobDetails/JobDetails";
+import QuizPage from "./pages/Quiz/QuizPage";
+
 
 // ✅ Google Client ID
 const CLIENT_ID = "122105051479-dna9hfi1gskvlbobkhkpboiml67i4gl7.apps.googleusercontent.com";
+
+
+
 
 // ✅ OpenAI API Key Validation
 const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || "❌ Clé API non chargée !";
@@ -86,6 +91,7 @@ function App() {
             <Route path="/edit-profile/:id" element={<EditProfile />} />
             <Route path="/entreprise/:id" element={<EntrepriseProfile />} />
             <Route path="/interview/:interviewId" element={<VideoCallPage />} />
+            <Route path="/quiz/:jobId" element={<QuizPage />} />
 
             {/* Back Office Routes (Protected) */}
             <Route path="/dashboard" element={<ProtectedRoute><DashboardLayoutWrapper /></ProtectedRoute>}>

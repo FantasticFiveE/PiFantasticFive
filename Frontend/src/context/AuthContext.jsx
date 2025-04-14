@@ -6,52 +6,58 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    try {
-      const token = localStorage.getItem("token");
-      const savedUser = localStorage.getItem("user");
-  
-      // 🛡️ Vérifie que savedUser est une chaîne JSON valide
-      if (savedUser && savedUser !== "undefined") {
-        const parsedUser = JSON.parse(savedUser);
-        if (token && parsedUser) {
-          setIsAuthenticated(true);
-          setUser(parsedUser);
-        }
-      }
-    } catch (error) {
-      console.error("Error reading from localStorage", error);
-      // Si le JSON est corrompu, on le supprime pour éviter des erreurs futures
-      localStorage.removeItem("user");
-    }
-  }, []);
-  
+  const [loading, setLoading] = useState(true); // ⏳ empêche les flashs
 
   const login = (userData, token) => {
-    try {
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(userData)); // Store user data as JSON
-      setIsAuthenticated(true);
-      setUser(userData);
-    } catch (error) {
-      console.error("Error saving to localStorage", error);
-    }
+    localStorage.setItem("token", token); // ✅ encore ici
+    localStorage.setItem("user", JSON.stringify(userData));
+    setIsAuthenticated(true);
+    setUser(userData);
   };
+  
 
   const logout = () => {
-    try {
-      setIsAuthenticated(false);
-      setUser(null);
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-    } catch (error) {
-      console.error("Error removing from localStorage", error);
-    }
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setIsAuthenticated(false);
+    setUser(null);
   };
 
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+  
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+  
+    const checkAuth = async () => {
+      try {
+        const res = await fetch("http://localhost:3001/Frontend/me", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+  
+        if (!res.ok) {
+          logout();
+        } else {
+          const userData = await res.json();
+          setIsAuthenticated(true);
+          setUser(userData);
+        }
+      } catch (error) {
+        logout();
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    checkAuth();
+  }, []);
+  
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
@@ -59,9 +65,7 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 };
 

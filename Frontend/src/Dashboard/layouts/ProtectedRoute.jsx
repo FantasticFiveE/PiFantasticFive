@@ -1,37 +1,36 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import { jwtDecode } from "jwt-decode";
 
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
-    const location = useLocation();
-    const token = localStorage.getItem("token");
-    
-    console.log("Current token:", token);
+  const { isAuthenticated, user, loading } = useAuth(); // ✅ Contexte
+  const location = useLocation();
 
-    if (!token) {
-        console.log("No token found, redirecting to login");
-        return <Navigate to="/login" state={{ from: location }} replace />;
-    }
+  if (loading) return null; // ⏳ ou un spinner
 
-    let user;
-    try {
-        user = jwtDecode(token);
-        console.log("Decoded user:", user);
-        // Store user role in localStorage for easy access
-        localStorage.setItem('userRole', user.role);
-    } catch (error) {
-        console.error("Token decode error:", error);
-        localStorage.removeItem("token");
-        localStorage.removeItem("userRole");
-        return <Navigate to="/login" replace />;
-    }
+  const token = localStorage.getItem("token");
+  console.log("🔐 Token at ProtectedRoute:", token);
 
-    if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-        console.log(`Role ${user.role} not in allowed roles:`, allowedRoles);
-        return <Navigate to="/unauthorized" replace />;
-    }
+  if (!isAuthenticated || !token) {
+    console.warn("No token or not authenticated, redirecting...");
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
 
-    return children;
+  let decoded;
+  try {
+    decoded = jwtDecode(token);
+  } catch (error) {
+    console.error("Invalid token:", error);
+    return <Navigate to="/login" replace />;
+  }
+
+  if (allowedRoles.length > 0 && !allowedRoles.includes(decoded.role)) {
+    console.warn("Access denied for role:", decoded.role);
+    return <Navigate to="/unauthorized" replace />;
+  }
+
+  return children;
 };
 
 export default ProtectedRoute;

@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "./card";
-import { FaCamera, FaSave } from "react-icons/fa";
+import { FaCamera, FaSave, FaCog } from "react-icons/fa";
 import Select from "react-select";
-import "./EditProfile.css"; 
+import "./EditProfile.css";
 import Navbar from "../components/Navbar/Navbar";
 import Footer from "../components/Footer/Footer";
-import VoiceInputAI from "../components/VoiceInputAI"; 
+import VoiceInputAI from "../components/VoiceInputAI";
 
 const skillsList = [
   { value: "JavaScript", label: "JavaScript" }, { value: "Python", label: "Python" },
@@ -24,10 +24,13 @@ const skillsList = [
 const EditProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
+
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({});
   const [oldPassword, setOldPassword] = useState("");
+  const [newPicture, setNewPicture] = useState(null);
 
   useEffect(() => {
     fetch(`http://localhost:3001/Frontend/getUser/${id}`)
@@ -56,19 +59,11 @@ const EditProfile = () => {
   }, [id]);
 
   const handleSave = async () => {
-    console.log("📡 Sending Data to API:", formData);
-
     try {
       const response = await fetch(`http://localhost:3001/Frontend/updateUser/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          profile: {
-            ...formData.profile,
-            experience: formData.profile.experience || "",
-          }
-        }),
+        body: JSON.stringify(formData),
       });
 
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
@@ -83,15 +78,10 @@ const EditProfile = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-
-    // Special handling for phone inside profile
     if (name === "phone") {
       setFormData((prev) => ({
         ...prev,
-        profile: {
-          ...prev.profile,
-          phone: value,
-        },
+        profile: { ...prev.profile, phone: value },
       }));
     } else {
       setFormData((prev) => ({
@@ -123,10 +113,7 @@ const EditProfile = () => {
     window.correctionTimeout = setTimeout(async () => {
       try {
         const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-        if (!apiKey) {
-          console.error("❌ OpenAI API Key is missing. Check your .env file!");
-          return;
-        }
+        if (!apiKey) return;
 
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
           method: "POST",
@@ -141,12 +128,6 @@ const EditProfile = () => {
           }),
         });
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error("❌ OpenAI API Error:", errorText);
-          return;
-        }
-
         const data = await response.json();
         if (data.choices?.[0]?.message?.content) {
           setFormData((prev) => ({
@@ -160,37 +141,76 @@ const EditProfile = () => {
     }, 1000);
   };
 
+  const handleCameraClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handlePictureChange = (event) => {
+    const selectedFile = event.target.files[0];
+    if (!selectedFile) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => setNewPicture(reader.result);
+    reader.readAsDataURL(selectedFile);
+  };
+
   if (loading) return <p>Loading...</p>;
   if (!user) return <p>User not found.</p>;
+
 
   return (
     <>
       <Navbar />
+  
       <div className="profile-container">
         <Card className="card">
+  
+          {/* Header avec Avatar et Email */}
           <CardHeader className="card-header">
             <div className="avatar-container">
               <img
-                src={user.picture ? `http://localhost:3001${user.picture}` : "/default-avatar.png"}
-                alt="Profile"
+                src={newPicture || `http://localhost:3001${user.picture}`}
                 className="avatar"
+                alt="Profile Picture"
               />
-              <FaCamera className="camera-icon" />
+              <label className="camera-icon" onClick={handleCameraClick}>
+                <FaCamera />
+              </label>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handlePictureChange}
+                accept="image/*"
+                style={{ display: "none" }}
+              />
+            </div>
+  
+            <h2 className="name">{user.name.toUpperCase()}</h2>
+            <p className="email">{user.email}</p>
+  
+            <div style={{ marginTop: "10px", display: "flex", justifyContent: "center" }}>
+           
             </div>
           </CardHeader>
-
+  
+          {/* Contenu du formulaire */}
           <CardContent className="card-body">
-            <h2>Personal Information</h2>
+            <h2>🧾 Informations personnelles</h2>
+  
             <div className="form-group">
-              <label>Name:</label>
+              <label>Nom:</label>
               <input type="text" name="name" value={formData.name} onChange={handleInputChange} />
             </div>
+  
             <div className="form-group">
               <label>Email:</label>
               <input type="email" name="email" value={formData.email} onChange={handleInputChange} />
             </div>
+  
             <div className="form-group">
-              <label>Phone:</label>
+              <label>Téléphone:</label>
               <input
                 type="text"
                 name="phone"
@@ -198,8 +218,8 @@ const EditProfile = () => {
                 onChange={handleInputChange}
               />
             </div>
-
-            <h2>Skills</h2>
+  
+            <h2>🛠️ Compétences</h2>
             <div className="form-group">
               <Select
                 isMulti
@@ -208,8 +228,8 @@ const EditProfile = () => {
                 onChange={handleSkillSelection}
               />
             </div>
-
-            <h2>Experience</h2>
+  
+            <h2>💼 Expérience</h2>
             <div className="form-group">
               <textarea
                 name="experience"
@@ -223,10 +243,10 @@ const EditProfile = () => {
               />
               <VoiceInputAI onTextChange={handleExperienceChange} />
             </div>
-
-            <h2>Security</h2>
+  
+            <h2>🔒 Sécurité</h2>
             <div className="form-group">
-              <label>Old Password:</label>
+              <label>Ancien mot de passe:</label>
               <input
                 type="password"
                 name="oldPassword"
@@ -234,8 +254,9 @@ const EditProfile = () => {
                 onChange={(e) => setOldPassword(e.target.value)}
               />
             </div>
+  
             <div className="form-group">
-              <label>New Password:</label>
+              <label>Nouveau mot de passe:</label>
               <input
                 type="password"
                 name="password"
@@ -248,16 +269,20 @@ const EditProfile = () => {
                 }
               />
             </div>
-
-            <button className="save-button" onClick={handleSave}>
-              <FaSave /> Save Changes
-            </button>
+  
+            <div style={{ marginTop: "20px", textAlign: "center" }}>
+              <button className="save-button" onClick={handleSave}>
+                <FaSave /> Sauvegarder
+              </button>
+            </div>
           </CardContent>
         </Card>
       </div>
+  
       <Footer />
     </>
   );
+  
 };
 
 export default EditProfile;

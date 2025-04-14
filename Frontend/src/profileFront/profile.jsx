@@ -4,14 +4,17 @@ import { Avatar } from "./avatar";
 import { Skeleton } from "./skeleton";
 import "./Profile.css";
 import { FaCamera, FaCheckCircle, FaTimesCircle, FaUpload, FaFilePdf, FaCog } from "react-icons/fa";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar/Navbar";
 import Footer from "../components/Footer/Footer";
 
 const Profile = () => {
-  const { id } = useParams();
+  const id = localStorage.getItem("userId");
+  const role = localStorage.getItem("role");
+
   const navigate = useNavigate();
-  const fileInputRef = useRef(null); // ✅ File input reference
+  const fileInputRef = useRef(null);
+  const [activeTab, setActiveTab] = useState("infos");
 
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -20,48 +23,59 @@ const Profile = () => {
   const [newPicture, setNewPicture] = useState(null);
   const [file, setFile] = useState(null);
   const [uploadStatus, setUploadStatus] = useState("");
-  const [pictureStatus, setPictureStatus] = useState(""); // ✅ Picture upload status
-
+  const [pictureStatus, setPictureStatus] = useState("");
+  const [applications, setApplications] = useState([]);
+  
   useEffect(() => {
-    fetch(`http://localhost:3001/Frontend/getUser/${id}`)
-      .then((res) => res.json())
-      .then((data) => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch(`http://localhost:3001/Frontend/getUser/${id}`);
+        const data = await res.json();
+        console.log("🧠 USER DATA:", data); // 👈 Ajoute ça
+
         setUser(data);
-        setResumeUrl(data.profile?.resume || ""); // ✅ Fetch existing CV
-        setPicture(data.picture || "/images/team-1.jpg"); // ✅ Load existing profile picture
+        setResumeUrl(data.profile?.resume || "");
+        setPicture(data.picture || "/images/team-1.jpg");
         setLoading(false);
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error("Error loading user:", err);
         setLoading(false);
-      });
-  }, [id]);
-
+      }
+    };
+  
+    const fetchApplications = async () => {
+      try {
+        const res = await fetch(`http://localhost:3001/Frontend/applications-by-candidate/${id}`);
+        const data = await res.json();
+        setApplications(data);
+      } catch (err) {
+        console.error("❌ Erreur lors de la récupération des candidatures:", err);
+      }
+    };
+  
+    fetchUser();
+  
+    if (role === "CANDIDATE") {
+      fetchApplications();
+    }
+  }, [id, role]);
+  
   const handleEditProfile = () => navigate(`/edit-profile/${id}`);
 
-  // ✅ Open file selector
-  const handleCameraClick = () => {
-    fileInputRef.current.click();
-  };
+  const handleCameraClick = () => fileInputRef.current.click();
 
-  // ✅ Handle profile picture selection and preview
   const handlePictureChange = (event) => {
     const selectedFile = event.target.files[0];
     if (!selectedFile) return;
 
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setNewPicture(reader.result); // ✅ Show preview
-    };
+    reader.onloadend = () => setNewPicture(reader.result);
     reader.readAsDataURL(selectedFile);
-
     setFile(selectedFile);
   };
 
-  // ✅ Confirm and upload new profile picture
   const handlePictureConfirm = async () => {
     if (!file) return;
-
     const formData = new FormData();
     formData.append("userId", id);
     formData.append("picture", file);
@@ -72,8 +86,7 @@ const Profile = () => {
         body: formData,
       });
       const data = await res.json();
-
-      setPicture(data.pictureUrl); // ✅ Update profile picture after upload
+      setPicture(data.pictureUrl);
       setNewPicture(null);
       setFile(null);
       setPictureStatus("✔️ Profile picture updated successfully!");
@@ -83,7 +96,25 @@ const Profile = () => {
     }
   };
 
-  // ✅ Cancel profile picture change
+
+  const handleDeleteApplication = async (applicationId) => {
+    try {
+      const res = await fetch(`http://localhost:3001/Frontend/delete-application/${applicationId}`, {
+        method: "DELETE",
+      });
+  
+      if (res.ok) {
+        alert("✅ Candidature supprimée !");
+        setApplications((prev) => prev.filter((app) => app._id !== applicationId));
+      } else {
+        console.error("❌ Échec de la suppression");
+      }
+    } catch (error) {
+      console.error("❌ Erreur lors de la suppression :", error);
+    }
+  };
+  
+
   const handlePictureCancel = () => {
     setNewPicture(null);
     setFile(null);
@@ -96,12 +127,15 @@ const Profile = () => {
     setFile(selectedFile);
   };
 
+
+
+  
   const handleFileUpload = async () => {
     if (!file) return alert("Please select a file.");
     const formData = new FormData();
     formData.append("resume", file);
     formData.append("userId", id);
-
+  
     try {
       const res = await fetch("http://localhost:3001/Frontend/upload-resume", {
         method: "POST",
@@ -111,26 +145,31 @@ const Profile = () => {
       setResumeUrl(data.resumeUrl);
       setUploadStatus("CV uploaded successfully!");
       setFile(null);
+  
+      // 🔁 Recharge les données utilisateur après upload
+      const resUser = await fetch(`http://localhost:3001/Frontend/getUser/${id}`);
+      const updatedUser = await resUser.json();
+      setUser(updatedUser);
+  
     } catch (err) {
       setUploadStatus("Error uploading CV.");
       console.error(err);
     }
   };
-
+  
   if (loading) return <Skeleton className="w-full h-64" />;
   if (!user) return <p className="text-center text-red-500">User not found.</p>;
 
   return (
     <>
-      <Navbar /> {/* 🏠 Navbar */}
+      <Navbar />
 
       <div className="profile-container">
         <Card className="card">
           <CardHeader className="card-header">
-            {/* 🖼️ Profile Picture */}
             <div className="avatar-container">
               <img
-                src={newPicture || `http://localhost:3001${user.picture}`} // ✅ Preview or current image
+                src={newPicture || `http://localhost:3001${user.picture}`}
                 className="avatar"
                 alt="Profile Picture"
               />
@@ -139,22 +178,20 @@ const Profile = () => {
               </label>
               <input
                 type="file"
-                ref={fileInputRef} // ✅ File input reference
+                ref={fileInputRef}
                 className="hidden-input"
                 onChange={handlePictureChange}
                 accept="image/*"
-                style={{ display: "none" }} // Hidden
+                style={{ display: "none" }}
               />
             </div>
 
-            {/* ✅ Picture Upload Status Message */}
             {pictureStatus && (
               <p className={pictureStatus.includes("✔️") ? "upload-success" : "upload-error"}>
                 {pictureStatus}
               </p>
             )}
 
-            {/* ✅ Picture Confirmation Buttons */}
             {newPicture && (
               <div className="picture-confirmation">
                 <div className="confirmation-buttons">
@@ -169,73 +206,178 @@ const Profile = () => {
             )}
 
             <h2 className="name">{user.name}</h2>
-            <p className="email">{user.email}</p>
-            <p className="phone"><strong>📞 Phone:</strong> {user.profile.phone || "Not provided"}</p>
-            
 
             <button className="edit-profile-button" onClick={handleEditProfile}>
               <FaCog /> Edit Profile
             </button>
+          
           </CardHeader>
 
-          <CardContent className="card-body">
-            <p className="role">{user.role}</p>
 
-            {/* 🛠️ Skills */}
-            <div className="skills">
-              <p><strong>🛠️ Skills:</strong></p>
-              {user.profile?.skills.length > 0 ? (
-                user.profile.skills.map((skill, index) => (
-                  <span key={index} className="skill-badge">{skill}</span>
-                ))
-              ) : (
-                <p>Not provided</p>
-              )}
-            </div>
+        
 
-            {/* 🌍 Languages */}
-            <div className="languages">
-              <p><strong>🌍 Languages:</strong></p>
-              {user.profile?.languages.length > 0 ? (
-                user.profile.languages.map((language, index) => (
-                  <span key={index} className="language-badge">{language}</span>
-                ))
-              ) : (
-                <p>Not provided</p>
-              )}
-            </div>
+<div className="tab-buttons">
+  <button
+    className={activeTab === "infos" ? "tab active" : "tab"}
+    onClick={() => setActiveTab("infos")}
+  >
+    📋 Infos
+  </button>
 
-            {/* 📄 Experience */}
-            <p><strong>📄 Experience:</strong> {user.profile?.experience || "Not provided"}</p>
+  <button
+    className={activeTab === "experience" ? "tab active" : "tab"}
+    onClick={() => setActiveTab("experience")}
+  >
+    💼 Expérience
+  </button>
 
-            {/* 📂 CV */}
-            <div className="upload-container">
-              {resumeUrl ? (
-                <p className="cv-link">
-                  <a href={`http://localhost:3001${resumeUrl}`} target="_blank" rel="noopener noreferrer">
-                    <FaFilePdf /> View CV
-                  </a>
-                </p>
-              ) : (
-                <>
-                  <label className="upload-button">
-                    <input type="file" onChange={handleFileChange} accept=".pdf,.doc,.docx" hidden />
-                    <FaUpload /> Upload CV
-                  </label>
-                  {file && (
-                    <button className="upload-btn" onClick={handleFileUpload}>
-                      <FaUpload /> Upload
-                    </button>
-                  )}
-                  {uploadStatus && <p>{uploadStatus}</p>}
-                </>
-              )}
-            </div>
-          </CardContent>
+  <button
+    className={activeTab === "cv" ? "tab active" : "tab"}
+    onClick={() => setActiveTab("cv")}
+  >
+    📄 CV
+  </button>
+
+  {user.role === "CANDIDATE" && (
+    <button
+      className={activeTab === "candidatures" ? "tab active" : "tab"}
+      onClick={() => setActiveTab("candidatures")}
+    >
+      📝 Candidatures
+    </button>
+  )}
+</div>
+
+
+
+<CardContent className="card-body">
+  {activeTab === "infos" && (
+    <>
+      <p className="role">{user.role}</p>
+
+      {/* ENTREPRISE */}
+      {user.role === "ENTERPRISE" && user.enterprise && (
+        <>
+          <p><strong>🏢 Entreprise:</strong> {user.enterprise.name}</p>
+          <p><strong>📍 Localisation:</strong> {user.enterprise.location}</p>
+          <p><strong>💼 Secteur:</strong> {user.enterprise.industry}</p>
+          <p><strong>🌐 Site web:</strong> {user.enterprise.website}</p>
+          <p><strong>📧 Email:</strong> {user.email}</p>
+        </>
+      )}
+
+      {/* CANDIDAT */}
+      {user.role === "CANDIDATE" && user.profile && (
+        <>
+          <p><strong>📧 Email:</strong> {user.email}</p>
+          <p><strong>📞 Téléphone:</strong> {user.profile.phone || "Non fourni"}</p>
+
+          <div className="skills">
+            <p><strong>🛠️ Compétences:</strong></p>
+            {user.profile.skills?.length > 0 ? (
+              user.profile.skills.map((skill, index) => (
+                <span key={index} className="skill-badge">{skill}</span>
+              ))
+            ) : <p>Non fourni</p>}
+          </div>
+
+          <div className="languages">
+            <p><strong>🌍 Langues:</strong></p>
+            {user.profile.languages?.length > 0 ? (
+              user.profile.languages.map((lang, index) => (
+                <span key={index} className="language-badge">{lang}</span>
+              ))
+            ) : <p>Non fourni</p>}
+          </div>
+        </>
+      )}
+    </>
+  )}
+
+  {activeTab === "experience" && user.profile?.experience?.length > 0 && (
+    <div className="experience">
+      <h4>Expérience</h4>
+      <ul>
+        {user.profile.experience.map((exp, idx) => (
+          <li key={idx}>
+            <strong>{exp.title}</strong> at {exp.company} – {exp.duration}<br />
+            <em>{exp.description}</em>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )}
+
+  {activeTab === "cv" && (
+    <div className="upload-container">
+      {resumeUrl ? (
+        <p className="cv-link">
+          <a href={`http://localhost:3001${resumeUrl}`} target="_blank" rel="noopener noreferrer">
+            <FaFilePdf /> Voir le CV
+          </a>
+        </p>
+      ) : (
+        <>
+          <label className="upload-button">
+            <input type="file" onChange={handleFileChange} accept=".pdf,.doc,.docx" hidden />
+            <FaUpload /> Ajouter un CV
+          </label>
+          {file && (
+            <button className="upload-btn" onClick={handleFileUpload}>
+              <FaUpload /> Upload
+            </button>
+          )}
+        </>
+      )}
+      {uploadStatus && <p>{uploadStatus}</p>}
+    </div>
+  )}
+
+  {/* ✅ NOUVEAU BLOC CANDIDATURES */}
+  {activeTab === "candidatures" && (
+    <>
+      <h4 className="section-title">📄 Mes Candidatures</h4>
+      {applications.length > 0 ? (
+  applications.map((app, i) => (
+    <div key={i} className="application-box">
+      <p><strong>🔹 Poste:</strong> {app.jobId?.title}</p>
+      <p><strong>📧 Email:</strong> {app.email}</p>
+      <p><strong>📞 Téléphone:</strong> {app.phone}</p>
+      <p><strong>📅 Date:</strong> {new Date(app.appliedAt).toLocaleDateString()}</p>
+      <p><strong>🎯 Score Quiz:</strong> {app.quizScore !== undefined ? `${app.quizScore} / 10` : "Pas encore passé"}</p>
+
+      {app.cv && (
+        <p>
+          <a href={`http://localhost:3001${app.cv}`} target="_blank" rel="noopener noreferrer" className="cv-link">
+            📄 Voir le CV
+          </a>
+        </p>
+      )}
+
+      {/* 🗑️ Bouton supprimer */}
+      <button
+  className="btn btn-danger"
+  onClick={() => handleDeleteApplication(app._id)}
+>
+  ❌ Supprimer
+</button>
+
+      <hr />
+    </div>
+  ))
+) : (
+  <p>❌ Aucune candidature envoyée pour le moment.</p>
+)}
+
+    </>
+  )}
+</CardContent>
+
+
         </Card>
       </div>
 
-      <Footer /> {/* 📜 Footer */}
+      <Footer />
     </>
   );
 };

@@ -1,0 +1,98 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap");
+
+.futuristic-navbar {
+  background-color: #0b0c2a !important;  /* example dark background */
+  color: white !important;
+}
+
+.futuristic-brand {
+  color: #fff !important;
+  font-weight: 700;
+  font-size: 1.2rem;
+  text-transform: uppercase;
+  transition: color 0.3s ease;
+}
+
+.futuristic-brand span {
+  color: #36d1dc;
+}
+
+.futuristic-brand:hover {
+  color: #36d1dc !important;
+}
+
+/* Toggler */
+.navbar-toggler.futuristic-toggler {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.navbar-toggler-icon {
+  background-image: url("data:image/svg+xml;charset=UTF8,<svg viewBox='0 0 30 30' width='30' height='30' xmlns='http://www.w3.org/2000/svg'><path stroke='rgba(255,255,255,0.9)' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 15h22M4 23h22'/></svg>");
+}
+
+/* Navigation Links */
+.futuristic-nav-link {
+  color: #ffffff !important;
+  margin: 0 8px;
+  transition: color 0.3s ease;
+  position: relative;
+}
+
+.futuristic-nav-link::after {
+  content: "";
+  display: block;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(135deg, #5b86e5 0%, #36d1dc 100%);
+  transition: width 0.3s;
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+}
+
+.futuristic-nav-link:hover::after {
+  width: 100%;
+}
+.futuristic-nav-link:hover {
+  color: #36d1dc !important;
+}
+
+/* Search Button (if you still use it) */
+.nav_search-btn {
+  background: transparent;
+  border: none;
+  color: #fff;
+  transition: transform 0.3s ease;
+}
+.nav_search-btn:hover {
+  transform: scale(1.1);
+}
+
+/* Sign In & Sign Up Buttons */
+.btn.signin-btn {
+  background: transparent;
+  border: 2px solid #5b86e5;
+  color: #5b86e5;
+  font-weight: 600;
+  border-radius: 25px;
+  transition: all 0.3s ease;
+}
+
+.btn.signin-btn:hover {
+  background: #5b86e5;
+  color: #fff;
+}
+
+.btn.signup-btn {
+  background: linear-gradient(135deg, #5b86e5 0%, #36d1dc 100%);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  border-radius: 25px;
+  transition: transform 0.3s ease;
+}
+
+.btn.signup-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(91, 134, 229, 0.4);
+}
+

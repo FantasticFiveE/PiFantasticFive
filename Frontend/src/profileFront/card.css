@@ -1,0 +1,84 @@
+/* Base Card Style */
+.futuristic-card {
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  border: 1px solid #e0e0e0;
+}
+
+.futuristic-card:hover {
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Header */
+.futuristic-card-header {
+  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  color: white;
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+  font-size: 1.2rem;
+  position: relative;
+  z-index: 2;
+}
+
+.futuristic-card-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    rgba(255, 255, 255, 0.1), 
+    rgba(255, 255, 255, 0)
+  );
+  z-index: 1;
+}
+
+.futuristic-card-header > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* Content */
+.futuristic-card-content {
+  padding: 24px;
+  font-size: 1rem;
+  color: #444;
+  line-height: 1.6;
+}
+
+/* Footer */
+.futuristic-card-footer {
+  padding: 16px 24px;
+  background: #f9f9f9;
+  text-align: right;
+  border-top: 1px solid #eee;
+}
+
+/* Optional: Icon or badge animation */
+.futuristic-icon {
+  margin-right: 12px;
+  font-size: 1.3rem;
+  color: rgba(255, 255, 255, 0.85);
+  transition: transform 0.3s;
+}
+
+.futuristic-icon:hover {
+  transform: scale(1.1) rotate(5deg);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .futuristic-card-content {
+    padding: 16px;
+  }
+
+  .futuristic-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

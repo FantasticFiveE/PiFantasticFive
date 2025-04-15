@@ -1,0 +1,115 @@
+/* Signup.css */
+
+/* Container principal, centré sur toute la page */
+.signup-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f4f7fc; /* Fond gris clair */
+  }
+  
+  /* Conteneur du formulaire */
+  .signup-form-container {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 480px;  /* Largeur ajustée du formulaire */
+  }
+  
+  /* Titre du formulaire */
+  .signup-header {
+    text-align: center;
+    color: #004080; /* Bleu pour le titre */
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 25px;
+  }
+  
+  /* Espacement pour chaque groupe de champs */
+  .input-group {
+    margin-bottom: 25px; /* Espacement entre les champs */
+  }
+  
+  /* Labels des champs */
+  .input-group label {
+    font-size: 16px;
+    margin-bottom: 8px; /* Ajout d'une marge sous les labels */
+    display: block;
+    color: #333;
+  }
+  
+  /* Champs de saisie */
+  .form-control {
+    border: 2px solid #d1d8e0; /* Bordure gris clair */
+    border-radius: 5px;
+    padding: 12px;
+    width: 100%;
+    font-size: 16px;
+    margin-top: 5px;
+    background-color: #fafafa; /* Fond clair */
+  }
+  
+  /* Champs de saisie invalides */
+  .form-control.is-invalid {
+    border-color: #dc3545; /* Rouge pour les champs invalides */
+    background-color: #fff0f0; /* Fond légèrement rouge */
+  }
+  
+  /* Messages d'erreur */
+  .invalid-feedback {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 5px; /* Un petit espace après le message d'erreur */
+  }
+  
+  /* Sélecteur pour le rôle */
+  .form-select {
+    width: 100%;
+    padding: 12px;
+    border-radius: 5px;
+    border: 2px solid #d1d8e0;
+    margin-top: 5px;
+    background-color: #fafafa;
+  }
+  
+  /* Bouton de soumission */
+  .btn-submit {
+    background-color: #004080;
+    color: #fff;
+    border: none;
+    padding: 14px;
+    border-radius: 5px;
+    width: 100%;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 20px;
+  }
+  
+  .btn-submit:hover {
+    background-color: #003366;
+  }
+  
+  /* Lien vers la page de connexion */
+  .signup-footer {
+    text-align: center;
+    margin-top: 25px;
+  }
+  
+  .signup-footer p {
+    font-size: 14px;
+    color: #666;
+  }
+  
+  .btn-link {
+    text-decoration: none;
+    color: #004080;
+    font-size: 16px;
+  }
+  
+  .btn-link:hover {
+    color: #003366;
+  }
+  

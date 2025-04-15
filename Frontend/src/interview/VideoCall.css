@@ -1,0 +1,474 @@
+:root {
+    --primary-color: #4a6bff;
+    --danger-color: #ff4757;
+    --success-color: #2ed573;
+    --warning-color: #ffa502;
+    --dark-color: #2f3542;
+    --light-color: #f1f2f6;
+    --text-color: #333;
+    --text-light: #777;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --border-radius: 8px;
+    --transition: all 0.3s ease;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--text-color);
+    background-color: #f8f9fa;
+}
+
+.video-call-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background-color: #fff;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    position: relative;
+}
+
+.video-call-container.fullscreen {
+    background-color: #000;
+}
+
+.call-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 25px;
+    background-color: #fff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    z-index: 100;
+}
+
+.header-left {
+    display: flex;
+    flex-direction: column;
+}
+
+.call-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--dark-color);
+    margin-bottom: 5px;
+}
+
+.call-info {
+    display: flex;
+    gap: 15px;
+    font-size: 0.85rem;
+    color: var(--text-light);
+}
+
+.call-id,
+.call-role {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.call-id::before {
+    content: "•";
+    color: var(--text-light);
+}
+
+.status-badge {
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    background-color: var(--light-color);
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-badge::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--text-light);
+}
+
+.status-badge.loading {
+    color: var(--warning-color);
+}
+
+.status-badge.loading::before {
+    background-color: var(--warning-color);
+}
+
+.status-badge.ready {
+    color: var(--success-color);
+}
+
+.status-badge.ready::before {
+    background-color: var(--success-color);
+}
+
+.status-badge.connecting {
+    color: var(--primary-color);
+}
+
+.status-badge.connecting::before {
+    background-color: var(--primary-color);
+}
+
+.status-badge.connected {
+    color: var(--success-color);
+}
+
+.status-badge.connected::before {
+    background-color: var(--success-color);
+}
+
+.status-badge.error {
+    color: var(--danger-color);
+}
+
+.status-badge.error::before {
+    background-color: var(--danger-color);
+}
+
+.status-badge.disconnected {
+    color: var(--text-light);
+}
+
+.status-badge.disconnected::before {
+    background-color: var(--text-light);
+}
+
+.status-badge.peer-disconnected {
+    color: var(--warning-color);
+}
+
+.status-badge.peer-disconnected::before {
+    background-color: var(--warning-color);
+}
+
+.video-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    flex: 1;
+    padding: 15px;
+    background-color: #f1f3f5;
+    position: relative;
+}
+
+.video-container {
+    position: relative;
+    background: #000;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+}
+
+.video-container.fullscreen-video {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    grid-column: 1 / -1;
+    border-radius: 0;
+}
+
+.video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 15px;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7) 0%, transparent 100%);
+    color: white;
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: var(--transition);
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-name {
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-bottom: 3px;
+}
+
+.user-status {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+.video-controls {
+    display: flex;
+    gap: 10px;
+}
+
+.control-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+    backdrop-filter: blur(5px);
+}
+
+.control-btn:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.control-btn.muted {
+    background-color: rgba(255, 71, 87, 0.3);
+}
+
+.control-btn.disabled {
+    background-color: rgba(255, 71, 87, 0.3);
+}
+
+.control-btn i {
+    font-size: 16px;
+}
+
+video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: #222;
+    display: block;
+}
+
+.video-off {
+    background: #333;
+}
+
+.waiting-connection {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: white;
+    z-index: 5;
+}
+
+.waiting-connection p {
+    margin-top: 15px;
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.call-controls {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    background-color: #fff;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.control-btn.start-call {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 12px 25px;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 200px;
+    justify-content: center;
+}
+
+.control-btn.end-call {
+    background-color: var(--danger-color);
+    color: white;
+    padding: 12px 25px;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 200px;
+    justify-content: center;
+}
+
+.control-btn.retry {
+    background-color: var(--warning-color);
+    color: white;
+    padding: 12px 25px;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 200px;
+    justify-content: center;
+}
+
+.call-footer {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px 25px;
+    background-color: #f8f9fa;
+    font-size: 0.8rem;
+    color: var(--text-light);
+}
+
+.footer-text {
+    font-weight: 500;
+}
+
+.footer-help a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.footer-help a:hover {
+    text-decoration: underline;
+}
+
+.loading-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background-color: #fff;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid rgba(74, 107, 255, 0.2);
+    border-radius: 50%;
+    border-top-color: var(--primary-color);
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+
+/* Icons (using Unicode or you can replace with actual icon font) */
+
+.icon-mic::before {
+    content: "🎤";
+}
+
+.icon-mic-off::before {
+    content: "🔇";
+}
+
+.icon-video::before {
+    content: "📷";
+}
+
+.icon-video-off::before {
+    content: "📷\fe0f";
+}
+
+.icon-phone::before {
+    content: "📞";
+}
+
+.icon-phone-off::before {
+    content: "📵";
+}
+
+.icon-refresh-cw::before {
+    content: "🔄";
+}
+
+.icon-maximize::before {
+    content: "⛶";
+}
+
+.icon-minimize::before {
+    content: "⛶";
+}
+
+
+/* Responsive layout */
+
+@media (max-width: 768px) {
+    .video-grid {
+        grid-template-columns: 1fr;
+        padding: 10px;
+    }
+    .video-container {
+        height: 50vh;
+    }
+    .call-header {
+        padding: 10px 15px;
+    }
+    .call-title {
+        font-size: 1.2rem;
+    }
+    .call-controls {
+        padding: 15px;
+    }
+    .control-btn.start-call,
+    .control-btn.end-call,
+    .control-btn.retry {
+        min-width: auto;
+        padding: 10px 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .call-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .header-right {
+        width: 100%;
+    }
+    .status-badge {
+        width: 100%;
+        justify-content: center;
+    }
+    .call-footer {
+        flex-direction: column;
+        gap: 5px;
+        align-items: center;
+        text-align: center;
+    }
+}

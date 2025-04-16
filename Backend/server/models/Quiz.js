@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const quizSchema = new mongoose.Schema({
-  jobPostId: { type: mongoose.Schema.Types.ObjectId, ref: "Job" },
+  jobId: { type: mongoose.Schema.Types.ObjectId, ref: "Job" },
   questions: [
     {
       question: String,

@@ -1226,9 +1226,14 @@ app.get("/Frontend/quiz/:jobId", async (req, res) => {
 
 app.post("/Frontend/submit-quiz", async (req, res) => {
   try {
-    const { candidateId, jobId, score } = req.body;
+    const { candidateId, jobId, score, totalQuestions } = req.body;
 
-    const result = new QuizResultModel({ candidateId, jobId, score });
+    const result = new QuizResultModel({
+      userId: candidateId, // 🔁 remapping
+      jobId,
+      score,
+    });
+
     await result.save();
 
     res.status(201).json({ message: "Score enregistré avec succès." });
@@ -1237,6 +1242,7 @@ app.post("/Frontend/submit-quiz", async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
+
 
 
 app.get("/Frontend/quiz-results/:jobId", async (req, res) => {
@@ -1251,26 +1257,53 @@ app.get("/Frontend/quiz-results/:jobId", async (req, res) => {
   }
 });
 
+
+
 app.put("/Frontend/update-quiz-score", async (req, res) => {
   try {
     const { jobId, candidateId, score } = req.body;
 
-    const updated = await ApplicationModel.findOneAndUpdate(
-      { jobId, candidateId },
+    console.log("💬 Reçu :", { jobId, candidateId, score });
+
+    // 1. Mettre à jour l'application
+    const updatedApplication = await ApplicationModel.findOneAndUpdate(
+      {
+        jobId: new mongoose.Types.ObjectId(jobId),
+        candidateId: new mongoose.Types.ObjectId(candidateId),
+      },
       { quizScore: score },
       { new: true }
     );
 
-    if (!updated) {
+    if (!updatedApplication) {
       return res.status(404).json({ message: "Application not found" });
     }
 
-    res.json({ message: "Quiz score updated", updated });
+    // 2. Créer ou mettre à jour QuizResult
+    const quizResult = await QuizResultModel.findOneAndUpdate(
+      {
+        jobId: new mongoose.Types.ObjectId(jobId),
+        candidateId: new mongoose.Types.ObjectId(candidateId),
+      },
+      {
+        jobId: new mongoose.Types.ObjectId(jobId),
+        candidateId: new mongoose.Types.ObjectId(candidateId),
+        score,
+      },
+      { new: true, upsert: true } // upsert = crée si n'existe pas
+    );
+
+    console.log("✅ Application mise à jour :", updatedApplication);
+    console.log("✅ Résultat quiz enregistré :", quizResult);
+
+    res.json({ message: "Quiz score updated in both Application and QuizResult", updatedApplication, quizResult });
+
   } catch (err) {
-    console.error("❌ Error updating quiz score:", err);
-    res.status(500).json({ message: "Server error" });
+    console.error("❌ Erreur :", err);
+    res.status(500).json({ message: "Erreur serveur" });
   }
 });
+
 
 
 app.get("/Frontend/applications-by-candidate/:candidateId", async (req, res) => {

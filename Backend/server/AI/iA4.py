@@ -92,8 +92,6 @@ def extract_experience(text):
                 experience.append(line.strip())
     return experience
 
-if not text or len(text.strip()) < 50:
-    return {'error': 'Le texte extrait est trop court ou vide'}
 
 
 # 🔹 Extraction de texte robuste
@@ -112,10 +110,10 @@ def extract_text_from_pdf(file_path):
 # 🔹 Traitement du CV
 def process_resume(file_path):
     text = extract_text_from_pdf(file_path)
-    print("\n🧾 Texte extrait (preview):", text[:500])  # ✅ Affiche les 500 premiers caractères
+    print("\n🧾 Texte extrait (preview):", text[:500])
 
-    if not text:
-        return {'error': 'Aucun texte extrait'}
+    if not text or len(text.strip()) < 50:
+        return {'error': 'Le texte extrait est trop court ou vide'}
 
     resume_data = {
         "name": extract_name(text),
@@ -128,6 +126,7 @@ def process_resume(file_path):
 
     print("🧠 Résumé analysé :", resume_data)
     return resume_data
+
 
 
 

@@ -3,6 +3,8 @@ const express = require('express');
 const router = express.Router();
 const Interview = require('../models/Interview');
 const { verifyToken } = require('../middleware/auth');
+const User = require('../models/user');
+
 
 // Initiate a video call
 router.post('/:interviewId/start-call', verifyToken, async(req, res) => {

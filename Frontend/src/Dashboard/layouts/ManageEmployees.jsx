@@ -48,6 +48,9 @@ function ManageEmployees() {
         }),
       });
 
+      console.log("Response status:", response.status); // Log the response status
+      console.log("Response body:", await response.json()); // Log the response body
+
       if (!response.ok) {
         throw new Error("Failed to update verification status");
       }
@@ -72,18 +75,40 @@ function ManageEmployees() {
     }
   };
 
-  // Handle deleting an enterprise user
-  const handleDelete = async (id) => {
+  // Handle saving edited enterprise details
+  const handleSave = async (id) => {
     try {
       const response = await fetch(`http://localhost:3001/api/users/${id}`, {
-        method: "DELETE",
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          enterprise: editedEnterprise,
+        }),
       });
+
       if (!response.ok) {
-        throw new Error("Failed to delete enterprise user");
+        throw new Error("Failed to save enterprise details");
       }
 
-      // Remove the deleted enterprise user from the list
-      setEnterprises(enterprises.filter((enterprise) => enterprise._id !== id));
+      // Update the enterprise's details in the local state
+      setEnterprises((prevEnterprises) =>
+        prevEnterprises.map((enterprise) =>
+          enterprise._id === id
+            ? {
+                ...enterprise,
+                enterprise: {
+                  ...enterprise.enterprise,
+                  ...editedEnterprise,
+                },
+              }
+            : enterprise
+        )
+      );
+
+      // Exit edit mode
+      setEditingId(null);
     } catch (err) {
       setError(err.message);
     }
@@ -98,53 +123,6 @@ function ManageEmployees() {
       location: enterprise.enterprise?.location || "",
       employeeCount: enterprise.enterprise?.employeeCount || "",
     });
-  };
-
-  // Handle saving edited enterprise details
-  const handleSave = async (id) => {
-    try {
-      const response = await fetch(`http://localhost:3001/api/users/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          enterprise: {
-            name: editedEnterprise.name,
-            industry: editedEnterprise.industry,
-            location: editedEnterprise.location,
-            employeeCount: editedEnterprise.employeeCount,
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update enterprise details");
-      }
-
-      // Update the enterprise's details in the local state
-      setEnterprises((prevEnterprises) =>
-        prevEnterprises.map((enterprise) =>
-          enterprise._id === id
-            ? {
-                ...enterprise,
-                enterprise: {
-                  ...enterprise.enterprise,
-                  name: editedEnterprise.name,
-                  industry: editedEnterprise.industry,
-                  location: editedEnterprise.location,
-                  employeeCount: editedEnterprise.employeeCount,
-                },
-              }
-            : enterprise
-        )
-      );
-
-      // Exit edit mode
-      setEditingId(null);
-    } catch (err) {
-      setError(err.message);
-    }
   };
 
   // Handle input changes in edit mode
@@ -174,7 +152,6 @@ function ManageEmployees() {
             Manage enterprise users and their verification status.
           </Subtitle>
         </div>
- 
       </div>
 
       {/* List of Enterprises */}
@@ -294,12 +271,6 @@ function ManageEmployees() {
                     disabled={enterprise.verificationStatus?.status === "REJECTED"}
                   >
                     Reject
-                  </button>
-                  <button
-                    className="btn btn-danger btn-sm"
-                    onClick={() => handleDelete(enterprise._id)}
-                  >
-                    Delete
                   </button>
                 </>
               )}

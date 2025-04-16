@@ -9,6 +9,7 @@ import Assessments from "../components/Widgets/Assessments";
 import CandidateStatus from "../components/Sections/CandidateStatus";
 import InterviewMeetingInfo from "../components/Sections/InterviewMeetingInfo";
 import ApplicationInfo from "../components/Sections/ApplicationInfo";
+import EnterpriseQuizzes from "../components/Sections/QuizPost"; // Importez le composant
 
 function DashboardLayout() {
   const [loading, setLoading] = useState(true);
@@ -79,20 +80,15 @@ function DashboardLayout() {
         {/* First Column */}
         <div className="col-lg-9 col-md-12 p-0">
           <div className="p-3">
-{/* <InterviewMeetingInfo /> */}
+            {/* <InterviewMeetingInfo /> */}
             <PostedJobs />
-            <CandidateStatus />
+            <CandidateStatus />  
+            <EnterpriseQuizzes /> {/* Ajoutez le composant ici */}
+
           </div>
         </div>
 
-        {/* Second Column */}
-        <div className="col-lg-3 col-md-12 p-0">
-          <div className="p-3 d-flex flex-column gap-4">
-            <Upcomings />
-
-            <Hirings />
-          </div>
-        </div>
+        
       </div>
     </div>
   );

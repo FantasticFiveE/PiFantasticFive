@@ -243,10 +243,14 @@ app.post("/auth/google", async(req, res) => {
 const userRoutes = require('./routes/userRoute');
 const jobRoutes = require('./routes/jobRoute');
 const interviewRoutes = require('./routes/interviewRoute');
+const quizRoutes = require('./routes/quizRoute');
+
+
 
 app.use('/api', userRoutes);
 app.use('/api', jobRoutes);
 app.use('/api', interviewRoutes);
+app.use('/quiz', quizRoutes);
 
 const uploadDir = path.join(__dirname, 'uploads');
 const resumeUpload = multer({
@@ -1313,6 +1317,34 @@ app.get('/api/users', async (req, res) => {
   } catch (err) {
     console.error("❌ Erreur lors de la récupération des utilisateurs :", err);
     res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
+app.post('/admins', async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    // Vérifie si l'admin existe déjà
+    const existingAdmin = await UserModel.findOne({ email });
+    if (existingAdmin) {
+      return res.status(400).json({ message: "Un utilisateur avec cet email existe déjà." });
+    }
+
+    // Hachage du mot de passe
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newAdmin = new UserModel({
+      name,
+      email,
+      password: hashedPassword,
+      role: "ADMIN", // très important
+    });
+
+    await newAdmin.save();
+    res.status(201).json({ message: "Admin ajouté avec succès.", admin: newAdmin });
+  } catch (error) {
+    console.error("❌ Erreur lors de l'ajout de l'admin :", error);
+    res.status(500).json({ message: "Erreur serveur." });
   }
 });
 

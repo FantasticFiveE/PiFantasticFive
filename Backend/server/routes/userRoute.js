@@ -124,16 +124,33 @@ router.post("/admin", async (req, res) => {
     }
 });
 
-// Update user by ID
-router.put("/users/:id", async(req, res) => {
+router.put("/users/:id", async (req, res) => {
     try {
-        const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!user) return res.status(404).json({ message: "User not found" });
-        res.status(200).json(user);
-    } catch (err) {
-        res.status(400).json({ message: "Failed to update user", error: err.message });
+      const { id } = req.params;
+      const { verificationStatus } = req.body;
+  
+      // Validation des données
+      if (!verificationStatus || !verificationStatus.status) {
+        return res.status(400).json({ message: "Invalid data provided." });
+      }
+  
+      // Mise à jour de l'utilisateur
+      const updatedUser = await User.findByIdAndUpdate(
+        id,
+        { verificationStatus },
+        { new: true }
+      );
+  
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found." });
+      }
+  
+      res.status(200).json({ message: "Verification status updated.", user: updatedUser });
+    } catch (error) {
+      console.error("❌ Error updating verification status:", error);
+      res.status(500).json({ message: "Server error." });
     }
-});
+  });
 
 // Delete user by ID
 router.delete("/users/:id", async(req, res) => {

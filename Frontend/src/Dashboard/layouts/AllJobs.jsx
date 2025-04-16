@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import "./job.css";
 
 const AllJobs = () => {
     const [jobs, setJobs] = useState([]);
@@ -12,7 +13,10 @@ const AllJobs = () => {
     const fetchJobs = () => {
         fetch("http://localhost:3001/api/jobs")
             .then((res) => res.json())
-            .then((data) => setJobs(data))
+            .then((data) => {
+                console.log("Données reçues de l'API :", data);
+                setJobs(data);
+            })
             .catch((err) => console.error("Error fetching jobs:", err));
     };
 
@@ -23,25 +27,31 @@ const AllJobs = () => {
     };
 
     const handleDelete = async (jobId) => {
+        const user = JSON.parse(localStorage.getItem("user"));
+        const userId = user?._id;
+
+        if (!userId) {
+            alert("User ID not found. Please log in.");
+            return;
+        }
+
         if (!window.confirm("Are you sure you want to delete this job?")) return;
 
         try {
-            const res = await fetch(`http://localhost:3001/api/jobs/${jobId}`, {
+            const res = await fetch(`http://localhost:3001/api/jobs/delete/${userId}/${jobId}`, {
                 method: "DELETE",
             });
+
             if (res.ok) {
                 setJobs(jobs.filter((job) => job._id !== jobId));
             } else {
+                const errorText = await res.text();
+                console.error("Failed to delete job:", errorText);
                 alert("Failed to delete the job.");
             }
         } catch (error) {
             console.error("Error deleting job:", error);
         }
-    };
-
-    const handleEditClick = (job) => {
-        setEditJob(job);
-        setIsModalOpen(true);
     };
 
     const handleSave = async () => {
@@ -53,7 +63,11 @@ const AllJobs = () => {
             });
 
             if (res.ok) {
-                setJobs(jobs.map((job) => (job._id === editJob._id ? editJob : job)));
+                setJobs((prevJobs) =>
+                    prevJobs.map((job) =>
+                        job._id === editJob._id ? { ...job, ...editJob } : job
+                    )
+                );
                 setIsModalOpen(false);
             } else {
                 alert("Failed to update job.");
@@ -65,43 +79,36 @@ const AllJobs = () => {
 
     return (
         <div className="container mx-auto p-6">
-            <h2 className="text-2xl font-bold mb-4 text-center">All Posted Jobs</h2>
+            <h2 className="text-3xl font-extrabold mb-6 text-center text-indigo-700">All Posted Jobs</h2>
             <div className="overflow-x-auto">
-                <table className="min-w-full border border-gray-300 bg-white shadow-md rounded-lg">
-                    <thead className="bg-gray-200">
-                        <tr className="text-left">
-                            <th className="py-3 px-4 border">Role</th>
-                            <th className="py-3 px-4 border">Enterprise</th>
-                            <th className="py-3 px-4 border">Industry</th>
-                            <th className="py-3 px-4 border">Location</th>
-                            <th className="py-3 px-4 border">Applicants</th>
-                            <th className="py-3 px-4 border">Status</th>
-                            <th className="py-3 px-4 border">Created Date</th>
-                            <th className="py-3 px-4 border text-center">Actions</th>
+                <table className="jobs-table">
+                    <thead>
+                        <tr>
+                            <th>Role</th>
+                            <th>Enterprise</th>
+                            <th>Industry</th>
+                            <th>Location</th>
+                            <th>Applicants</th>
+                            <th>Status</th>
+                            <th>Created Date</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {jobs.map((job) => (
-                            <tr key={job._id} className="hover:bg-gray-100">
-                                <td className="py-3 px-4 border">{job.title}</td>
-                                <td className="py-3 px-4 border">{job.enterpriseName}</td>
-                                <td className="py-3 px-4 border">{job.industry}</td>
-                                <td className="py-3 px-4 border">{job.location}</td>
-                                <td className="py-3 px-4 border">{job.applicants}</td>
-                                <td className="py-3 px-4 border">{job.status}</td>
-                                <td className="py-3 px-4 border">{formatDate(job.createdDate)}</td>
-                                <td className="py-3 px-4 border text-center">
-                                    <button
-                                        onClick={() => handleEditClick(job)}
-                                        className="bg-blue-500 text-blue px-3 py-1 rounded mr-2 hover:bg-blue-600"
-                                    >
-                                        ✏️ Edit
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(job._id)}
-                                        className="bg-red-500 text-blue px-3 py-1 rounded hover:bg-red-600"
-                                    >
-                                        🗑️ Delete
+                            <tr key={job._id}>
+                                <td>{job.title}</td>
+                                <td>{job.enterpriseName}</td>
+                                <td>{job.industry}</td>
+                                <td>{job.location}</td>
+                                <td>{job.applicants}</td>
+                                <td className={job.status === "OPEN" ? "status-open" : "status-closed"}>
+                                    {job.status || "N/A"}
+                                </td>
+                                <td>{formatDate(job.createdDate)}</td>
+                                <td className="actions">
+                                    <button onClick={() => handleDelete(job._id)} className="delete-btn">
+                                        🗑️
                                     </button>
                                 </td>
                             </tr>
@@ -110,28 +117,27 @@ const AllJobs = () => {
                 </table>
             </div>
 
-            {/* Edit Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-                    <div className="bg-white p-6 rounded-lg w-96">
-                        <h3 className="text-lg font-bold mb-4">Edit Job</h3>
+                <div className="modal-overlay">
+                    <div className="modal">
+                        <h3>Edit Job</h3>
                         <input
                             type="text"
-                            className="w-full mb-2 p-2 border rounded"
-                            value={editJob.title}
+                            className="modal-input"
+                            value={editJob?.title || ""}
                             onChange={(e) => setEditJob({ ...editJob, title: e.target.value })}
                         />
                         <input
                             type="text"
-                            className="w-full mb-2 p-2 border rounded"
-                            value={editJob.status}
+                            className="modal-input"
+                            value={editJob?.status || ""}
                             onChange={(e) => setEditJob({ ...editJob, status: e.target.value })}
                         />
-                        <div className="flex justify-end">
-                            <button onClick={() => setIsModalOpen(false)} className="mr-2 px-4 py-2 bg-gray-500 text-white rounded">
+                        <div className="modal-actions">
+                            <button onClick={() => setIsModalOpen(false)} className="cancel-btn">
                                 Cancel
                             </button>
-                            <button onClick={handleSave} className="px-4 py-2 bg-green-500 text-white rounded">
+                            <button onClick={handleSave} className="save-btn">
                                 Save
                             </button>
                         </div>

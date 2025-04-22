@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
-
 import {
   FaMapMarkerAlt,
   FaMoneyBillWave,
@@ -27,17 +25,14 @@ const JobDetails = () => {
   const { id } = useParams();
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [formData, setFormData] = useState({ name: "", email: "", phone: "" });
-  const [showForm, setShowForm] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
+  const [userProfile, setUserProfile] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
-
+  const [solutionType, setSolutionType] = useState(1); // 1 for URL solution, 2 for File solution
   const role = localStorage.getItem("role");
   const userId = localStorage.getItem("userId");
-
   const navigate = useNavigate();
 
-
+  // Fetch the job details
   useEffect(() => {
     const fetchJob = async () => {
       try {
@@ -53,39 +48,118 @@ const JobDetails = () => {
     window.scrollTo(0, 0);
   }, [id]);
 
+  // Fetch the user profile
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const res = await axios.get(`http://localhost:3001/api/users/${userId}`);
+        setUserProfile(res.data);
+      } catch (err) {
+        console.error("❌ Failed to fetch user profile", err);
+      }
+    };
+
+    if (role === "CANDIDATE") {
+      fetchUserProfile();
+    }
+  }, [role, userId]);
+
+  // Format date function
   const formatDate = (dateString) => {
     const options = { year: "numeric", month: "long", day: "numeric" };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  // SOLUTION 1: When resume is stored as a URL
+  const handleApplySolution1 = async () => {
+    if (!userProfile?.profile?.resume) {
+      return alert("❌ No resume found in your profile.");
+    }
+
+    try {
+      // First, fetch the resume file if it's stored as a URL
+      const resumeResponse = await axios.get(userProfile.profile.resume, {
+        responseType: 'blob'
+      });
+      
+      const resumeFile = new File([resumeResponse.data], 'resume.pdf', {
+        type: resumeResponse.headers['content-type']
+      });
+
+      const formData = new FormData();
+      formData.append('cv', resumeFile);
+      formData.append('jobId', job._id);
+      formData.append('enterpriseId', job.entrepriseId?._id || job.entrepriseId);
+      formData.append('candidateId', userId);
+      formData.append('fullName', userProfile.name);
+      formData.append('email', userProfile.email);
+      formData.append('phone', userProfile.profile?.phone || '');
+
+      await axios.post(
+        "http://localhost:3001/Frontend/apply-job",
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      alert("🎉 Application submitted successfully!");
+      navigate(`/quiz/${job._id}`);
+    } catch (err) {
+      console.error("❌ Error submitting application:", err);
+      alert(`Failed to submit application: ${err.response?.data?.message || err.message}`);
+    }
   };
 
-  const handleApply = async () => {
-    if (!formData.name || !formData.email || !formData.phone || !selectedFile) {
-      return alert("Veuillez remplir tous les champs et ajouter un CV.");
+  // SOLUTION 2: When resume is already a File object
+  const handleApplySolution2 = async () => {
+    if (!userProfile?.profile?.resume) {
+      return alert("❌ No resume found in your profile.");
     }
-  
-    const formDataToSend = new FormData();
-    formDataToSend.append("jobId", job._id);
-    formDataToSend.append("enterpriseId", job.entrepriseId?._id || job.entrepriseId);
-    formDataToSend.append("candidateId", userId);
-    formDataToSend.append("fullName", formData.name);
-    formDataToSend.append("email", formData.email);
-    formDataToSend.append("phone", formData.phone);
-    formDataToSend.append("cv", selectedFile);
-  
+
+    // Check if resume is a File object
+    if (!(userProfile.profile.resume instanceof File)) {
+      return alert("❌ Resume format is not supported. Please upload a new resume.");
+    }
+
+    const formData = new FormData();
+    formData.append('cv', userProfile.profile.resume);
+    formData.append('jobId', job._id);
+    formData.append('enterpriseId', job.entrepriseId?._id || job.entrepriseId);
+    formData.append('candidateId', userId);
+    formData.append('fullName', userProfile.name);
+    formData.append('email', userProfile.email);
+    formData.append('phone', userProfile.profile?.phone || '');
+
     try {
-      await axios.post("http://localhost:3001/Frontend/apply-job", formDataToSend);
-      alert("🎉 Candidature envoyée avec succès !");
-      navigate(`/quiz/${job._id}`); // Redirection vers le quiz !
+      await axios.post(
+        "http://localhost:3001/Frontend/apply-job",
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      alert("🎉 Application submitted successfully!");
+      navigate(`/quiz/${job._id}`);
     } catch (err) {
-      console.error("❌ Erreur lors de l'envoi :", err);
+      console.error("❌ Error submitting application:", err);
+      alert(`Failed to submit application: ${err.response?.data?.message || err.message}`);
     }
   };
-  
-  
+
+  // Main apply handler that chooses the right solution
+  const handleApply = () => {
+    if (solutionType === 1) {
+      handleApplySolution1();
+    } else {
+      handleApplySolution2();
+    }
+  };
+
   if (loading) {
     return (
       <div className="loading">
@@ -165,33 +239,25 @@ const JobDetails = () => {
 
             {role === "CANDIDATE" && (
               <div className="apply-section">
+                <div className="solution-toggle">
+                  <button 
+                    className={`toggle-btn ${solutionType === 1 ? 'active' : ''}`}
+                    onClick={() => setSolutionType(1)}
+                  >
+                   
+                  </button>
+                  <button 
+                    className={`toggle-btn ${solutionType === 2 ? 'active' : ''}`}
+                    onClick={() => setSolutionType(2)}
+                  >
+                  
+                  </button>
+                </div>
+                
                 <p>Ready to take the next step in your career? Submit your application now and join our team!</p>
-                <button className="apply-btn" onClick={() => setShowForm(!showForm)}>
+                <button className="apply-btn" onClick={handleApply}>
                   Apply Now <FaChevronRight className="apply-btn-icon" />
                 </button>
-
-                {showForm && (
-                  <div className="application-form">
-                    <input type="text" name="name" placeholder="Full Name" value={formData.name} onChange={handleInputChange} />
-                    <input type="email" name="email" placeholder="Email Address" value={formData.email} onChange={handleInputChange} />
-                    <input type="text" name="phone" placeholder="Phone Number" value={formData.phone} onChange={handleInputChange} />
-                    <input 
-  type="file" 
-  accept=".pdf,.doc,.docx"
-  onChange={(e) => setSelectedFile(e.target.files[0])} 
-  className="form-control"
-/>
-                    <button className="submit-btn" onClick={handleApply}>Submit Application</button>
-                  </div>
-                )}
-
-{successMessage && (
-  <div className="alert alert-success mt-3">
-    {successMessage}
-  </div>
-)}
-
-                {successMessage && <p className="success-message">{successMessage}</p>}
               </div>
             )}
           </div>

@@ -2,16 +2,15 @@ import { useEffect, useState, useRef } from "react";
 import { Card, CardContent, CardHeader } from "./card";
 import { Avatar } from "./avatar";
 import { Skeleton } from "./skeleton";
-import "./Profile.css";
-import { FaCamera, FaCheckCircle, FaTimesCircle, FaUpload, FaFilePdf, FaCog } from "react-icons/fa";
+import { FaCamera, FaCheckCircle, FaTimesCircle, FaUpload, FaFilePdf, FaCog, FaUser, FaEnvelope, FaPhone, FaGlobe, FaBriefcase } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar/Navbar";
 import Footer from "../components/Footer/Footer";
+import "./Profile.css";
 
 const Profile = () => {
   const id = localStorage.getItem("userId");
   const role = localStorage.getItem("role");
-
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const [activeTab, setActiveTab] = useState("infos");
@@ -25,14 +24,13 @@ const Profile = () => {
   const [uploadStatus, setUploadStatus] = useState("");
   const [pictureStatus, setPictureStatus] = useState("");
   const [applications, setApplications] = useState([]);
+  const [isEditing, setIsEditing] = useState(false);
   
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const res = await fetch(`http://localhost:3001/Frontend/getUser/${id}`);
         const data = await res.json();
-        console.log("🧠 USER DATA:", data); // 👈 Ajoute ça
-
         setUser(data);
         setResumeUrl(data.profile?.resume || "");
         setPicture(data.picture || "/images/team-1.jpg");
@@ -96,7 +94,6 @@ const Profile = () => {
     }
   };
 
-
   const handleDeleteApplication = async (applicationId) => {
     try {
       const res = await fetch(`http://localhost:3001/Frontend/delete-application/${applicationId}`, {
@@ -114,7 +111,6 @@ const Profile = () => {
     }
   };
   
-
   const handlePictureCancel = () => {
     setNewPicture(null);
     setFile(null);
@@ -127,9 +123,6 @@ const Profile = () => {
     setFile(selectedFile);
   };
 
-
-
-  
   const handleFileUpload = async () => {
     if (!file) return alert("Please select a file.");
     const formData = new FormData();
@@ -146,18 +139,25 @@ const Profile = () => {
       setUploadStatus("CV uploaded successfully!");
       setFile(null);
   
-      // 🔁 Recharge les données utilisateur après upload
       const resUser = await fetch(`http://localhost:3001/Frontend/getUser/${id}`);
       const updatedUser = await resUser.json();
       setUser(updatedUser);
-  
     } catch (err) {
       setUploadStatus("Error uploading CV.");
       console.error(err);
     }
   };
   
-  if (loading) return <Skeleton className="w-full h-64" />;
+  if (loading) return (
+    <div className="text-center">
+      <div className="loading-spinner">
+        <div className="spinner-border text-light" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    </div>
+  );
+  
   if (!user) return <p className="text-center text-red-500">User not found.</p>;
 
   return (
@@ -165,216 +165,286 @@ const Profile = () => {
       <Navbar />
 
       <div className="profile-container">
-        <Card className="card">
-          <CardHeader className="card-header">
-            <div className="avatar-container">
-              <img
-                src={newPicture || `http://localhost:3001${user.picture}`}
-                className="avatar"
-                alt="Profile Picture"
-              />
-              <label className="camera-icon" onClick={handleCameraClick}>
-                <FaCamera />
-              </label>
+        <div className="profile-content">
+          <div className="profile-sidebar">
+            <div className="image-upload-container">
+              {picture && !newPicture ? (
+                <div className="enterprise-image-wrapper">
+                  <img
+                    src={`http://localhost:3001${picture}`}
+                    alt={user.name}
+                    className="enterprise-image"
+                  />
+                  <div className="image-overlay" onClick={handleCameraClick}>
+                    <FaCamera className="camera-icon" />
+                  </div>
+                </div>
+              ) : newPicture ? (
+                <div className="enterprise-image-wrapper">
+                  <img src={newPicture} alt="Preview" className="enterprise-image" />
+                  <div className="image-actions">
+                    <button className="btn btn-success btn-sm" onClick={handlePictureConfirm}>
+                      <FaCheckCircle />
+                    </button>
+                    <button className="btn btn-danger btn-sm" onClick={handlePictureCancel}>
+                      <FaTimesCircle />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="image-placeholder editable" onClick={handleCameraClick}>
+                  <FaCamera className="camera-icon" />
+                  <span>Add image</span>
+                </div>
+              )}
+
               <input
                 type="file"
-                ref={fileInputRef}
-                className="hidden-input"
-                onChange={handlePictureChange}
                 accept="image/*"
+                ref={fileInputRef}
                 style={{ display: "none" }}
+                onChange={handlePictureChange}
               />
             </div>
 
-            {pictureStatus && (
-              <p className={pictureStatus.includes("✔️") ? "upload-success" : "upload-error"}>
-                {pictureStatus}
-              </p>
-            )}
-
-            {newPicture && (
-              <div className="picture-confirmation">
-                <div className="confirmation-buttons">
-                  <button onClick={handlePictureConfirm} className="confirm-button">
-                    <FaCheckCircle /> Confirm
-                  </button>
-                  <button onClick={handlePictureCancel} className="cancel-button">
-                    <FaTimesCircle /> Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-
             <h2 className="name">{user.name}</h2>
+            <p className="role">{user.role}</p>
 
             <button className="edit-profile-button" onClick={handleEditProfile}>
               <FaCog /> Edit Profile
             </button>
-          
-          </CardHeader>
-
-
-        
-
-<div className="tab-buttons">
-  <button
-    className={activeTab === "infos" ? "tab active" : "tab"}
-    onClick={() => setActiveTab("infos")}
-  >
-    📋 Infos
-  </button>
-
-  <button
-    className={activeTab === "experience" ? "tab active" : "tab"}
-    onClick={() => setActiveTab("experience")}
-  >
-    💼 Expérience
-  </button>
-
-  <button
-    className={activeTab === "cv" ? "tab active" : "tab"}
-    onClick={() => setActiveTab("cv")}
-  >
-    📄 CV
-  </button>
-
-  {user.role === "CANDIDATE" && (
-    <button
-      className={activeTab === "candidatures" ? "tab active" : "tab"}
-      onClick={() => setActiveTab("candidatures")}
-    >
-      📝 Candidatures
-    </button>
-  )}
-</div>
-
-
-
-<CardContent className="card-body">
-  {activeTab === "infos" && (
-    <>
-      <p className="role">{user.role}</p>
-
-      {/* ENTREPRISE */}
-      {user.role === "ENTERPRISE" && user.enterprise && (
-        <>
-          <p><strong>🏢 Entreprise:</strong> {user.enterprise.name}</p>
-          <p><strong>📍 Localisation:</strong> {user.enterprise.location}</p>
-          <p><strong>💼 Secteur:</strong> {user.enterprise.industry}</p>
-          <p><strong>🌐 Site web:</strong> {user.enterprise.website}</p>
-          <p><strong>📧 Email:</strong> {user.email}</p>
-        </>
-      )}
-
-      {/* CANDIDAT */}
-      {user.role === "CANDIDATE" && user.profile && (
-        <>
-          <p><strong>📧 Email:</strong> {user.email}</p>
-          <p><strong>📞 Téléphone:</strong> {user.profile.phone || "Non fourni"}</p>
-
-          <div className="skills">
-            <p><strong>🛠️ Compétences:</strong></p>
-            {user.profile.skills?.length > 0 ? (
-              user.profile.skills.map((skill, index) => (
-                <span key={index} className="skill-badge">{skill}</span>
-              ))
-            ) : <p>Non fourni</p>}
           </div>
 
-          <div className="languages">
-            <p><strong>🌍 Langues:</strong></p>
-            {user.profile.languages?.length > 0 ? (
-              user.profile.languages.map((lang, index) => (
-                <span key={index} className="language-badge">{lang}</span>
-              ))
-            ) : <p>Non fourni</p>}
+          <div className="profile-details">
+            <div className="tab-buttons">
+              <button
+                className={activeTab === "infos" ? "tab active" : "tab"}
+                onClick={() => setActiveTab("infos")}
+              >
+                <FaUser /> Infos
+              </button>
+
+              <button
+                className={activeTab === "experience" ? "tab active" : "tab"}
+                onClick={() => setActiveTab("experience")}
+              >
+                <FaBriefcase /> Experience
+              </button>
+
+              <button
+                className={activeTab === "cv" ? "tab active" : "tab"}
+                onClick={() => setActiveTab("cv")}
+              >
+                <FaFilePdf /> CV
+              </button>
+
+              {user.role === "CANDIDATE" && (
+                <button
+                  className={activeTab === "candidatures" ? "tab active" : "tab"}
+                  onClick={() => setActiveTab("candidatures")}
+                >
+                  <FaEnvelope /> Applications
+                </button>
+              )}
+            </div>
+
+            <div className="profile-card">
+              {activeTab === "infos" && (
+                <>
+                  {user.role === "ENTERPRISE" && user.enterprise && (
+                    <>
+                      <div className="profile-detail">
+                        <FaBuilding className="detail-icon" />
+                        <div className="detail-content">
+                          <label>Company</label>
+                          <p>{user.enterprise.name}</p>
+                        </div>
+                      </div>
+
+                      <div className="profile-detail">
+                        <FaLocationDot className="detail-icon" />
+                        <div className="detail-content">
+                          <label>Location</label>
+                          <p>{user.enterprise.location}</p>
+                        </div>
+                      </div>
+
+                      <div className="profile-detail">
+                        <FaIndustry className="detail-icon" />
+                        <div className="detail-content">
+                          <label>Industry</label>
+                          <p>{user.enterprise.industry}</p>
+                        </div>
+                      </div>
+
+                      <div className="profile-detail">
+                        <FaGlobe className="detail-icon" />
+                        <div className="detail-content">
+                          <label>Website</label>
+                          <p>
+                            <a href={user.enterprise.website} target="_blank" rel="noreferrer">
+                              {user.enterprise.website}
+                            </a>
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="profile-detail">
+                        <FaEnvelope className="detail-icon" />
+                        <div className="detail-content">
+                          <label>Email</label>
+                          <p>{user.email}</p>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {user.role === "CANDIDATE" && user.profile && (
+                    <>
+                      <div className="profile-detail">
+                        <FaEnvelope className="detail-icon" />
+                        <div className="detail-content">
+                          <label>Email</label>
+                          <p>{user.email}</p>
+                        </div>
+                      </div>
+
+                      <div className="profile-detail">
+                        <FaPhone className="detail-icon" />
+                        <div className="detail-content">
+                          <label>Phone</label>
+                          <p>{user.profile.phone || "Not provided"}</p>
+                        </div>
+                      </div>
+
+                      <div className="profile-detail">
+                        <div className="detail-icon">
+                          <FaBriefcase />
+                        </div>
+                        <div className="detail-content">
+                          <label>Skills</label>
+                          <div className="skills">
+                            {user.profile.skills?.length > 0 ? (
+                              user.profile.skills.map((skill, index) => (
+                                <span key={index} className="skill-badge">{skill}</span>
+                              ))
+                            ) : <p>Not provided</p>}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="profile-detail">
+                        <div className="detail-icon">
+                          <FaGlobe />
+                        </div>
+                        <div className="detail-content">
+                          <label>Languages</label>
+                          <div className="languages">
+                            {user.profile.languages?.length > 0 ? (
+                              user.profile.languages.map((lang, index) => (
+                                <span key={index} className="language-badge">{lang}</span>
+                              ))
+                            ) : <p>Not provided</p>}
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+
+              {activeTab === "experience" && user.profile?.experience?.length > 0 && (
+                <div className="profile-detail description-detail">
+                  <div className="detail-icon">
+                    <FaBriefcase />
+                  </div>
+                  <div className="detail-content">
+                    <label>Experience</label>
+                    <ul className="experience-list">
+                      {user.profile.experience.map((exp, idx) => (
+                        <li key={idx}>
+                          <strong>{exp.title}</strong> at {exp.company} – {exp.duration}<br />
+                          <em>{exp.description}</em>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "cv" && (
+                <div className="profile-detail">
+                  <div className="detail-icon">
+                    <FaFilePdf />
+                  </div>
+                  <div className="detail-content">
+                    <label>Resume</label>
+                    {resumeUrl ? (
+                      <p className="cv-link">
+                        <a href={`http://localhost:3001${resumeUrl}`} target="_blank" rel="noopener noreferrer">
+                          <FaFilePdf /> View Resume
+                        </a>
+                      </p>
+                    ) : (
+                      <>
+                        <label className="upload-button">
+                          <input type="file" onChange={handleFileChange} accept=".pdf,.doc,.docx" hidden />
+                          <FaUpload /> Add Resume
+                        </label>
+                        {file && (
+                          <button className="upload-btn" onClick={handleFileUpload}>
+                            <FaUpload /> Upload
+                          </button>
+                        )}
+                      </>
+                    )}
+                    {uploadStatus && <p className={uploadStatus.includes("success") ? "text-success" : "text-danger"}>{uploadStatus}</p>}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "candidatures" && (
+                <div className="profile-detail">
+                  <div className="detail-icon">
+                    <FaEnvelope />
+                  </div>
+                  <div className="detail-content">
+                    <label>My Applications</label>
+                    {applications.length > 0 ? (
+                      applications.map((app, i) => (
+                        <div key={i} className="application-box">
+                          <p><strong>Position:</strong> {app.jobId?.title}</p>
+                          <p><strong>Email:</strong> {app.email}</p>
+                          <p><strong>Phone:</strong> {app.phone}</p>
+                          <p><strong>Date:</strong> {new Date(app.appliedAt).toLocaleDateString()}</p>
+                          <p><strong>Quiz Score:</strong> {app.quizScore !== undefined ? `${app.quizScore} / 10` : "Not taken"}</p>
+
+                          {app.cv && (
+                            <p>
+                              <a href={`http://localhost:3001${app.cv}`} target="_blank" rel="noopener noreferrer" className="cv-link">
+                                <FaFilePdf /> View CV
+                              </a>
+                            </p>
+                          )}
+
+                          <button
+                            className="btn btn-danger"
+                            onClick={() => handleDeleteApplication(app._id)}
+                          >
+                            Delete Application
+                          </button>
+                          <hr />
+                        </div>
+                      ))
+                    ) : (
+                      <p>No applications submitted yet.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        </>
-      )}
-    </>
-  )}
-
-  {activeTab === "experience" && user.profile?.experience?.length > 0 && (
-    <div className="experience">
-      <h4>Expérience</h4>
-      <ul>
-        {user.profile.experience.map((exp, idx) => (
-          <li key={idx}>
-            <strong>{exp.title}</strong> at {exp.company} – {exp.duration}<br />
-            <em>{exp.description}</em>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )}
-
-  {activeTab === "cv" && (
-    <div className="upload-container">
-      {resumeUrl ? (
-        <p className="cv-link">
-          <a href={`http://localhost:3001${resumeUrl}`} target="_blank" rel="noopener noreferrer">
-            <FaFilePdf /> Voir le CV
-          </a>
-        </p>
-      ) : (
-        <>
-          <label className="upload-button">
-            <input type="file" onChange={handleFileChange} accept=".pdf,.doc,.docx" hidden />
-            <FaUpload /> Ajouter un CV
-          </label>
-          {file && (
-            <button className="upload-btn" onClick={handleFileUpload}>
-              <FaUpload /> Upload
-            </button>
-          )}
-        </>
-      )}
-      {uploadStatus && <p>{uploadStatus}</p>}
-    </div>
-  )}
-
-  {/* ✅ NOUVEAU BLOC CANDIDATURES */}
-  {activeTab === "candidatures" && (
-    <>
-      <h4 className="section-title">📄 Mes Candidatures</h4>
-      {applications.length > 0 ? (
-  applications.map((app, i) => (
-    <div key={i} className="application-box">
-      <p><strong>🔹 Poste:</strong> {app.jobId?.title}</p>
-      <p><strong>📧 Email:</strong> {app.email}</p>
-      <p><strong>📞 Téléphone:</strong> {app.phone}</p>
-      <p><strong>📅 Date:</strong> {new Date(app.appliedAt).toLocaleDateString()}</p>
-      <p><strong>🎯 Score Quiz:</strong> {app.quizScore !== undefined ? `${app.quizScore} / 10` : "Pas encore passé"}</p>
-
-      {app.cv && (
-        <p>
-          <a href={`http://localhost:3001${app.cv}`} target="_blank" rel="noopener noreferrer" className="cv-link">
-            📄 Voir le CV
-          </a>
-        </p>
-      )}
-
-      {/* 🗑️ Bouton supprimer */}
-      <button
-  className="btn btn-danger"
-  onClick={() => handleDeleteApplication(app._id)}
->
-  ❌ Supprimer
-</button>
-
-      <hr />
-    </div>
-  ))
-) : (
-  <p>❌ Aucune candidature envoyée pour le moment.</p>
-)}
-
-    </>
-  )}
-</CardContent>
-
-
-        </Card>
+        </div>
       </div>
 
       <Footer />

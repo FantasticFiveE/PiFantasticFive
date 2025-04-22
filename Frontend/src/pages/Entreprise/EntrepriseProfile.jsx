@@ -4,8 +4,13 @@ import axios from "axios";
 import PublicLayout from "../../layouts/PublicLayout";
 import "./EntrepriseProfile.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTrashCan } from "@fortawesome/free-solid-svg-icons";
-import {faBuilding, faIndustry, faLocationDot, faGlobe, faFileLines, faPeopleGroup, faEdit, faSave, faTimes, faBriefcase, faCamera, faPlus, faMinus, faPlusCircle } from "@fortawesome/free-solid-svg-icons";
+import { 
+  faTrashCan, faBuilding, faIndustry, 
+  faLocationDot, faGlobe, faFileLines, 
+  faPeopleGroup, faEdit, faSave, faTimes, 
+  faBriefcase, faCamera, faPlus, faMinus, 
+  faPlusCircle, faCalendarAlt, faVideo 
+} from "@fortawesome/free-solid-svg-icons";
 
 const EntrepriseProfile = () => {
   const { id } = useParams();
@@ -24,12 +29,22 @@ const EntrepriseProfile = () => {
   const [selectedJobId, setSelectedJobId] = useState(null);
   const [selectedApplications, setSelectedApplications] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  
+  const [showInterviewModal, setShowInterviewModal] = useState(false);
+  const [selectedCandidate, setSelectedCandidate] = useState(null);
+  const [interviewDetails, setInterviewDetails] = useState({
+    type: 'Virtual',
+    link: '',
+    date: '',
+    time: '',
+    notes: ''
+  });
+  const [scheduledInterviews, setScheduledInterviews] = useState([]);
   const [showQuizFormModal, setShowQuizFormModal] = useState(false);
   const [quizJobId, setQuizJobId] = useState(null);
-  const [quizQuestions, setQuizQuestions] = useState([{ question: "", options: ["", "", "", ""], correctAnswer: 0 }]);
-  
-
+  const [quizQuestions, setQuizQuestions] = useState([
+    { question: "", options: ["", "", "", ""], correctAnswer: 0 },
+  ]);
+  const [jobQuizLengths, setJobQuizLengths] = useState({});
 
   const [newJob, setNewJob] = useState({
     title: "",
@@ -37,16 +52,47 @@ const EntrepriseProfile = () => {
     location: "",
     salary: "",
     languages: "",
-    skills: ""
+    skills: "",
   });
 
   const fileInputRef = useRef(null);
 
-  const openQuizFormModal = (jobId) => {
-    setQuizJobId(jobId);
-    setShowQuizFormModal(true);
+  // Fetch scheduled interviews for the job
+  const fetchInterviews = async (jobId) => {
+    try {
+      const res = await axios.get(`http://localhost:3001/api/interviews/job/${jobId}?enterpriseId=${id}`);
+      setScheduledInterviews(res.data);
+    } catch (err) {
+      console.error("Error fetching interviews:", err);
+    }
   };
-  
+
+  const fetchQuizLengths = async () => {
+    try {
+      const res = await axios.get('http://localhost:3001/Frontend/quiz-lengths');
+      setJobQuizLengths(res.data);
+    } catch (err) {
+      console.error("Error fetching quiz lengths:", err);
+    }
+  };
+
+  const openQuizFormModal = async (jobId) => {
+    try {
+      const res = await axios.get(`http://localhost:3001/quiz/job/${jobId}`);
+      if (res.data && res.data.questions) {
+        setQuizQuestions(res.data.questions);
+      } else {
+        setQuizQuestions([{ question: "", options: ["", "", "", ""], correctAnswer: 0 }]);
+      }
+      setQuizJobId(jobId);
+      setShowQuizFormModal(true);
+    } catch (err) {
+      console.error("Error fetching quiz:", err);
+      setQuizQuestions([{ question: "", options: ["", "", "", ""], correctAnswer: 0 }]);
+      setQuizJobId(jobId);
+      setShowQuizFormModal(true);
+    }
+  };
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -54,31 +100,30 @@ const EntrepriseProfile = () => {
         const userId = localStorage.getItem("userId");
         const [jobsRes, countRes] = await Promise.all([
           axios.get(`http://localhost:3001/Frontend/jobs-by-entreprise/${userId}`),
-          axios.get(`http://localhost:3001/Frontend/job-applications-count/${userId}`)
+          axios.get(`http://localhost:3001/Frontend/job-applications-count/${userId}`),
         ]);
         setJobs(jobsRes.data);
         setApplicationCounts(countRes.data);
+        fetchQuizLengths();
       } catch (error) {
         console.error("❌ Failed to fetch jobs or counts", error);
       }
     };
-  
+
     fetchJobs();
   }, []);
-
-
 
   useEffect(() => {
     const fetchApplications = async () => {
       try {
-        const enterpriseId = localStorage.getItem("userId"); // ou le bon ID de l'entreprise
+        const enterpriseId = localStorage.getItem("userId");
         const res = await axios.get(`http://localhost:3001/Frontend/applications/${enterpriseId}`);
         setApplications(res.data);
       } catch (err) {
-        console.error("❌ Erreur récupération des candidatures:", err);
+        console.error("❌ Error fetching applications:", err);
       }
     };
-  
+
     fetchApplications();
   }, []);
 
@@ -91,22 +136,29 @@ const EntrepriseProfile = () => {
         setEditedEnterprise(res.data.User.enterprise);
         setLoading(false);
       } catch (err) {
-        console.error("Erreur entreprise:", err);
+        console.error("Error fetching enterprise:", err);
       }
     };
-    
+
     const fetchEnterpriseJobs = async () => {
       try {
         const res = await axios.get(`http://localhost:3001/Frontend/jobs-by-entreprise/${id}`);
         setEnterpriseJobs(res.data);
       } catch (err) {
-        console.error("Erreur lors de la récupération des jobs de l'entreprise :", err);
+        console.error("Error fetching enterprise jobs:", err);
       }
     };
 
     fetchEntreprise();
     fetchEnterpriseJobs();
   }, [id]);
+
+  // Call fetchInterviews when job is selected
+  useEffect(() => {
+    if (selectedJobId) {
+      fetchInterviews(selectedJobId);
+    }
+  }, [selectedJobId]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -118,30 +170,99 @@ const EntrepriseProfile = () => {
   };
 
   const handleDeleteJob = async (jobId) => {
-    const confirm = window.confirm("Voulez-vous vraiment supprimer ce job ?");
+    const confirm = window.confirm("Are you sure you want to delete this job?");
     if (!confirm) return;
-  
+
     try {
       await axios.delete(`http://localhost:3001/Frontend/delete-job/${jobId}`);
-      // Update jobs list locally after deletion
       setEnterpriseJobs((prev) => prev.filter((job) => job._id !== jobId));
     } catch (error) {
-      console.error("Erreur lors de la suppression du job :", error);
+      console.error("Error deleting job:", error);
     }
   };
+
+  const openApplicationModal = async (jobId) => {
+    try {
+      const res = await axios.get(`http://localhost:3001/Frontend/job-applications/${jobId}`);
+      
+      // Handle different response formats
+      let applications = [];
+      
+      if (Array.isArray(res.data)) {
+        // If response is already an array
+        applications = res.data;
+      } else if (res.data && Array.isArray(res.data.applications)) {
+        // If response is an object with applications array
+        applications = res.data.applications;
+      } else if (res.data && typeof res.data === 'object') {
+        // If response is a single object, put it in an array
+        applications = [res.data];
+      }
+      
+      // Get quiz length - use first application or fallback
+      const quizLength = applications[0]?.quizLength || (jobQuizLengths[jobId] || 0);
+      const passingScore = Math.ceil(quizLength / 2);
   
-const openApplicationModal = async (jobId) => {
-  try {
-    const res = await axios.get(`http://localhost:3001/Frontend/job-applications/${jobId}`);
-    setSelectedApplications(res.data);
-    setSelectedJobId(jobId);
-    setShowModal(true);
-  } catch (err) {
-    console.error("❌ Failed to fetch applications for job:", jobId, err);
-  }
-};
+      // Filter qualified candidates
+      const qualifiedCandidates = applications.filter(app => {
+        return app.quizScore !== undefined && app.quizScore >= passingScore;
+      });
+  
+      setSelectedApplications(qualifiedCandidates);
+      setSelectedJobId(jobId);
+      setShowModal(true);
+    } catch (err) {
+      console.error("❌ Failed to fetch applications for job:", jobId, err);
+      setSelectedApplications([]); // Set empty array on error
+      setShowModal(true); // Still show the modal
+    }
+  };
+  const handleScheduleInterview = (candidate) => {
+    setSelectedCandidate(candidate);
+    setShowInterviewModal(true);
+  };
 
+  const handleInterviewChange = (e) => {
+    const { name, value } = e.target;
+    setInterviewDetails(prev => ({ ...prev, [name]: value }));
+  };
 
+  const handleSubmitInterview = async () => {
+    try {
+      const interviewData = {
+        jobId: selectedJobId,
+        enterpriseId: id,
+        candidateId: selectedCandidate.candidateId._id,
+        date: new Date(`${interviewDetails.date}T${interviewDetails.time}`),
+        status: 'Scheduled',
+        meeting: {
+          type: interviewDetails.type,
+          link: interviewDetails.type === 'Virtual' 
+            ? interviewDetails.link 
+            : enterprise.location,
+          notes: interviewDetails.notes
+        }
+      };
+  
+      const response = await axios.post('http://localhost:3001/api/interviews', interviewData);
+
+      alert('Interview scheduled successfully! The candidate will receive a confirmation email.');
+      
+      setShowInterviewModal(false);
+      setInterviewDetails({
+        type: 'Virtual',
+        link: '',
+        date: '',
+        time: '',
+        notes: ''
+      });
+      
+      fetchInterviews(selectedJobId);
+    } catch (error) {
+      console.error('Error scheduling interview:', error);
+      alert(`Failed to schedule interview: ${error.response?.data?.message || error.message}`);
+    }
+  };
 
   const handleChooseImage = () => fileInputRef.current.click();
 
@@ -169,46 +290,50 @@ const openApplicationModal = async (jobId) => {
       const res = await axios.put(`http://localhost:3001/Frontend/updateUser/${id}`, {
         enterprise: editedEnterprise,
       });
-  
+
       setEnterprise(res.data.enterprise);
       setIsEditing(false);
-      setUserPicture(res.data.picture || userPicture); // ajoute ça après setEnterprise
+      setUserPicture(res.data.picture || userPicture);
 
       if (selectedFile) {
         const formData = new FormData();
         formData.append("picture", selectedFile);
         formData.append("userId", id);
-  
-        const uploadRes = await axios.post("http://localhost:3001/Frontend/upload-profile", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-  
+
+        const uploadRes = await axios.post(
+          "http://localhost:3001/Frontend/upload-profile",
+          formData,
+          {
+            headers: { "Content-Type": "multipart/form-data" },
+          }
+        );
+
         if (uploadRes.data.pictureUrl) {
           setUserPicture(uploadRes.data.pictureUrl);
         }
       }
-  
+
       setImagePreview(null);
       setSelectedFile(null);
     } catch (error) {
-      console.error("Erreur lors de la mise à jour :", error);
+      console.error("Error updating profile:", error);
     }
   };
-  
 
   const handleSubmitQuiz = async () => {
     try {
       await axios.post("http://localhost:3001/Frontend/create-quiz", {
         jobId: quizJobId,
-        questions: quizQuestions
+        questions: quizQuestions,
       });
-      alert("🎉 Quiz enregistré avec succès !");
+      alert("🎉 Quiz saved successfully!");
       setShowQuizFormModal(false);
+      fetchQuizLengths(); // Refresh quiz lengths
     } catch (error) {
-      console.error("Erreur lors de l'enregistrement du quiz :", error);
+      console.error("Error saving quiz:", error);
+      alert("Failed to save quiz. Please try again.");
     }
   };
-  
 
   const handleJobChange = (e) => {
     const { name, value } = e.target;
@@ -222,38 +347,44 @@ const openApplicationModal = async (jobId) => {
         description: newJob.description,
         location: newJob.location,
         salary: newJob.salary,
-        skills: newJob.skills.split(',').map(skill => skill.trim()),
-        languages: newJob.languages.split(',').map(lang => lang.trim()),
-        entrepriseId: id
+        skills: newJob.skills.split(",").map((skill) => skill.trim()),
+        languages: newJob.languages.split(",").map((lang) => lang.trim()),
+        entrepriseId: id,
       });
-  
-      // Refresh job list after adding
+
       const res = await axios.get(`http://localhost:3001/Frontend/jobs-by-entreprise/${id}`);
       setEnterpriseJobs(res.data);
-      
-      alert("Nouveau poste ajouté avec succès !");
-      setNewJob({ title: "", description: "", location: "", salary: "", languages: "", skills: "" });
+
+      alert("New job added successfully!");
+      setNewJob({
+        title: "",
+        description: "",
+        location: "",
+        salary: "",
+        languages: "",
+        skills: "",
+      });
       setShowJobForm(false);
     } catch (err) {
-      console.error("Erreur lors de l'ajout du job :", err);
+      console.error("Error adding job:", err);
     }
   };
 
   return (
     <PublicLayout>
       <div className="entreprise-profile-container">
-      <div className="entreprise-profile">
+        <div className="entreprise-profile">
           {loading ? (
             <div className="text-center">
               <div className="loading-spinner">
                 <div className="spinner-border text-light" role="status">
-                  <span className="visually-hidden">Chargement...</span>
+                  <span className="visually-hidden">Loading...</span>
                 </div>
               </div>
             </div>
           ) : !enterprise ? (
             <div className="alert alert-danger" role="alert">
-              Aucune donnée trouvée pour cette entreprise.
+              No data found for this enterprise.
             </div>
           ) : (
             <>
@@ -264,7 +395,7 @@ const openApplicationModal = async (jobId) => {
                 </h2>
                 {!isEditing && (
                   <button className="btn btn-edit-profile" onClick={handleEdit}>
-                    <FontAwesomeIcon icon={faEdit} /> Modifier
+                    <FontAwesomeIcon icon={faEdit} /> Edit
                   </button>
                 )}
               </div>
@@ -274,10 +405,10 @@ const openApplicationModal = async (jobId) => {
                   <div className="image-upload-container">
                     {userPicture && !imagePreview ? (
                       <div className="enterprise-image-wrapper">
-                        <img 
-                          src={`http://localhost:3001${userPicture}`} 
-                          alt={enterprise.name} 
-                          className="enterprise-image" 
+                        <img
+                          src={`http://localhost:3001${userPicture}`}
+                          alt={enterprise.name}
+                          className="enterprise-image"
                         />
                         {isEditing && (
                           <div className="image-overlay" onClick={handleChooseImage}>
@@ -286,12 +417,12 @@ const openApplicationModal = async (jobId) => {
                         )}
                       </div>
                     ) : !userPicture && !imagePreview ? (
-                      <div 
-                        className={`image-placeholder ${isEditing ? 'editable' : ''}`} 
+                      <div
+                        className={`image-placeholder ${isEditing ? "editable" : ""}`}
                         onClick={isEditing ? handleChooseImage : null}
                       >
                         <FontAwesomeIcon icon={faCamera} className="camera-icon" />
-                        <span>Ajouter une image</span>
+                        <span>Add image</span>
                       </div>
                     ) : (
                       <div className="enterprise-image-wrapper">
@@ -315,16 +446,14 @@ const openApplicationModal = async (jobId) => {
                       onChange={handleImageChange}
                     />
                   </div>
-                  
-                  
-                    <button 
-                      className="btn btn-add-job mt-4 w-100" 
-                      onClick={() => setShowJobForm(!showJobForm)}
-                    >
-                      <FontAwesomeIcon icon={showJobForm ? faMinus : faPlus} className="me-2" />
-                      {showJobForm ? 'Masquer' : 'Ajouter un Job'}
-                    </button>
-                  
+
+                  <button
+                    className="btn btn-add-job mt-4 w-100"
+                    onClick={() => setShowJobForm(!showJobForm)}
+                  >
+                    <FontAwesomeIcon icon={showJobForm ? faMinus : faPlus} className="me-2" />
+                    {showJobForm ? "Hide" : "Add Job"}
+                  </button>
                 </div>
 
                 <div className="profile-details">
@@ -332,13 +461,13 @@ const openApplicationModal = async (jobId) => {
                     <div className="profile-detail">
                       <FontAwesomeIcon icon={faBuilding} className="detail-icon" />
                       <div className="detail-content">
-                        <label>Nom</label>
+                        <label>Name</label>
                         {isEditing ? (
-                          <input 
-                            name="name" 
-                            className="form-control" 
-                            value={editedEnterprise.name || ""} 
-                            onChange={handleChange} 
+                          <input
+                            name="name"
+                            className="form-control"
+                            value={editedEnterprise.name || ""}
+                            onChange={handleChange}
                           />
                         ) : (
                           <p>{enterprise.name}</p>
@@ -349,13 +478,13 @@ const openApplicationModal = async (jobId) => {
                     <div className="profile-detail">
                       <FontAwesomeIcon icon={faIndustry} className="detail-icon" />
                       <div className="detail-content">
-                        <label>Industrie</label>
+                        <label>Industry</label>
                         {isEditing ? (
-                          <input 
-                            name="industry" 
-                            className="form-control" 
-                            value={editedEnterprise.industry || ""} 
-                            onChange={handleChange} 
+                          <input
+                            name="industry"
+                            className="form-control"
+                            value={editedEnterprise.industry || ""}
+                            onChange={handleChange}
                           />
                         ) : (
                           <p>{enterprise.industry}</p>
@@ -366,13 +495,13 @@ const openApplicationModal = async (jobId) => {
                     <div className="profile-detail">
                       <FontAwesomeIcon icon={faLocationDot} className="detail-icon" />
                       <div className="detail-content">
-                        <label>Localisation</label>
+                        <label>Location</label>
                         {isEditing ? (
-                          <input 
-                            name="location" 
-                            className="form-control" 
-                            value={editedEnterprise.location || ""} 
-                            onChange={handleChange} 
+                          <input
+                            name="location"
+                            className="form-control"
+                            value={editedEnterprise.location || ""}
+                            onChange={handleChange}
                           />
                         ) : (
                           <p>{enterprise.location}</p>
@@ -383,16 +512,20 @@ const openApplicationModal = async (jobId) => {
                     <div className="profile-detail">
                       <FontAwesomeIcon icon={faGlobe} className="detail-icon" />
                       <div className="detail-content">
-                        <label>Site Web</label>
+                        <label>Website</label>
                         {isEditing ? (
-                          <input 
-                            name="website" 
-                            className="form-control" 
-                            value={editedEnterprise.website || ""} 
-                            onChange={handleChange} 
+                          <input
+                            name="website"
+                            className="form-control"
+                            value={editedEnterprise.website || ""}
+                            onChange={handleChange}
                           />
                         ) : (
-                          <p><a href={enterprise.website} target="_blank" rel="noreferrer">{enterprise.website}</a></p>
+                          <p>
+                            <a href={enterprise.website} target="_blank" rel="noreferrer">
+                              {enterprise.website}
+                            </a>
+                          </p>
                         )}
                       </div>
                     </div>
@@ -400,14 +533,14 @@ const openApplicationModal = async (jobId) => {
                     <div className="profile-detail">
                       <FontAwesomeIcon icon={faPeopleGroup} className="detail-icon" />
                       <div className="detail-content">
-                        <label>Nombre d'employés</label>
+                        <label>Employee Count</label>
                         {isEditing ? (
-                          <input 
-                            name="employeeCount" 
-                            type="number" 
-                            className="form-control" 
-                            value={editedEnterprise.employeeCount || ""} 
-                            onChange={handleChange} 
+                          <input
+                            name="employeeCount"
+                            type="number"
+                            className="form-control"
+                            value={editedEnterprise.employeeCount || ""}
+                            onChange={handleChange}
                           />
                         ) : (
                           <p>{enterprise.employeeCount}</p>
@@ -420,12 +553,12 @@ const openApplicationModal = async (jobId) => {
                       <div className="detail-content">
                         <label>Description</label>
                         {isEditing ? (
-                          <textarea 
-                            name="description" 
-                            className="form-control" 
-                            value={editedEnterprise.description || ""} 
+                          <textarea
+                            name="description"
+                            className="form-control"
+                            value={editedEnterprise.description || ""}
                             onChange={handleChange}
-                            rows="4" 
+                            rows="4"
                           />
                         ) : (
                           <p>{enterprise.description}</p>
@@ -438,33 +571,32 @@ const openApplicationModal = async (jobId) => {
                     <div className="profile-actions">
                       <button className="btn btn-save" onClick={handleSave}>
                         <FontAwesomeIcon icon={faSave} className="me-2" />
-                        Enregistrer
+                        Save
                       </button>
                       <button className="btn btn-cancel" onClick={handleCancelEdit}>
                         <FontAwesomeIcon icon={faTimes} className="me-2" />
-                        Annuler
+                        Cancel
                       </button>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Job Form */}
               {showJobForm && (
                 <div className="job-form">
                   <h4 className="mb-4">
                     <FontAwesomeIcon icon={faBriefcase} className="me-2" />
-                    Nouveau poste
+                    New Job Position
                   </h4>
                   <div className="mb-3">
-                    <label className="form-label">Titre du poste</label>
+                    <label className="form-label">Job Title</label>
                     <input
                       type="text"
                       className="form-control"
                       name="title"
                       value={newJob.title}
                       onChange={handleJobChange}
-                      placeholder="Ex: Développeur Frontend React"
+                      placeholder="Ex: React Frontend Developer"
                     />
                   </div>
                   <div className="mb-3">
@@ -474,14 +606,14 @@ const openApplicationModal = async (jobId) => {
                       name="description"
                       value={newJob.description}
                       onChange={handleJobChange}
-                      placeholder="Décrivez les responsabilités et qualifications requises"
+                      placeholder="Describe responsibilities and required qualifications"
                       rows="4"
                     ></textarea>
                   </div>
-                  
+
                   <div className="row">
                     <div className="col-md-6 mb-3">
-                      <label className="form-label">Localisation</label>
+                      <label className="form-label">Location</label>
                       <input
                         type="text"
                         className="form-control"
@@ -492,7 +624,7 @@ const openApplicationModal = async (jobId) => {
                       />
                     </div>
                     <div className="col-md-6 mb-3">
-                      <label className="form-label">Salaire (€)</label>
+                      <label className="form-label">Salary (€)</label>
                       <input
                         type="number"
                         className="form-control"
@@ -503,21 +635,21 @@ const openApplicationModal = async (jobId) => {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="row">
                     <div className="col-md-6 mb-3">
-                      <label className="form-label">Langues requises</label>
+                      <label className="form-label">Required Languages</label>
                       <input
                         type="text"
                         className="form-control"
                         name="languages"
                         value={newJob.languages}
                         onChange={handleJobChange}
-                        placeholder="Ex: Anglais, Français"
+                        placeholder="Ex: English, French"
                       />
                     </div>
                     <div className="col-md-6 mb-3">
-                      <label className="form-label">Compétences requises</label>
+                      <label className="form-label">Required Skills</label>
                       <input
                         type="text"
                         className="form-control"
@@ -530,13 +662,13 @@ const openApplicationModal = async (jobId) => {
                   </div>
 
                   <div className="text-end mt-4">
-                    <button 
-                      className="btn btn-success" 
+                    <button
+                      className="btn btn-success"
                       onClick={handleAddJob}
                       disabled={!newJob.title || !newJob.description}
                     >
                       <FontAwesomeIcon icon={faPlusCircle} className="me-2" />
-                      Ajouter
+                      Add
                     </button>
                   </div>
                 </div>
@@ -544,231 +676,414 @@ const openApplicationModal = async (jobId) => {
             </>
           )}
         </div>
-        
+
         {enterpriseJobs.length > 0 && (
-  <div className="jobs-section mt-5">
-    <h4 className="mb-4">
-      <i className="fas fa-briefcase icon"></i>Jobs publiés par votre entreprise
-    </h4>
-    <div className="jobs-grid">
-      {enterpriseJobs.map((job, index) => (
-        <div 
-          key={job._id} 
-          className="job-card" 
-          style={{ animationDelay: `${index * 0.1}s` }}
-        >
-          <div className="card-header position-relative d-flex justify-content-between align-items-center">
-            
-          <h5 className="card-title d-flex align-items-center gap-2">
-  {applicationCounts[job._id] > 0 && (
-    <div
-      className="notification-badge"
-      onClick={() => openApplicationModal(job._id)}
-      style={{ cursor: "pointer" }}
-      title="Voir les candidatures"
-    >
-      🔔 <span className="notif-count">{applicationCounts[job._id]}</span>
-    </div>
-  )}
-  {job.title}
-</h5>
+          <div className="jobs-section mt-5">
+            <h4 className="mb-4">
+              <i className="fas fa-briefcase icon"></i>Jobs posted by your company
+            </h4>
+            <div className="jobs-grid">
+              {enterpriseJobs.map((job, index) => (
+                <div key={job._id} className="job-card" style={{ animationDelay: `${index * 0.1}s` }}>
+                  <div className="card-header position-relative d-flex justify-content-between align-items-center">
+                    <h5 className="card-title d-flex align-items-center gap-2">
+                      {applicationCounts[job._id] > 0 && (
+                        <div
+                          className="notification-badge"
+                          onClick={() => openApplicationModal(job._id)}
+                          style={{ cursor: "pointer" }}
+                          title="View applications"
+                        >
+                          🔔 <span className="notif-count">{applicationCounts[job._id]}</span>
+                        </div>
+                      )}
+                      {job.title}
+                    </h5>
 
+                    <FontAwesomeIcon
+                      icon={faTrashCan}
+                      className="delete-icon-top"
+                      onClick={() => handleDeleteJob(job._id)}
+                      title="Delete this job"
+                    />
+                  </div>
 
+                  <div className="card-body">
+                    <div className="job-detail">
+                      <strong>Description:</strong> {job.description}
+                    </div>
+                    <div className="job-detail">
+                      <strong>
+                        <i className="fas fa-map-marker-alt me-2"></i>Location:
+                      </strong>{" "}
+                      {job.location}
+                    </div>
+                    <div className="job-detail">
+                      <strong>Salary:</strong> {job.salary} €
+                    </div>
 
+                    {job.languages?.length > 0 && (
+                      <div className="job-detail">
+                        <strong>Languages:</strong>
+                        <div className="tag-container">
+                          {job.languages.map((lang, i) => (
+                            <span key={i} className="language-tag">
+                              <i className="fas fa-language"></i> {lang}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
-            <FontAwesomeIcon
-              icon={faTrashCan}
-              className="delete-icon-top"
-              onClick={() => handleDeleteJob(job._id)}
-              title="Supprimer ce job"
-            />
-          </div>
-
-          <div className="card-body">
-            <div className="job-detail">
-              <strong>Description:</strong> {job.description}
-            </div>
-            <div className="job-detail">
-              <strong><i className="fas fa-map-marker-alt me-2"></i>Localisation:</strong> {job.location}
-            </div>
-            <div className="job-detail">
-              <strong>Salaire:</strong> {job.salary} €
-            </div>
-
-         
-
-            {job.languages?.length > 0 && (
-              <div className="job-detail">
-                <strong>Langues:</strong>
-                <div className="tag-container">
-                  {job.languages.map((lang, i) => (
-                    <span key={i} className="language-tag">
-                      <i className="fas fa-language"></i> {lang}
-                    </span>
-                  ))}
+                    {job.skills?.length > 0 && (
+                      <div className="job-detail">
+                        <strong>Skills:</strong>
+                        <div className="tag-container">
+                          {job.skills.map((skill, i) => (
+                            <span key={i} className="skill-tag">
+                              <i className="fas fa-code"></i> {skill}
+                            </span>
+                          ))}
+                          <button
+                            className="btn btn-outline-warning mt-2"
+                            onClick={() => openQuizFormModal(job._id)}
+                          >
+                            {jobQuizLengths[job._id] ? `Edit Quiz (${jobQuizLengths[job._id]} questions)` : "Add Quiz"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
-
-            {job.skills?.length > 0 && (
-              <div className="job-detail">
-                <strong>Compétences:</strong>
-                <div className="tag-container">
-                  {job.skills.map((skill, i) => (
-                    <span key={i} className="skill-tag">
-                      <i className="fas fa-code"></i> {skill}
-                    </span>
-                  ))}
-                     <button
-  className="btn btn-outline-warning mt-2"
-  onClick={() => openQuizFormModal(job._id)}
->
-  🧠 Ajouter un Quiz
-</button>
-
-                </div>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
-    </div>
-  </div>
-)}
-
-
-{showModal && (
-  <div className="custom-modal-overlay" onClick={() => setShowModal(false)}>
-    <div className="custom-modal" onClick={(e) => e.stopPropagation()}>
-      <h4 className="modal-title">Candidatures pour ce poste</h4>
-      <button className="close-modal" onClick={() => setShowModal(false)}>✖</button>
-      {selectedApplications.length > 0 ? (
-        <ul className="application-list">
-          {selectedApplications.map((app, index) => (
-            <li key={index} className="application-item">
-              <p><strong>Nom:</strong> {app.fullName}</p>
-              <p><strong>Email:</strong> {app.email}</p>
-              <p><strong>Téléphone:</strong> {app.phone}</p>
-              <p><strong>Résultat du Quiz :</strong> {app.quizScore}/10</p>
-
-              {/* Ajoute d'autres infos ici si tu veux */}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p>Aucune candidature reçue pour ce poste.</p>
-      )}
-    </div>
-  </div>
-)}
-
+        )}
 
 {showModal && (
   <div className="custom-modal-overlay">
     <div className="custom-modal">
       <div className="modal-header">
-        <h5>Candidatures pour le job</h5>
-        <button className="close-button" onClick={() => setShowModal(false)}>✖</button>
+        <h5>Qualified Candidates for this Job</h5>
+        <button className="close-button" onClick={() => setShowModal(false)}>
+          ✖
+        </button>
       </div>
       <div className="modal-body">
-      {selectedApplications.length > 0 ? (
-  selectedApplications.map((app, i) => (
-    <div key={i} className="application-card">
-      <p><strong>Nom :</strong> {app.candidateId?.name}</p>
-      <p><strong>Email :</strong> {app.candidateId?.email}</p>
-      <p><strong>Téléphone :</strong> {app.candidateId?.profile?.phone || 'Non disponible'}</p>
+        {selectedApplications.length > 0 ? (
+          selectedApplications.map((app, i) => (
+            <div key={i} className="application-card">
+              <p><strong>Name:</strong> {app.candidateId?.name}</p>
+              <p><strong>Email:</strong> {app.candidateId?.email}</p>
+              <p><strong>Phone:</strong> {app.candidateId?.profile?.phone || "Not available"}</p>
+              <p>
+                <strong>Quiz score:</strong> {app.quizScore}/{app.quizLength} 
+                ({Math.round((app.quizScore/app.quizLength)*100)}%)
+              </p>
+              <p className="text-success">✅ Qualified (Needed {app.passingScore} correct answers)</p>
 
-      {/* ✅ Affiche le score du quiz */}
-      <p><strong>Score au quiz :</strong> {app.quizScore !== undefined ? `${app.quizScore} / 10` : 'Non soumis'}</p>
-
-      <div className="action-buttons">
-        <a href={`mailto:${app.candidateId?.email}`} className="btn btn-outline-primary">📧 Envoyer un email</a>
-        {app.candidateId?.profile?.phone && (
-          <a href={`tel:${app.candidateId.profile.phone}`} className="btn btn-outline-success">📞 Appeler</a>
-        )}
-        {app.cv && (
-          <a 
-            href={`http://localhost:3001${app.cv}`} 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="btn btn-outline-secondary"
-          >
-            📄 Télécharger le CV
-          </a>
+              <div className="action-buttons">
+                <button 
+                  className="btn btn-primary"
+                  onClick={() => handleScheduleInterview(app)}
+                >
+                  <FontAwesomeIcon icon={faCalendarAlt} className="me-2" />
+                  Schedule Interview
+                </button>
+                <a
+                  href={`mailto:${app.candidateId?.email}`}
+                  className="btn btn-outline-primary"
+                >
+                  📧 Send email
+                </a>
+                {app.candidateId?.profile?.phone && (
+                  <a
+                    href={`tel:${app.candidateId.profile.phone}`}
+                    className="btn btn-outline-success"
+                  >
+                    📞 Call
+                  </a>
+                )}
+                {app.cv && (
+                  <a
+                    href={`http://localhost:3001${app.cv}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-outline-secondary"
+                  >
+                    📄 Download CV
+                  </a>
+                )}
+              </div>
+              <hr />
+            </div>
+          ))
+        ) : (
+          <div className="alert alert-info">
+            No qualified candidates found for this job. Candidates need to complete and pass the quiz to be eligible.
+          </div>
         )}
       </div>
-      <hr />
-    </div>
-  ))
-) : (
-  <p>Aucune candidature trouvée pour ce job.</p>
-)}
-
-
-      </div>  
     </div>
   </div>
 )}
 
-{showQuizFormModal && (
-  <div className="quiz-modal">
-    <h4>Ajouter un Quiz pour ce job</h4>
-    {quizQuestions.map((q, idx) => (
-      <div key={idx} className="mb-3">
-        <label>Question {idx + 1}</label>
-        <input
-          type="text"
-          className="form-control"
-          value={q.question}
-          onChange={(e) => {
-            const updated = [...quizQuestions];
-            updated[idx].question = e.target.value;
-            setQuizQuestions(updated);
-          }}
-        />
-        {q.options.map((opt, i) => (
-          <input
-            key={i}
-            type="text"
-            placeholder={`Option ${i + 1}`}
-            className="form-control mt-1"
-            value={opt}
-            onChange={(e) => {
-              const updated = [...quizQuestions];
-              updated[idx].options[i] = e.target.value;
-              setQuizQuestions(updated);
-            }}
-          />
-        ))}
-        <select
-          className="form-select mt-2"
-          value={q.correctAnswer}
-          onChange={(e) => {
-            const updated = [...quizQuestions];
-            updated[idx].correctAnswer = parseInt(e.target.value);
-            setQuizQuestions(updated);
-          }}
-        >
-          <option value={0}>Réponse correcte: Option 1</option>
-          <option value={1}>Option 2</option>
-          <option value={2}>Option 3</option>
-          <option value={3}>Option 4</option>
-        </select>
-      </div>
-    ))}
-    <button className="btn btn-secondary" onClick={() => {
-      if (quizQuestions.length < 10) {
-        setQuizQuestions([...quizQuestions, { question: "", options: ["", "", "", ""], correctAnswer: 0 }]);
-      }
-    }}>➕ Ajouter une autre question</button>
+        {/* Scheduled Interviews Section */}
+        {scheduledInterviews.length > 0 && (
+          <div className="interviews-section mt-5">
+            <h4 className="mb-4">
+              <FontAwesomeIcon icon={faCalendarAlt} className="me-2" />
+              Scheduled Interviews
+            </h4>
+            <div className="interview-list">
+              {scheduledInterviews.map((interview, index) => (
+                <div key={index} className="interview-card">
+                  <div className="interview-header">
+                    <h6>
+                      <FontAwesomeIcon icon={faVideo} className="me-2" />
+                      Interview with {interview.candidateId?.name}
+                    </h6>
+                    <span className={`status-badge ${interview.status.toLowerCase()}`}>
+                      {interview.status}
+                    </span>
+                  </div>
+                  <div className="interview-details">
+                    <p>
+                      <strong>Date:</strong> {new Date(interview.date).toLocaleString()}
+                    </p>
+                    <p>
+                      <strong>Type:</strong> {interview.meeting.type}
+                    </p>
+                    {interview.meeting.type === 'Virtual' && (
+                      <p>
+                        <strong>Link:</strong> 
+                        <a 
+                          href={interview.meeting.link} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="interview-link"
+                        >
+                          {interview.meeting.link}
+                        </a>
+                      </p>
+                    )}
+                    {interview.meeting.notes && (
+                      <p>
+                        <strong>Notes:</strong> {interview.meeting.notes}
+                      </p>
+                    )}
+                  </div>
+                  <div className="interview-actions">
+                    {interview.meeting.type === 'Virtual' && (
+                      <a 
+                        href={interview.meeting.link} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="btn btn-sm btn-primary"
+                      >
+                        <FontAwesomeIcon icon={faVideo} className="me-2" />
+                        Join Meeting
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-    <button className="btn btn-success mt-3" onClick={handleSubmitQuiz}>✅ Enregistrer le quiz</button>
-    <button className="btn btn-danger mt-2" onClick={() => setShowQuizFormModal(false)}>❌ Fermer</button>
-  </div>
-)}
+        {showInterviewModal && (
+          <div className="custom-modal-overlay">
+            <div className="custom-modal">
+              <div className="modal-header">
+                <h5>Schedule Interview with {selectedCandidate?.candidateId?.name}</h5>
+                <button className="close-button" onClick={() => setShowInterviewModal(false)}>
+                  ✖
+                </button>
+              </div>
+              <div className="modal-body">
+                <div className="mb-3">
+                  <label className="form-label">Interview Type</label>
+                  <select
+                    name="type"
+                    className="form-select"
+                    value={interviewDetails.type}
+                    onChange={handleInterviewChange}
+                  >
+                    <option value="Virtual">Virtual</option>
+                    <option value="In-person">In-person</option>
+                  </select>
+                </div>
 
+                {interviewDetails.type === 'Virtual' && (
+                  <div className="mb-3">
+                    <label className="form-label">Meeting Link</label>
+                    <input
+                      type="text"
+                      name="link"
+                      className="form-control"
+                      placeholder="Leave blank to generate a new meeting link"
+                      value={interviewDetails.link}
+                      onChange={handleInterviewChange}
+                    />
+                  </div>
+                )}
 
+                <div className="row mb-3">
+                  <div className="col-md-6">
+                    <label className="form-label">Date</label>
+                    <input
+                      type="date"
+                      name="date"
+                      className="form-control"
+                      value={interviewDetails.date}
+                      onChange={handleInterviewChange}
+                      min={new Date().toISOString().split('T')[0]}
+                      required
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label">Time</label>
+                    <input
+                      type="time"
+                      name="time"
+                      className="form-control"
+                      value={interviewDetails.time}
+                      onChange={handleInterviewChange}
+                      required
+                    />
+                  </div>
+                </div>
 
+                <div className="mb-3">
+                  <label className="form-label">Notes</label>
+                  <textarea
+                    name="notes"
+                    className="form-control"
+                    rows="3"
+                    value={interviewDetails.notes}
+                    onChange={handleInterviewChange}
+                    placeholder="Any special instructions for the candidate"
+                  ></textarea>
+                </div>
+
+                <div className="text-end">
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleSubmitInterview}
+                    disabled={!interviewDetails.date || !interviewDetails.time}
+                  >
+                    <FontAwesomeIcon icon={faCalendarAlt} className="me-2" />
+                    Schedule Interview
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showQuizFormModal && (
+          <div className="quiz-modal">
+            <h4>Add/Edit Quiz for this Job</h4>
+            <p className="text-muted mb-3">
+              The quiz will have {quizQuestions.length} questions. Candidates need to answer at least {Math.ceil(quizQuestions.length / 2)} correctly to qualify.
+            </p>
+            
+            {quizQuestions.map((q, idx) => (
+              <div key={idx} className="mb-3 p-3 border rounded">
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <label className="fw-bold">Question {idx + 1}</label>
+                  <button 
+                    className="btn btn-sm btn-danger"
+                    onClick={() => {
+                      if (quizQuestions.length > 1) {
+                        setQuizQuestions(quizQuestions.filter((_, i) => i !== idx));
+                      }
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  className="form-control mb-2"
+                  placeholder="Enter question"
+                  value={q.question}
+                  onChange={(e) => {
+                    const updated = [...quizQuestions];
+                    updated[idx].question = e.target.value;
+                    setQuizQuestions(updated);
+                  }}
+                  required
+                />
+                
+                <div className="options-container">
+                  {q.options.map((opt, i) => (
+                    <div key={i} className="input-group mb-2">
+                      <div className="input-group-text">
+                        <input
+                          type="radio"
+                          name={`correctAnswer-${idx}`}
+                          checked={q.correctAnswer === i}
+                          onChange={() => {
+                            const updated = [...quizQuestions];
+                            updated[idx].correctAnswer = i;
+                            setQuizQuestions(updated);
+                          }}
+                        />
+                      </div>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder={`Option ${i + 1}`}
+                        value={opt}
+                        onChange={(e) => {
+                          const updated = [...quizQuestions];
+                          updated[idx].options[i] = e.target.value;
+                          setQuizQuestions(updated);
+                        }}
+                        required
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            <div className="d-flex justify-content-between mt-3">
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  if (quizQuestions.length < 20) {
+                    setQuizQuestions([
+                      ...quizQuestions,
+                      { question: "", options: ["", "", "", ""], correctAnswer: 0 },
+                    ]);
+                  }
+                }}
+                disabled={quizQuestions.length >= 20}
+              >
+                ➕ Add Question (Max 20)
+              </button>
+
+              <div>
+                <button
+                  className="btn btn-danger me-2"
+                  onClick={() => setShowQuizFormModal(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="btn btn-success" 
+                  onClick={handleSubmitQuiz}
+                  disabled={quizQuestions.some(q => !q.question || q.options.some(opt => !opt))}
+                >
+                  Save Quiz ({quizQuestions.length} questions)
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </PublicLayout>
   );

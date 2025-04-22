@@ -249,7 +249,7 @@ const quizRoutes = require('./routes/quizRoute');
 
 app.use('/api', userRoutes);
 app.use('/api', jobRoutes);
-app.use('/api', interviewRoutes);
+app.use('/api/interviews', interviewRoutes);
 app.use('/quiz', quizRoutes);
 
 const uploadDir = path.join(__dirname, 'uploads');
@@ -1179,21 +1179,25 @@ app.get("/Frontend/job-applications-count/:entrepriseId", async (req, res) => {
 
 
 // ✅ Récupérer toutes les candidatures pour un job donné
+// In your backend route handler
 app.get("/Frontend/job-applications/:jobId", async (req, res) => {
-  try {
-    const { jobId } = req.params;
-
-    const applications = await ApplicationModel.find({ jobId })
-      .populate("candidateId", "name email profile.phone");
-
-    res.status(200).json(applications);
-  } catch (error) {
-    console.error("❌ Error fetching job applications:", error);
-    res.status(500).json({ message: "Erreur serveur lors de la récupération des candidatures." });
-  }
-});
-
-
+    try {
+      const { jobId } = req.params;
+      const applications = await ApplicationModel.find({ jobId }).populate("candidateId");
+      
+      // Always return an array, even if empty
+      res.status(200).json({
+        success: true,
+        applications: applications || [] // Ensure it's always an array
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: "Error fetching applications",
+        applications: [] // Return empty array on error
+      });
+    }
+  });
 app.post("/Frontend/create-quiz", async (req, res) => {
   try {
     const { jobId, questions } = req.body;
@@ -1225,25 +1229,55 @@ app.get("/Frontend/quiz/:jobId", async (req, res) => {
 
 
 app.post("/Frontend/submit-quiz", async (req, res) => {
-  try {
-    const { candidateId, jobId, score, totalQuestions } = req.body;
+    try {
+      const { jobId, candidateId, answers } = req.body;
+  
+      // Get the quiz questions
+      const quiz = await QuizModel.findOne({ jobId });
+      if (!quiz) {
+        return res.status(404).json({ message: "Quiz not found for this job" });
+      }
+  
+      // Calculate score
+      let score = 0;
+      quiz.questions.forEach((question, index) => {
+        if (answers[index] === question.correctAnswer) {
+          score++;
+        }
+      });
+  
+      // Update application with quiz score
+      await ApplicationModel.findOneAndUpdate(
+        { jobId, candidateId },
+        { quizScore: score, quizCompleted: true },
+        { new: true }
+      );
+  
+      res.status(200).json({
+        success: true,
+        score,
+        totalQuestions: quiz.questions.length,
+        passingScore: Math.ceil(quiz.questions.length / 2)
+      });
+    } catch (error) {
+      console.error("❌ Error submitting quiz:", error);
+      res.status(500).json({ message: "Server error while processing quiz" });
+    }
+  });
 
-    const result = new QuizResultModel({
-      userId: candidateId, // 🔁 remapping
-      jobId,
-      score,
-    });
-
-    await result.save();
-
-    res.status(201).json({ message: "Score enregistré avec succès." });
-  } catch (err) {
-    console.error("❌ Erreur enregistrement score:", err);
-    res.status(500).json({ message: "Erreur serveur" });
-  }
-});
-
-
+  app.get('/Frontend/quiz-lengths', async (req, res) => {
+    try {
+      const quizzes = await QuizModel.find({}, 'jobId questions');
+      const lengths = {};
+      quizzes.forEach(quiz => {
+        lengths[quiz.jobId] = quiz.questions.length;
+      });
+      res.status(200).json(lengths);
+    } catch (error) {
+      console.error("Error fetching quiz lengths:", error);
+      res.status(500).json({ message: "Error fetching quiz lengths" });
+    }
+  });
 
 app.get("/Frontend/quiz-results/:jobId", async (req, res) => {
   try {
@@ -1381,6 +1415,7 @@ app.post('/admins', async (req, res) => {
   }
 });
 
+  
 // Start the server
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {

@@ -42,7 +42,7 @@ const VideoCall = () => {
             const storedRole = localStorage.getItem('userRole');
             if (storedRole) return storedRole;
 
-            // 4. Decode from token
+            // 4. Decode from tokenz
             const token = localStorage.getItem('token');
             if (token) {
                 try {

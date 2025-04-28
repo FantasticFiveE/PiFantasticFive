@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./Login.css";
@@ -14,8 +14,99 @@ function Login() {
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
 
+  // Set up particle system
+  useEffect(() => {
+    const createParticles = () => {
+      const particleContainer = document.createElement('div');
+      particleContainer.className = 'particle-system';
+      
+      // Create 40 particles
+      for (let i = 0; i < 40; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        
+        // Random size between 3px and 12px
+        const size = Math.random() * 9 + 3;
+        particle.style.width = `${size}px`;
+        particle.style.height = `${size}px`;
+        
+        // Random position
+        particle.style.top = `${Math.random() * 100}%`;
+        particle.style.left = `${Math.random() * 100}%`;
+        
+        // Random animation duration between 8s and 20s
+        const duration = Math.random() * 12 + 8;
+        particle.style.animation = `generateParticles ${duration}s ease-in-out infinite`;
+        
+        // Random delay between 0s and 5s
+        const delay = Math.random() * 5;
+        particle.style.animationDelay = `${delay}s`;
+        
+        // Random z-index for depth
+        const zIndex = Math.floor(Math.random() * 200) - 100;
+        particle.style.transform = `translateZ(${zIndex}px)`;
+        
+        particleContainer.appendChild(particle);
+      }
+      
+      const container = document.querySelector('.futuristic-login-container');
+      if (container) {
+        container.appendChild(particleContainer);
+      }
+    };
+
+    createParticles();
+    
+    // Clean up function to remove particles when component unmounts
+    return () => {
+      const particleSystem = document.querySelector('.particle-system');
+      if (particleSystem) {
+        particleSystem.remove();
+      }
+    };
+  }, []);
+
+  // Add 3D tilt effect to the form card
+  useEffect(() => {
+    const formCard = document.querySelector('.futuristic-form-card');
+    
+    if (!formCard) return;
+    
+    const handleMouseMove = (e) => {
+      const rect = formCard.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      
+      // Calculate rotation based on mouse position (subtle effect)
+      const rotateY = ((x - centerX) / centerX) * 5; // max 5 degrees
+      const rotateX = ((centerY - y) / centerY) * 5; // max 5 degrees
+      
+      formCard.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(0)`;
+    };
+    
+    const handleMouseLeave = () => {
+      formCard.style.transform = 'perspective(1000px) rotateX(2deg) rotateY(-2deg)';
+      formCard.style.transition = 'transform 0.5s ease';
+    };
+    
+    formCard.addEventListener('mousemove', handleMouseMove);
+    formCard.addEventListener('mouseleave', handleMouseLeave);
+    
+    return () => {
+      if (formCard) {
+        formCard.removeEventListener('mousemove', handleMouseMove);
+        formCard.removeEventListener('mouseleave', handleMouseLeave);
+      }
+    };
+  }, []);
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    // Clear error when user starts typing
+    if (error) setError("");
   };
 
   const handleSubmit = async (e) => {
@@ -37,35 +128,45 @@ function Login() {
       if (result.data.status) {
         const { token, userId, role, userData } = result.data;
         const userRole = role.toUpperCase();
+        
+        // Add a success animation to the form before redirect
+        const formCard = document.querySelector('.futuristic-form-card');
+        if (formCard) {
+          formCard.style.transition = 'all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+          formCard.style.transform = 'perspective(1000px) scale(1.05) translateY(-20px)';
+          formCard.style.boxShadow = '0 30px 70px rgba(91, 134, 229, 0.6)';
+          formCard.style.borderColor = 'rgba(54, 209, 220, 0.5)';
+        }
       
-        // ✅ Enregistrement immédiat
+        // Local storage operations
         localStorage.setItem("token", token);
         localStorage.setItem("userId", userId);
         localStorage.setItem("role", role);
       
-        console.log("✅ Token enregistré:", localStorage.getItem("token"));
+        console.log("✅ Token saved:", localStorage.getItem("token"));
       
-        login(userData, token); // context
-        navigate("/home");
-
-        // ✅ Décale le navigate pour laisser le temps au localStorage
+        login(userData, token); // context update
+        
+        // Delay navigation to allow for animation
         setTimeout(() => {
           if (userRole === "ENTERPRISE") {
             navigate("/enterprise-dashboard");
           } else {
             navigate("/home");
           }
-        }, 200); // ⏳ donne un peu de temps à React
-        
-  
-        // ✅ Redirection selon le rôle
-        if (userRole === "ENTERPRISE") {
-          navigate("/enterprise-dashboard");
-        } else {
-          navigate("/home");
-        }
+        }, 800);
       } else {
         setError(result.data.message || "Email or password is incorrect!");
+        
+        // Add error shake animation
+        const formCard = document.querySelector('.futuristic-form-card');
+        if (formCard) {
+          formCard.style.animation = 'none';
+          setTimeout(() => {
+            formCard.style.animation = 'errorShake 0.5s';
+          }, 10);
+        }
+        
         if (result.data.emailVerified === false) {
           navigate("/verify-email");
         }
@@ -73,9 +174,17 @@ function Login() {
     } catch (err) {
       console.error("Login Error:", err.response?.data || err.message);
       setError(err.response?.data?.message || "Unable to login.");
+      
+      // Add error animation
+      const formCard = document.querySelector('.futuristic-form-card');
+      if (formCard) {
+        formCard.style.animation = 'none';
+        setTimeout(() => {
+          formCard.style.animation = 'errorShake 0.5s';
+        }, 10);
+      }
     }
   };
-  
       
   const handleGoogleSuccess = async (response) => {
     try {
@@ -87,16 +196,28 @@ function Login() {
         const { token, userId, role, userData } = result.data;
         const userRole = role.toUpperCase();
 
+        // Add success animation
+        const formCard = document.querySelector('.futuristic-form-card');
+        if (formCard) {
+          formCard.style.transition = 'all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+          formCard.style.transform = 'perspective(1000px) scale(1.05) translateY(-20px)';
+          formCard.style.boxShadow = '0 30px 70px rgba(91, 134, 229, 0.6)';
+        }
+
         localStorage.setItem("token", token);
-        console.log("🎯 Token saved to localStorage:", localStorage.getItem("token"));
-                localStorage.setItem("user", JSON.stringify(userData));
+        localStorage.setItem("user", JSON.stringify(userData));
         localStorage.setItem("role", userRole);
 
         login(userData, token);
-        navigate("/home");
+        
+        // Delay navigation for animation
+        setTimeout(() => {
+          navigate("/home");
+        }, 800);
       }
     } catch (err) {
       console.error("Google Login Error:", err);
+      setError("Google authentication failed. Please try again.");
     }
   };
 
@@ -107,6 +228,7 @@ function Login() {
   return (
     <div className="futuristic-login-container">
       <div className="animated-bg-overlay"></div>
+      
       <div className="futuristic-login-left">
         <div className="futuristic-brand-container floating-brand">
           <img
@@ -125,7 +247,7 @@ function Login() {
       </div>
 
       <div className="futuristic-login-right fade-in">
-        <div className="futuristic-form-card float-up">
+        <div className="futuristic-form-card">
           <h2 className="futuristic-form-heading">Login</h2>
           <p className="futuristic-form-subheading">Enter your credentials to continue</p>
 
@@ -180,10 +302,22 @@ function Login() {
 
             <button type="submit" className="futuristic-login-button">Login</button>
 
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => console.error("Google Login Failed")}
-            />
+            <div className="google-login-wrapper">
+              <span>OR</span>
+            </div>
+
+            <div className="google-button-container">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => {
+                  console.error("Google Login Failed");
+                  setError("Google authentication failed. Please try again.");
+                }}
+                shape="pill"
+                size="large"
+                width="100%"
+              />
+            </div>
 
             <div className="futuristic-register-option">
               <p>New Here?</p>

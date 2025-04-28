@@ -1,10 +1,9 @@
 /* 
-  Futuristic / Glassmorphism-inspired login page 
-  Enhanced with animations 
+  Advanced 3D Login Experience with Immersive Animations
+  Featuring Glassmorphism, Particle System, and Dynamic 3D Transforms
 */
 
-/* Font Imports */
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Orbitron:wght@500;700&display=swap");
 
 * {
   margin: 0;
@@ -13,50 +12,81 @@
   font-family: "Poppins", sans-serif;
 }
 
-/* Container */
+/* Enhanced Main Container with Deeper Perspective */
 .futuristic-login-container {
-  position: relative; /* so our animated overlay can be absolutely positioned */
+  position: relative;
   display: flex;
   min-height: 100vh;
-  background: linear-gradient(135deg, #2e2f3e 0%, #0f1923 100%);
-  background-size: cover;
-  background-position: center;
-  overflow: hidden; /* Hide overflow from floating shapes */
+  background: linear-gradient(135deg, #0f1a30 0%, #050a18 100%);
+  overflow: hidden;
+  perspective: 2000px; /* Increased perspective for deeper 3D effect */
 }
 
-/* 
-  1) Animated BG Overlay 
-*/
+/* Advanced Dynamic Background */
 .animated-bg-overlay {
   position: absolute;
   top: -50%;
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(
-    circle at center,
-    rgba(255, 255, 255, 0.2),
-    transparent 40%
-  );
-  opacity: 0.7;
-  animation: rotateOverlay 20s linear infinite;
+  background: 
+    radial-gradient(circle at 20% 30%, rgba(91, 134, 229, 0.15), transparent 30%),
+    radial-gradient(circle at 80% 70%, rgba(36, 210, 220, 0.12), transparent 40%);
+  animation: rotateOverlay 30s linear infinite;
   z-index: 1;
 }
 
-/* Rotate the overlay continuously */
+/* 3D Particle System */
+.particle-system {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 1;
+  transform-style: preserve-3d;
+}
+
+.particle {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 50%;
+  z-index: 1;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+  transform-style: preserve-3d;
+}
+
+/* Generate 40 random particles with different sizes and animations */
+@keyframes generateParticles {
+  0% {
+    opacity: 0;
+    transform: translateZ(0) scale(0.8);
+  }
+  25% {
+    opacity: 0.4;
+  }
+  75% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 0;
+    transform: translateZ(300px) scale(1.2);
+  }
+}
+
+/* Enhanced rotation animation */
 @keyframes rotateOverlay {
   0% {
     transform: rotate(0deg) scale(1);
   }
   50% {
-    transform: rotate(180deg) scale(1.2);
+    transform: rotate(180deg) scale(1.4);
   }
   100% {
     transform: rotate(360deg) scale(1);
   }
 }
 
-/* Left Panel (Branding) */
+/* Left Panel with Enhanced 3D Effects */
 .futuristic-login-left {
   flex: 1;
   display: flex;
@@ -64,65 +94,144 @@
   justify-content: center;
   background: linear-gradient(
     60deg,
-    rgba(28, 56, 93, 0.9),
-    rgba(15, 25, 35, 0.8),
-    rgba(28, 56, 93, 0.9)
+    rgba(18, 36, 63, 0.95),
+    rgba(10, 15, 25, 0.85),
+    rgba(18, 36, 63, 0.95)
   );
-  backdrop-filter: blur(8px);
-  z-index: 2; /* Above the overlay */
+  backdrop-filter: blur(16px);
+  z-index: 2;
+  position: relative;
+  transform-style: preserve-3d;
+  box-shadow: 5px 0 30px rgba(0, 0, 0, 0.4);
+  clip-path: polygon(0 0, 100% 0, 92% 100%, 0 100%); /* More angled edge */
+  overflow: hidden;
 }
 
-/* 
-  2) Floating animation for branding panel 
-*/
+/* Enhanced 3D Parallax Effect for Brand Container */
 .floating-brand {
-  animation: floating 3s ease-in-out infinite;
+  animation: floating3D 8s ease-in-out infinite;
+  transform-style: preserve-3d;
 }
 
-/* Subtle float up/down */
-@keyframes floating {
+/* Enhanced 3D floating animation */
+@keyframes floating3D {
   0% {
-    transform: translateY(0px);
+    transform: translateY(0px) translateZ(0) rotateY(0deg);
+  }
+  25% {
+    transform: translateY(-15px) translateZ(30px) rotateY(5deg);
   }
   50% {
-    transform: translateY(-10px);
+    transform: translateY(0px) translateZ(60px) rotateY(0deg);
+  }
+  75% {
+    transform: translateY(15px) translateZ(30px) rotateY(-5deg);
   }
   100% {
-    transform: translateY(0px);
+    transform: translateY(0px) translateZ(0) rotateY(0deg);
   }
 }
 
-/* Branding Container */
+/* Enhanced Brand Container */
 .futuristic-brand-container {
   text-align: center;
   color: #fff;
-  max-width: 300px;
-  padding: 20px;
-  animation: fadeInDown 1s ease;
+  max-width: 350px;
+  padding: 40px;
+  animation: fadeInDown 1.5s ease;
+  position: relative;
 }
 
+/* Holographic 3D Logo with Glow */
 .futuristic-company-logo {
-  width: 80px;
-  height: 80px;
-  margin-bottom: 15px;
+  width: 120px;
+  height: 120px;
+  margin-bottom: 25px;
   object-fit: contain;
   border-radius: 50%;
-  border: 2px solid #fff;
+  border: 3px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 
+    0 0 25px rgba(91, 134, 229, 0.6),
+    0 0 50px rgba(91, 134, 229, 0.3),
+    inset 0 0 15px rgba(255, 255, 255, 0.5);
+  animation: pulseLogo 6s infinite alternate, holographicSpin 15s linear infinite;
+  transition: all 0.7s ease;
+  transform-style: preserve-3d;
+  perspective: 1000px;
 }
 
+.futuristic-company-logo:hover {
+  transform: scale(1.15) rotateY(25deg);
+  box-shadow: 
+    0 0 40px rgba(91, 134, 229, 0.8),
+    0 0 70px rgba(91, 134, 229, 0.4),
+    inset 0 0 20px rgba(255, 255, 255, 0.6);
+}
+
+@keyframes holographicSpin {
+  0% {
+    filter: hue-rotate(0deg) brightness(1);
+  }
+  50% {
+    filter: hue-rotate(180deg) brightness(1.2);
+  }
+  100% {
+    filter: hue-rotate(360deg) brightness(1);
+  }
+}
+
+@keyframes pulseLogo {
+  0% {
+    box-shadow: 
+      0 0 20px rgba(91, 134, 229, 0.6),
+      0 0 40px rgba(91, 134, 229, 0.3),
+      inset 0 0 15px rgba(255, 255, 255, 0.5);
+  }
+  100% {
+    box-shadow: 
+      0 0 35px rgba(91, 134, 229, 0.9),
+      0 0 70px rgba(91, 134, 229, 0.5),
+      inset 0 0 25px rgba(255, 255, 255, 0.7);
+  }
+}
+
+/* Enhanced Title with 3D Text Effect */
 .futuristic-brand-title {
-  font-size: 2rem;
-  margin-bottom: 10px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2.8rem;
+  margin-bottom: 15px;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  background: linear-gradient(90deg, #ffffff, #5b86e5, #36d1dc, #ffffff);
+  background-size: 300% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: gradientText 8s linear infinite;
+  text-shadow: 
+    0 0 5px rgba(255, 255, 255, 0.2),
+    0 5px 15px rgba(0, 0, 0, 0.3);
+  transform: translateZ(20px);
+  position: relative;
+}
+
+/* Dynamic gradient animation */
+@keyframes gradientText {
+  0% { background-position: 0% center; }
+  50% { background-position: 150% center; }
+  100% { background-position: 300% center; }
 }
 
 .futuristic-brand-subtitle {
-  font-size: 1rem;
-  line-height: 1.6;
-  opacity: 0.9;
+  font-size: 1.15rem;
+  line-height: 1.7;
+  opacity: 0.95;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  transform: translateZ(10px);
 }
 
-/* Right Panel (Form) */
+/* Enhanced Right Panel with 3D Form */
 .futuristic-login-right {
   flex: 1.5;
   display: flex;
@@ -130,239 +239,560 @@
   justify-content: center;
   position: relative;
   overflow: hidden;
-  padding: 30px;
-  z-index: 2; /* Above the overlay */
+  padding: 40px;
+  z-index: 2;
+  transform-style: preserve-3d;
 }
 
-/* 
-  3) Fade in animation for form side
-*/
+/* Enhanced fade in animation with 3D transform */
 .fade-in {
-  animation: fadeIn 1s ease forwards;
+  animation: fadeInTransform 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
-@keyframes fadeIn {
+
+@keyframes fadeInTransform {
   0% {
     opacity: 0;
-    transform: translateX(30px);
+    transform: translateX(70px) rotateY(-15deg);
+    filter: blur(5px);
   }
   100% {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateX(0) rotateY(0);
+    filter: blur(0);
   }
 }
 
-/* Glassmorphism Form Card */
+/* Enhanced 3D Glassmorphism Form Card */
 .futuristic-form-card {
-  max-width: 400px;
+  max-width: 450px;
   width: 100%;
-  padding: 40px;
-  border-radius: 12px;
+  padding: 50px;
+  border-radius: 20px;
   background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  animation: fadeInUp 1s ease; /* Existing animation */
+  backdrop-filter: blur(20px);
+  box-shadow: 
+    0 20px 50px rgba(0, 0, 0, 0.5),
+    0 5px 15px rgba(0, 0, 0, 0.3),
+    inset 0 0 1px rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+  transform-style: preserve-3d;
+  transition: all 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform: perspective(1000px) rotateX(2deg) rotateY(-2deg);
+}
+
+/* Enhanced 3D hover effect with tilt */
+.futuristic-form-card:hover {
+  transform: perspective(1000px) translateY(-12px) rotateX(3deg) rotateY(-3deg);
+  box-shadow: 
+    0 30px 60px rgba(0, 0, 0, 0.6),
+    0 0 30px rgba(91, 134, 229, 0.4),
+    inset 0 0 2px rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Interactive glowing aura */
+.futuristic-form-card::before {
+  content: "";
+  position: absolute;
+  top: -25px;
+  left: -25px;
+  right: -25px;
+  bottom: -25px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(91, 134, 229, 0.15),
+    transparent 70%
+  );
+  z-index: -1;
+  border-radius: 30px;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  animation: breathe 6s infinite alternate;
+}
+
+@keyframes breathe {
+  0% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1.05);
+  }
+}
+
+.futuristic-form-card:hover::before {
+  opacity: 1;
+}
+
+/* Edge glow effect */
+.futuristic-form-card::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  bottom: -1px;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(91, 134, 229, 0.3) 50%,
+    transparent
+  );
+  border-radius: 20px;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.futuristic-form-card:hover::after {
+  opacity: 1;
+  animation: rotateGlow 3s linear infinite;
+}
+
+@keyframes rotateGlow {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 200% 200%;
+  }
+}
+
+/* Enhanced Form Headings */
+.futuristic-form-heading {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2.4rem;
+  color: #fff;
+  margin-bottom: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transform: translateZ(15px);
   position: relative;
 }
 
-/* 
-  4) Slight float-up on hover effect
-*/
-.float-up:hover {
-  transform: translateY(-5px);
-  transition: transform 0.3s ease;
+/* Decorative line under heading */
+.futuristic-form-heading::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, #5b86e5, #36d1dc);
+  border-radius: 2px;
+  transition: width 0.5s ease;
 }
 
-.futuristic-form-heading {
-  font-size: 1.8rem;
-  color: #fff;
-  margin-bottom: 10px;
-  font-weight: 600;
+.futuristic-form-card:hover .futuristic-form-heading::after {
+  width: 100px;
 }
 
 .futuristic-form-subheading {
-  font-size: 1rem;
-  color: #cccccc;
-  margin-bottom: 30px;
+  font-size: 1.05rem;
+  color: #d0d0d0;
+  margin-bottom: 40px;
+  transform: translateZ(10px);
 }
 
-/* Error Message */
+/* Enhanced Error Message with 3D Pop */
 .futuristic-error-message {
-  background-color: rgba(255, 0, 0, 0.1);
-  color: #ff4f4f;
+  background-color: rgba(255, 30, 30, 0.1);
+  color: #ff6b6b;
   border-left: 4px solid #ff4f4f;
-  padding: 12px;
-  margin-bottom: 20px;
-  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 30px;
+  border-radius: 10px;
+  backdrop-filter: blur(8px);
+  animation: fadeInShake 0.6s, errorPulse 2s infinite alternate;
+  transform: translateZ(5px);
+  box-shadow: 0 5px 15px rgba(255, 0, 0, 0.2);
 }
 
-/* Form Groups */
+@keyframes errorPulse {
+  0% {
+    box-shadow: 0 5px 15px rgba(255, 0, 0, 0.2);
+  }
+  100% {
+    box-shadow: 0 5px 25px rgba(255, 0, 0, 0.4);
+  }
+}
+
+@keyframes fadeInShake {
+  0% { opacity: 0; transform: translateX(-15px) translateZ(5px); }
+  20% { transform: translateX(15px) translateZ(5px); }
+  40% { transform: translateX(-10px) translateZ(5px); }
+  60% { transform: translateX(10px) translateZ(5px); }
+  80% { transform: translateX(-5px) translateZ(5px); }
+  100% { opacity: 1; transform: translateX(0) translateZ(5px); }
+}
+
+/* Enhanced Form Groups with Depth */
 .futuristic-form-group {
-  margin-bottom: 20px;
+  margin-bottom: 30px;
+  transform-style: preserve-3d;
+  perspective: 1000px;
 }
 
 .futuristic-label {
   display: block;
-  margin-bottom: 8px;
-  font-size: 0.9rem;
+  margin-bottom: 12px;
+  font-size: 1rem;
   color: #fff;
   font-weight: 500;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.7px;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+  transform: translateZ(8px);
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.futuristic-form-group:hover .futuristic-label {
+  color: #5b86e5;
+  transform: translateZ(12px) translateX(5px);
 }
 
 .futuristic-input-container {
   position: relative;
+  transform-style: preserve-3d;
 }
 
+/* Enhanced input icon with depth */
 .futuristic-input-icon {
   position: absolute;
-  left: 15px; /* Distance from left edge */
+  left: 18px;
   top: 50%;
-  transform: translateY(-50%);
+  transform: translateY(-50%) translateZ(8px);
   color: #aaa;
-  font-size: 1rem;
+  font-size: 1.15rem;
+  transition: all 0.4s ease;
 }
 
+/* Enhanced 3D input field */
 .futuristic-input {
   width: 100%;
-  padding: 14px;
-  padding-left: 50px; /* Keeps space for the icon */
-  text-align: center; /* This centers the placeholder text */
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background-color: rgba(255, 255, 255, 0.1);
+  padding: 18px;
+  padding-left: 50px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background-color: rgba(255, 255, 255, 0.06);
   color: #fff;
   outline: none;
-  transition: all 0.3s ease;
-  font-size: 0.95rem;
+  transition: all 0.5s ease;
+  font-size: 1.05rem;
+  letter-spacing: 0.7px;
+  transform: translateZ(0);
+  backdrop-filter: blur(5px);
+  box-shadow: 
+    0 5px 15px rgba(0, 0, 0, 0.2),
+    inset 0 1px 2px rgba(255, 255, 255, 0.1);
 }
 
-/* Optional: Move the icon slightly if needed */
-.futuristic-input-icon {
-  position: absolute;
-  left: 15px; /* You can also increase this if needed */
-  top: 50%;
-  transform: translateY(-50%);
-  color: #aaa;
-  font-size: 0.95rem;
-}
-
-
+/* Enhanced 3D input focus state */
 .futuristic-input:focus {
   border-color: #5b86e5;
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 5px 20px rgba(91, 134, 229, 0.35),
+    inset 0 1px 3px rgba(255, 255, 255, 0.2);
+  transform: translateZ(5px);
 }
 
-/* Show/Hide Password Icon */
+.futuristic-input-container:focus-within .futuristic-input-icon {
+  color: #5b86e5;
+  transform: translateY(-50%) translateZ(15px) scale(1.15);
+  text-shadow: 0 0 10px rgba(91, 134, 229, 0.5);
+}
+
+/* Enhanced Eye Icon with 3D hover */
 .futuristic-eye-icon {
   position: absolute;
-  right: 15px;
+  right: 18px;
   top: 50%;
-  transform: translateY(-50%);
+  transform: translateY(-50%) translateZ(8px);
   color: #aaa;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 1.15rem;
+  transition: all 0.4s ease;
 }
 
 .futuristic-eye-icon:hover {
-  color: #fff;
+  color: #5b86e5;
+  transform: translateY(-50%) translateZ(15px) scale(1.15);
+  text-shadow: 0 0 10px rgba(91, 134, 229, 0.5);
 }
 
-/* Forgot Password */
+/* Enhanced Forgot Password Link */
 .futuristic-forgot-password {
   text-align: right;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
+  transform-style: preserve-3d;
 }
 
 .futuristic-forgot-link {
   color: #5b86e5;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   text-decoration: none;
-  transition: color 0.3s;
+  transition: all 0.4s ease;
+  position: relative;
+  padding: 3px 5px;
+  transform: translateZ(5px);
+  display: inline-block;
 }
 
 .futuristic-forgot-link:hover {
   color: #9bc4eb;
-  text-decoration: underline;
+  transform: translateZ(15px) scale(1.05);
 }
 
-/* Submit Button */
+.futuristic-forgot-link::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(90deg, #5b86e5, #36d1dc);
+  transition: width 0.4s ease;
+  transform: translateZ(2px);
+}
+
+.futuristic-forgot-link:hover::after {
+  width: 100%;
+}
+
+/* Enhanced 3D Submit Button with Depth */
 .futuristic-login-button {
   width: 100%;
-  padding: 14px;
+  padding: 18px;
   border: none;
-  border-radius: 8px;
+  border-radius: 14px;
   background: linear-gradient(135deg, #5b86e5 0%, #36d1dc 100%);
   color: #fff;
-  font-size: 1rem;
+  font-size: 1.15rem;
   font-weight: 600;
+  letter-spacing: 1.5px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  margin-top: 10px;
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  margin-top: 20px;
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+  box-shadow: 
+    0 8px 25px rgba(91, 134, 229, 0.5),
+    0 4px 8px rgba(0, 0, 0, 0.3);
+  transform-style: preserve-3d;
+  transform: translateZ(10px);
 }
 
+/* Enhanced light sweep animation */
+.futuristic-login-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg, 
+    transparent, 
+    rgba(255,255,255,0.3), 
+    transparent
+  );
+  transition: all 0.7s ease;
+}
+
+/* Enhanced 3D button hover state */
 .futuristic-login-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 15px rgba(91, 134, 229, 0.4);
+  transform: translateY(-5px) translateZ(20px);
+  box-shadow: 
+    0 15px 30px rgba(91, 134, 229, 0.6),
+    0 5px 15px rgba(0, 0, 0, 0.4);
+  letter-spacing: 2px;
+  background: linear-gradient(135deg, #5b86e5 0%, #36d1dc 70%, #5b86e5 100%);
+  background-size: 200% 100%;
+  animation: gradientShift 2s infinite alternate;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+.futuristic-login-button:hover::before {
+  left: 100%;
 }
 
 .futuristic-login-button:active {
-  transform: translateY(0);
+  transform: translateY(-2px) translateZ(15px);
+  box-shadow: 0 10px 20px rgba(91, 134, 229, 0.5);
 }
 
-.futuristic-login-button.loading {
-  opacity: 0.8;
-  cursor: not-allowed;
+/* Enhanced Google Login Button */
+.google-login-wrapper {
+  margin: 30px 0 20px;
+  display: flex;
+  justify-content: center;
+  position: relative;
+  transform-style: preserve-3d;
 }
 
-/* Register Option */
+/* Enhanced Google Login Button separator */
+.google-login-wrapper::before,
+.google-login-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 30%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.2);
+  animation: linePulse 3s infinite alternate;
+}
+
+@keyframes linePulse {
+  0% {
+    opacity: 0.2;
+    transform: scaleX(0.9);
+  }
+  100% {
+    opacity: 0.8;
+    transform: scaleX(1.1);
+  }
+}
+
+.google-login-wrapper::before {
+  left: 0;
+}
+
+.google-login-wrapper::after {
+  right: 0;
+}
+
+.google-login-wrapper span {
+  padding: 0 15px;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.7);
+  transform: translateZ(5px);
+}
+
+/* Enhanced Register Option with 3D */
 .futuristic-register-option {
-  margin-top: 20px;
+  margin-top: 30px;
   text-align: center;
-  color: #ccc;
+  color: #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transform-style: preserve-3d;
+  transform: translateZ(10px);
 }
 
 .futuristic-register-option p {
-  margin-bottom: 8px;
+  margin-bottom: 0;
 }
 
+/* Enhanced Register Link with 3D effects */
 .futuristic-register-link {
   color: #5b86e5;
   text-decoration: none;
   font-weight: 600;
-  transition: color 0.3s;
+  transition: all 0.4s ease;
+  position: relative;
+  padding: 3px 6px;
+  display: inline-block;
 }
 
 .futuristic-register-link:hover {
   color: #9bc4eb;
-  text-decoration: underline;
+  transform: translateZ(15px) scale(1.1);
+  text-shadow: 0 0 10px rgba(91, 134, 229, 0.5);
 }
 
-/* Animations */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.futuristic-register-link::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -2px;
+  left: 0;
+  background: linear-gradient(90deg, #5b86e5, #36d1dc);
+  transition: width 0.4s ease;
 }
 
-@keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.futuristic-register-link:hover::after {
+  width: 100%;
 }
 
-/* Responsive */
-@media (max-width: 960px) {
+/* Create dynamic particles programmatically */
+.particle:nth-child(1) {
+  width: 6px;
+  height: 6px;
+  top: 10%;
+  left: 20%;
+  animation: generateParticles 8s ease-in-out infinite;
+  animation-delay: 0s;
+}
+
+.particle:nth-child(2) {
+  width: 8px;
+  height: 8px;
+  top: 30%;
+  left: 80%;
+  animation: generateParticles 12s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+.particle:nth-child(3) {
+  width: 10px;
+  height: 10px;
+  top: 70%;
+  left: 10%;
+  animation: generateParticles 10s ease-in-out infinite;
+  animation-delay: 2s;
+}
+
+.particle:nth-child(4) {
+  width: 7px;
+  height: 7px;
+  top: 40%;
+  left: 40%;
+  animation: generateParticles 15s ease-in-out infinite;
+  animation-delay: 0.5s;
+}
+
+.particle:nth-child(5) {
+  width: 9px;
+  height: 9px;
+  top: 60%;
+  left: 60%;
+  animation: generateParticles 9s ease-in-out infinite;
+  animation-delay: 1.5s;
+}
+
+.particle:nth-child(6) {
+  width: 5px;
+  height: 5px;
+  top: 20%;
+  left: 50%;
+  animation: generateParticles 11s ease-in-out infinite;
+  animation-delay: 3s;
+}
+
+.particle:nth-child(7) {
+  width: 8px;
+  height: 8px;
+  top: 80%;
+  left: 30%;
+  animation: generateParticles 14s ease-in-out infinite;
+  animation-delay: 2.5s;
+}
+
+/* Enhanced Mobile Responsiveness */
+@media (max-width: 1100px) {
   .futuristic-login-container {
     flex-direction: column;
   }
@@ -374,14 +804,129 @@
   }
 
   .futuristic-login-left {
-    padding: 40px 20px;
+    padding: 60px 20px;
+    clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);
   }
 
   .futuristic-login-right {
-    padding: 40px 20px;
+    padding: 40px 20px 60px;
   }
 
   .futuristic-form-card {
-    margin-top: 30px;
+    margin-top: -60px;
+    padding: 40px 30px;
+    width: 90%;
   }
+  
+  .futuristic-brand-title {
+    font-size: 2.4rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .futuristic-form-card {
+    padding: 35px 25px;
+  }
+  
+  .futuristic-brand-title {
+    font-size: 2rem;
+  }
+  
+  .futuristic-form-heading {
+    font-size: 1.8rem;
+  }
+  
+  .futuristic-input {
+    padding: 16px;
+    padding-left: 45px;
+  }
+}
+/* Error shake animation for the form card */
+@keyframes errorShake {
+  0%, 100% { transform: perspective(1000px) translateX(0) rotateY(-2deg); }
+  20% { transform: perspective(1000px) translateX(-20px) rotateY(-8deg); }
+  40% { transform: perspective(1000px) translateX(20px) rotateY(4deg); }
+  60% { transform: perspective(1000px) translateX(-10px) rotateY(-4deg); }
+  80% { transform: perspective(1000px) translateX(10px) rotateY(2deg); }
+}
+
+/* Success animation for successful login */
+@keyframes successPulse {
+  0% { box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 20px rgba(91, 134, 229, 0.3); }
+  50% { box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 60px rgba(54, 209, 220, 0.6); }
+  100% { box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 20px rgba(91, 134, 229, 0.3); }
+}
+
+/* Google button container styling */
+.google-button-container {
+  margin-top: 10px;
+  margin-bottom: 20px;
+  transform: translateZ(10px);
+  transition: all 0.3s ease;
+}
+
+.google-button-container:hover {
+  transform: translateZ(15px) scale(1.02);
+}
+
+/* Logo click animation */
+@keyframes logoClick {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+
+.futuristic-company-logo:active {
+  animation: logoClick 0.3s ease;
+}
+
+/* Additional hover for input fields */
+.futuristic-input:hover {
+  border-color: rgba(91, 134, 229, 0.4);
+  box-shadow: 0 5px 15px rgba(91, 134, 229, 0.2);
+}
+
+/* Animated particle colors */
+.particle:nth-child(3n) {
+  background: rgba(91, 134, 229, 0.1);
+  box-shadow: 0 0 10px rgba(91, 134, 229, 0.2);
+}
+
+.particle:nth-child(3n+1) {
+  background: rgba(54, 209, 220, 0.1);
+  box-shadow: 0 0 10px rgba(54, 209, 220, 0.2);
+}
+
+.particle:nth-child(3n+2) {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+/* Additional transition for smooth form interactions */
+.futuristic-input, 
+.futuristic-label, 
+.futuristic-input-icon, 
+.futuristic-eye-icon, 
+.futuristic-login-button,
+.futuristic-forgot-link,
+.futuristic-register-link {
+  will-change: transform, opacity, color;
+}
+
+/* Ambient background pulsing */
+@keyframes ambientBackgroundPulse {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.futuristic-login-container {
+  background-size: 400% 400%;
+  animation: ambientBackgroundPulse 20s ease infinite;
 }

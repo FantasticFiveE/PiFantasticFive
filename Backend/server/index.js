@@ -378,17 +378,14 @@ app.post('/Frontend/register', resumeUpload.single('resume'), async(req, res) =>
 
                     const resumeData = pythonResponse.data;
                     userData.profile.resume = `/uploads/${req.file.filename}`;
-                    userData.profile.skills = resumeData.skills || [];
-                    userData.profile.languages = resumeData.languages || [];
-                    userData.profile.phone = resumeData.phone || "";
-                    userData.profile.experience = Array.isArray(resumeData.experience)
-  ? resumeData.experience.map((item) => ({
-      title: "",
-      company: "",
-      duration: "",
-      description: item
-    }))
-  : [];
+                    userData.profile.skills = resumeData.profile?.skills || [];
+                    userData.profile.languages = resumeData.profile?.languages || [];
+                    userData.profile.phone = resumeData.profile?.phone || "";
+                    userData.profile.experience = Array.isArray(resumeData.profile?.experience)
+                      ? resumeData.profile.experience
+                      : [];
+                    
+                    
 
                     if (resumeData.name) userData.name = resumeData.name;
                 } catch (error) {

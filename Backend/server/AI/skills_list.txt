@@ -1,0 +1,59 @@
+python
+java
+c
+c++
+html
+css
+javascript
+typescript
+react
+react.js
+nodejs
+angular
+spring
+django
+flask
+php
+symfony
+sql
+mongodb
+mysql
+postgresql
+git
+docker
+aws
+azure
+gcp
+linux
+ubuntu
+centos7
+tailwind css
+figma
+adobe photoshop
+adobe illustrator
+wordpress
+seo
+sem
+powerbi
+tableau
+anaconda
+tensorflow
+keras
+scikit-learn
+pytorch
+machine learning
+deep learning
+data analysis
+data visualization
+responsive design
+api integration
+cms
+network infrastructure
+web development
+computer systems
+signal processing
+project management
+scrum
+agile
+jira
+confluence

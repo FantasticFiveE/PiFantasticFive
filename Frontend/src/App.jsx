@@ -35,6 +35,8 @@ import ProtectedRoute from "./Dashboard/layouts/ProtectedRoute";
 import EntrepriseProfile from "./pages/Entreprise/EntrepriseProfile";
 import JobDetails from "./pages/JobDetails/JobDetails";
 import QuizPage from "./pages/Quiz/QuizPage";
+import CandidateProfile from "./pages/Candidate/CandidateProfile";
+import CandidateMessages from './pages/CandidateMessages';
 
 
 // ✅ Google Client ID
@@ -92,6 +94,8 @@ function App() {
             <Route path="/entreprise/:id" element={<EntrepriseProfile />} />
             <Route path="/interview/:interviewId" element={<VideoCallPage />} />
             <Route path="/quiz/:jobId" element={<QuizPage />} />
+            <Route path="/candidate/:id" element={<CandidateProfile />} />
+            <Route path="/messages" element={<CandidateMessages />} />
 
             {/* Back Office Routes (Protected) */}
             <Route path="/dashboard" element={<ProtectedRoute><DashboardLayoutWrapper /></ProtectedRoute>}>

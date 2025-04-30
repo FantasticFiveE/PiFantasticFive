@@ -55,30 +55,38 @@ const Navbar = () => {
   
             {/* 🔒 Authenticated User */}
             {isAuthenticated && userId ? (
-              <>
-                <li className="nav-item">
-                  <Link
-                    className="nav-link futuristic-nav-link"
-                    to={userRole === "ENTERPRISE" ? `/entreprise/${userId}` : `/profile/${userId}`}
-                  >
-                    {userRole === "ENTERPRISE" ? "My Enterprise" : "Mon Profil"}
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <button
-                    className="btn logout-btn"
-                    onClick={handleLogout}
-                    style={{
-                      background: "transparent",
-                      border: "2px solid #5b86e5",
-                      color: "#5b86e5",
-                      fontWeight: "600",
-                      borderRadius: "25px",
-                      transition: "all 0.3s ease",
-                    }}
-                  >
-                    Logout
-                  </button>
+  <>
+    {/* ✅ Only show messages for candidates */}
+    {userRole === "CANDIDATE" && (
+      <li className="nav-item">
+        <Link className="nav-link futuristic-nav-link" to="/messages">📨 Messages</Link>
+      </li>
+    )}
+
+    <li className="nav-item">
+      <Link
+        className="nav-link futuristic-nav-link"
+        to={userRole === "ENTERPRISE" ? `/entreprise/${userId}` : `/profile/${userId}`}
+      >
+        {userRole === "ENTERPRISE" ? "My Enterprise" : "Mon Profil"}
+      </Link>
+    </li>
+
+    <li className="nav-item">
+      <button
+        className="btn logout-btn"
+        onClick={handleLogout}
+        style={{
+          background: "transparent",
+          border: "2px solid #5b86e5",
+          color: "#5b86e5",
+          fontWeight: "600",
+          borderRadius: "25px",
+          transition: "all 0.3s ease",
+        }}
+      >
+        Logout
+      </button>
                 </li>
               </>
             ) : (

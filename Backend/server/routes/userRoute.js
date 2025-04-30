@@ -194,6 +194,15 @@ router.post("/change-password", async(req, res) => {
         res.status(500).json({ message: "Error changing password", error: err.message });
     }
 });
+router.get('/Frontend/all-candidates', async (req, res) => {
+    try {
+      const candidates = await UserModel.find({ role: "CANDIDATE" }, 'name email profile.skills');
+      res.json(candidates);
+    } catch (err) {
+      res.status(500).json({ error: "Server error fetching candidates" });
+    }
+  });
+  
 
 router.get('/approved-candidates', async(req, res) => {
     try {

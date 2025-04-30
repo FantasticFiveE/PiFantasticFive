@@ -17,6 +17,21 @@ const setupSocket = (server) => {
     pingInterval: 25000
   });
 
+  module.exports = (io) => {
+    io.on('connection', (socket) => {
+      console.log('✅ Client connected:', socket.id);
+  
+      socket.on("notify-candidate", ({ to, message }) => {
+        io.emit(`notification-${to}`, { message });
+        console.log(`🔔 Notification sent to candidate ${to}: ${message}`);
+      });
+  
+      socket.on('disconnect', () => {
+        console.log('❌ Client disconnected:', socket.id);
+      });
+    });
+  };
+  
   // 🔐 Authentication middleware
   io.use(async (socket, next) => {
     try {

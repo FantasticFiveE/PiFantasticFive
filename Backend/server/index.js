@@ -25,6 +25,8 @@ const uploadCV = require("./middleware/uploadCV");
 const QuizModel = require("./models/Quiz");
 const QuizResultModel = require("./models/QuizResultModel");
 const Application = require("./models/Application");
+const messageRoutes = require('./routes/messages');
+const setupSocketEvents = require('./socket');
 
 // Create Express app and HTTP server
 const app = express();
@@ -135,7 +137,7 @@ const allowedOrigins = [
 
 app.use(
   cors({
-    origin: function(origin, callback) {
+    origin: function (origin, callback) {
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -145,6 +147,7 @@ app.use(
     credentials: true,
   })
 );
+app.use('/api/messages', messageRoutes);
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {

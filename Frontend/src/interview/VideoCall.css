@@ -385,9 +385,107 @@ video {
     margin-bottom: 20px;
 }
 
+/* Summary Controls */
+.summary-controls {
+    position: fixed;
+    bottom: 100px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 1000;
+}
+
+.summary-btn {
+    background: #4a6fa5;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.summary-btn:disabled {
+    background: #cccccc;
+    cursor: not-allowed;
+}
+
+.summary-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px;
+    max-height: 80vh;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.2);
+    z-index: 1001;
+    overflow-y: auto;
+    color: #333;
+}
+
+.summary-content {
+    margin: 15px 0;
+    line-height: 1.6;
+}
+
+.summary-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.summary-actions button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.recording-indicator {
+    position: fixed;
+    bottom: 150px;
+    right: 20px;
+    background: #ff4d4d;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.recording-indicator::before {
+    content: '';
+    width: 10px;
+    height: 10px;
+    background: white;
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.3; }
+    100% { opacity: 1; }
+}
+
+/* Fullscreen styles */
+.fullscreen-video {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1000;
+}
 
 /* Icons (using Unicode or you can replace with actual icon font) */
-
 .icon-mic::before {
     content: "🎤";
 }
@@ -424,9 +522,7 @@ video {
     content: "⛶";
 }
 
-
 /* Responsive layout */
-
 @media (max-width: 768px) {
     .video-grid {
         grid-template-columns: 1fr;
@@ -450,6 +546,13 @@ video {
         min-width: auto;
         padding: 10px 20px;
     }
+    .summary-controls {
+        bottom: 80px;
+        right: 10px;
+    }
+    .summary-modal {
+        width: 90%;
+    }
 }
 
 @media (max-width: 480px) {
@@ -470,5 +573,17 @@ video {
         gap: 5px;
         align-items: center;
         text-align: center;
+    }
+    .summary-controls {
+        position: static;
+        flex-direction: row;
+        justify-content: center;
+        padding: 10px;
+        background: rgba(0,0,0,0.5);
+        margin-top: 10px;
+    }
+    .recording-indicator {
+        position: static;
+        margin-bottom: 10px;
     }
 }

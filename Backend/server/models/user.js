@@ -47,9 +47,22 @@ const InterviewSchema = new Schema({
     joinTime: { type: Date },
     leaveTime: { type: Date }
   }],
-  recordingUrl: { type: String }
+  recordingUrl: { type: String },
+  // New fields for AI summary
+  transcript: [{
+    speaker: String,
+    text: String,
+    timestamp: String
+  }],
+  summary: String,
+  evaluation: {
+    technical: Number,
+    communication: Number,
+    culturalFit: Number,
+    overall: Number
+  },
+  lastUpdated: { type: Date }
 }, { _id: false });
-
 const ApplicationSchema = new Schema({
   jobId: { type: Schema.Types.ObjectId, ref: 'Job' },
   enterpriseId: { type: Schema.Types.ObjectId, ref: 'User' },

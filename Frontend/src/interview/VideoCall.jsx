@@ -19,30 +19,32 @@ const VideoCall = () => {
     const [callTime, setCallTime] = useState(0);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [activeVideo, setActiveVideo] = useState(null);
+    const [isSummarizing, setIsSummarizing] = useState(false);
+    const [interviewSummary, setInterviewSummary] = useState(null);
+    const [transcript, setTranscript] = useState([]);
+    const [isRecording, setIsRecording] = useState(false);
+
     const localVideoRef = useRef(null);
     const remoteVideoRef = useRef(null);
     const socketRef = useRef(null);
     const pcRef = useRef(null);
     const callTimerRef = useRef(null);
     const videoGridRef = useRef(null);
+    const speechRecognitionRef = useRef(null);
 
-    // Enhanced role detection
+    // Role detection
     useEffect(() => {
         if (authLoading) return;
 
         const determineRole = () => {
-            // 1. Check primary localStorage key
             const explicitRole = localStorage.getItem('role');
             if (explicitRole) return explicitRole;
 
-            // 2. Check auth context
             if (user?.role) return user.role;
 
-            // 3. Check legacy localStorage key
             const storedRole = localStorage.getItem('userRole');
             if (storedRole) return storedRole;
 
-            // 4. Decode from tokenz
             const token = localStorage.getItem('token');
             if (token) {
                 try {
@@ -74,6 +76,77 @@ const VideoCall = () => {
         return () => clearInterval(callTimerRef.current);
     }, [status]);
 
+    // Initialize speech recognition
+    const initSpeechRecognition = () => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onresult = (event) => {
+                const newTranscript = [];
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) {
+                        newTranscript.push({
+                            speaker: userRole === 'ENTERPRISE' ? 'Interviewer' : 'Candidate',
+                            text: event.results[i][0].transcript,
+                            timestamp: new Date().toISOString()
+                        });
+                    }
+                }
+                setTranscript(prev => [...prev, ...newTranscript]);
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error', event.error);
+            };
+
+            speechRecognitionRef.current = recognition;
+        }
+    };
+
+    // Toggle transcription
+    const toggleTranscription = () => {
+        if (isRecording) {
+            speechRecognitionRef.current?.stop();
+            setIsRecording(false);
+        } else {
+            if (!speechRecognitionRef.current) {
+                initSpeechRecognition();
+            }
+            speechRecognitionRef.current?.start();
+            setIsRecording(true);
+        }
+    };
+
+    // Generate AI summary
+    const generateSummary = async () => {
+        setIsSummarizing(true);
+        try {
+            const response = await fetch('http://localhost:3001/api/interviews/summarize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({
+                    interviewId,
+                    transcript,
+                    userId: user?._id
+                })
+            });
+
+            const data = await response.json();
+            setInterviewSummary(data.summary);
+        } catch (error) {
+            console.error("Summary generation failed:", error);
+        } finally {
+            setIsSummarizing(false);
+        }
+    };
+
     // WebRTC and Socket.io implementation
     useEffect(() => {
         if (!initialized) return;
@@ -82,7 +155,7 @@ const VideoCall = () => {
             try {
                 setStatus('loading');
                 
-                // 1. Get media stream
+                // Get media stream
                 const stream = await navigator.mediaDevices.getUserMedia({
                     video: { width: { ideal: 1280 }, height: { ideal: 720 } },
                     audio: true
@@ -92,13 +165,13 @@ const VideoCall = () => {
                     localVideoRef.current.srcObject = stream;
                 }
 
-                // 2. Connect to signaling server
+                // Connect to signaling server
                 socketRef.current = io('http://localhost:3001', {
                     auth: { token: localStorage.getItem('token') },
                     transports: ['websocket']
                 });
 
-                // 3. Create peer connection
+                // Create peer connection
                 pcRef.current = new RTCPeerConnection({
                     iceServers: [
                         { urls: 'stun:stun.l.google.com:19302' },
@@ -170,6 +243,9 @@ const VideoCall = () => {
             if (socketRef.current) socketRef.current.disconnect();
             if (localStream) {
                 localStream.getTracks().forEach(track => track.stop());
+            }
+            if (speechRecognitionRef.current) {
+                speechRecognitionRef.current.stop();
             }
             clearInterval(callTimerRef.current);
         };
@@ -415,6 +491,54 @@ const VideoCall = () => {
                     </button>
                 )}
             </div>
+
+            {/* Summary Controls */}
+            {userRole === 'ENTERPRISE' && (
+                <div className="summary-controls">
+                    {isRecording && (
+                        <div className="recording-indicator">
+                            <span>Recording</span>
+                        </div>
+                    )}
+                    <button 
+                        onClick={toggleTranscription}
+                        className={`control-btn ${isRecording ? 'active' : ''}`}
+                    >
+                        {isRecording ? 'Stop Transcription' : 'Start Transcription'}
+                    </button>
+
+                    <button 
+                        onClick={generateSummary}
+                        disabled={isSummarizing || transcript.length === 0}
+                        className="summary-btn"
+                    >
+                        {isSummarizing ? (
+                            <span>Generating Summary...</span>
+                        ) : (
+                            <span>Generate AI Summary</span>
+                        )}
+                    </button>
+
+                    {interviewSummary && (
+                        <div className="summary-modal">
+                            <h3>Interview Analysis</h3>
+                            <div className="summary-content">
+                                {interviewSummary.split('\n').map((para, i) => (
+                                    <p key={i}>{para}</p>
+                                ))}
+                            </div>
+                            <div className="summary-actions">
+                                <button onClick={() => navigator.clipboard.writeText(interviewSummary)}>
+                                    Copy to Clipboard
+                                </button>
+                                <button onClick={() => setInterviewSummary(null)}>
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
 
             <div className="call-footer">
                 <p className="footer-text">

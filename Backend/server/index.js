@@ -1412,7 +1412,8 @@ app.post('/admins', async (req, res) => {
   }
 });
 
-  
+const recommendationRoutes = require('./routes/recommendationRoute');
+app.use('/api/recommendations', recommendationRoutes);
 // Start the server
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {

@@ -19,7 +19,8 @@ router.get('/for-user', async(req, res) => {
         }
 
         // 2. Get recommendations from Python service
-        const response = await axios.post('http://localhost:5001/recommend', {
+        const response = await axios.post('http://127.0.0.1:5001/recommend', {
+
             candidate_id: decoded.id,
             top_k: 5
         }, {

@@ -2,8 +2,10 @@ const socketIO = require('socket.io');
 const jwt = require('jsonwebtoken');
 const { RTCSessionDescription, RTCPeerConnection, RTCIceCandidate } = require('wrtc');
 const UserModel = require('./models/user');
+const Message = require('./models/Message');
 
 const activeConnections = new Map();
+const userSockets = new Map(); // Map userId -> socket.id
 
 const setupSocket = (server) => {
   const io = socketIO(server, {
@@ -17,36 +19,15 @@ const setupSocket = (server) => {
     pingInterval: 25000
   });
 
-  module.exports = (io) => {
-    io.on('connection', (socket) => {
-      console.log('✅ Client connected:', socket.id);
-  
-      socket.on("notify-candidate", ({ to, message }) => {
-        io.emit(`notification-${to}`, { message });
-        console.log(`🔔 Notification sent to candidate ${to}: ${message}`);
-      });
-  
-      socket.on('disconnect', () => {
-        console.log('❌ Client disconnected:', socket.id);
-      });
-    });
-  };
-  
   // 🔐 Authentication middleware
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth?.token;
-
-      if (!token) {
-        return next(new Error('Authentication token required'));
-      }
+      if (!token) return next(new Error('Authentication token required'));
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
       const user = await UserModel.findById(decoded.id);
-
-      if (!user) {
-        return next(new Error('User not found'));
-      }
+      if (!user) return next(new Error('User not found'));
 
       socket.user = {
         id: user._id.toString(),
@@ -54,6 +35,7 @@ const setupSocket = (server) => {
         role: user.role
       };
 
+      userSockets.set(user._id.toString(), socket.id); // Map user to socket
       next();
     } catch (err) {
       console.error('Socket auth error:', err);
@@ -61,8 +43,10 @@ const setupSocket = (server) => {
     }
   });
 
+  // ✅ Main connection handler
   io.on('connection', (socket) => {
-    console.log('✅ Client connected:', socket.user.id);
+    const userId = socket.user?.id;
+    console.log('✅ Client connected:', userId);
 
     // 🔄 Heartbeat
     const heartbeatInterval = setInterval(() => {
@@ -70,24 +54,50 @@ const setupSocket = (server) => {
     }, 5000);
 
     socket.on('pong', () => {
-      console.log('❤️ Heartbeat from:', socket.user.id);
+      console.log('❤️ Heartbeat from:', userId);
     });
 
-    // 🔁 Join Interview Room
-    socket.on('join-interview', ({ interviewId }) => {
-      if (!interviewId) {
-        return socket.emit('error', 'Interview ID is required');
+    // 💬 Messaging
+    socket.on('send-message', async ({ to, from, content }) => {
+      const newMessage = new Message({
+        from,
+        to,
+        text: content,
+        timestamp: new Date()
+      });
+    
+      await newMessage.save(); // save to MongoDB
+    
+      const recipientSocketId = userSockets.get(to);
+      if (recipientSocketId) {
+        io.to(recipientSocketId).emit('receive-message', {
+          from,
+          content,
+          timestamp: newMessage.timestamp
+        });
+      } else {
+        console.warn(`⚠️ No active socket found for recipient ${to}`);
       }
+    });
+    
+
+    socket.on("notify-candidate", ({ to, message }) => {
+      const recipientSocketId = userSockets.get(to);
+      if (recipientSocketId) {
+        io.to(recipientSocketId).emit(`notification-${to}`, { message });
+        console.log(`🔔 Notification sent to candidate ${to}: ${message}`);
+      }
+    });
+
+    // 🎥 WebRTC Interview Setup
+    socket.on('join-interview', ({ interviewId }) => {
+      if (!interviewId) return socket.emit('error', 'Interview ID is required');
 
       socket.join(interviewId);
-      console.log(`👥 User ${socket.user.id} joined interview ${interviewId}`);
-
-      socket.to(interviewId).emit('user-connected', {
-        userId: socket.user.id
-      });
+      console.log(`👥 User ${userId} joined interview ${interviewId}`);
+      socket.to(interviewId).emit('user-connected', { userId });
     });
 
-    // 📡 Offer
     socket.on('offer', async ({ interviewId, offer }) => {
       try {
         const pc = new RTCPeerConnection({
@@ -95,12 +105,12 @@ const setupSocket = (server) => {
           iceCandidatePoolSize: 10
         });
 
-        activeConnections.set(socket.user.id, pc);
+        activeConnections.set(userId, pc);
 
         pc.onicecandidate = (event) => {
           if (event.candidate) {
             socket.to(interviewId).emit('ice-candidate', {
-              userId: socket.user.id,
+              userId,
               candidate: event.candidate
             });
           }
@@ -111,7 +121,7 @@ const setupSocket = (server) => {
         await pc.setLocalDescription(answer);
 
         socket.to(interviewId).emit('answer', {
-          userId: socket.user.id,
+          userId,
           answer
         });
       } catch (err) {
@@ -120,10 +130,9 @@ const setupSocket = (server) => {
       }
     });
 
-    // 📞 Answer
     socket.on('answer', async ({ interviewId, answer }) => {
       try {
-        const pc = activeConnections.get(socket.user.id);
+        const pc = activeConnections.get(userId);
         if (!pc) throw new Error('Peer connection not found');
         await pc.setRemoteDescription(new RTCSessionDescription(answer));
       } catch (err) {
@@ -132,10 +141,9 @@ const setupSocket = (server) => {
       }
     });
 
-    // ❄️ ICE Candidate
     socket.on('ice-candidate', async ({ interviewId, candidate }) => {
       try {
-        const pc = activeConnections.get(socket.user.id);
+        const pc = activeConnections.get(userId);
         if (!pc) throw new Error('Peer connection not found');
         await pc.addIceCandidate(new RTCIceCandidate(candidate));
       } catch (err) {
@@ -147,17 +155,15 @@ const setupSocket = (server) => {
     // 🔌 Disconnect
     socket.on('disconnect', () => {
       clearInterval(heartbeatInterval);
-
-      const pc = activeConnections.get(socket.user.id);
+      const pc = activeConnections.get(userId);
       if (pc) {
         pc.close();
-        activeConnections.delete(socket.user.id);
+        activeConnections.delete(userId);
       }
-
-      console.log('❌ Client disconnected:', socket.user.id);
+      userSockets.delete(userId);
+      console.log('❌ Client disconnected:', userId);
     });
 
-    // 🧯 Error
     socket.on('error', (err) => {
       console.error('Socket error:', err.message);
     });

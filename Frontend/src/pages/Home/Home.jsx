@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
+import MessagePopup from "../../components/MessagePopup";
 import { io } from "socket.io-client";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
@@ -16,14 +17,17 @@ import {
   faMagnifyingGlass,
   faCirclePlay,
   faLightbulb,
-  faStar
+  faStar,
+  faMessage,
+  faBell
 } from "@fortawesome/free-solid-svg-icons";
 import { motion } from "framer-motion";
 import { TypeAnimation } from "react-type-animation";
+const token = localStorage.getItem("token");
 
 const socket = io("http://localhost:3001", {
-  path: "/socket.io/",
-  transports: ["websocket"]
+  auth: { token },
+  transports: ['websocket']
 });
 
 const Home = () => {
@@ -39,69 +43,131 @@ const Home = () => {
   const [contactName, setContactName] = useState("");
   const [contactSubject, setContactSubject] = useState("");
   const [contactMessage, setContactMessage] = useState("");
+  
+  // Message popup states
+  const [showMessagePopup, setShowMessagePopup] = useState(false);
+  const [chatPartner, setChatPartner] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [messageNotifications, setMessageNotifications] = useState([]);
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
 
   const role = localStorage.getItem("role");
+  const [messages, setMessages] = useState([]);
 
   useEffect(() => {
+    const userId = localStorage.getItem("userId");
+    if (userId) {
+      setCurrentUserId(userId);
+    }
+  
+    // 👂 Listen to socket events
+    socket.on("connect", () => {
+      console.log("✅ Connected to socket server");
+    });
+  
+    socket.on("disconnect", () => {
+      console.log("❌ Disconnected from socket server");
+    });
+  
+    socket.on("receive-message", (data) => {
+      console.log("📥 Message received from:", data.from);
+    
+      if (data.to === userId) {
+        setMessages(prev => [...prev, data]);
+        setMessageNotifications(prev => [...prev, data]);
+        setHasUnreadMessages(true);
+      }
+    });
+  
     const fetchData = async () => {
       try {
         const jobsRes = await axios.get("http://localhost:3001/Frontend/jobs");
         setJobs(jobsRes.data);
-
+  
         if (role === "ENTERPRISE") {
           const candidatesRes = await axios.get("http://localhost:3001/api/Frontend/all-candidates");
           setCandidates(candidatesRes.data);
         }
-
+  
         const token = localStorage.getItem("token");
         if (token) {
+          if (role === "CANDIDATE") {
+            try {
+              const messagesRes = await axios.get(
+                `http://localhost:3001/api/messages/history/${userId}/system`,
+                {
+                  headers: { Authorization: `Bearer ${token}` },
+                }
+              );
+  
+              const unreadMessages = messagesRes.data.messages?.filter(
+                (msg) => !msg.read && msg.to === userId
+              );
+  
+              if (unreadMessages?.length > 0) {
+                setMessageNotifications(unreadMessages);
+                setHasUnreadMessages(true);
+              }
+            } catch (msgError) {
+              console.error("❌ Error fetching messages:", msgError);
+            }
+          }
+  
+          // 🔁 Fetch recommendations
           setRecommendationsLoading(true);
           try {
             const recRes = await axios.get(
               "http://localhost:3001/api/recommendations/for-user",
-              { 
+              {
                 headers: { Authorization: `Bearer ${token}` },
-                timeout: 5000
+                timeout: 5000,
               }
             );
-            
+  
             let recommendationsData = [];
             if (Array.isArray(recRes.data)) {
               recommendationsData = recRes.data;
-            } else if (recRes.data && recRes.data.recommendations) {
+            } else if (recRes.data?.recommendations) {
               recommendationsData = recRes.data.recommendations;
-            } else if (recRes.data && Array.isArray(recRes.data.jobs)) {
-              recommendationsData = recRes.data.jobs.map(job => ({
+            } else if (Array.isArray(recRes.data?.jobs)) {
+              recommendationsData = recRes.data.jobs.map((job) => ({
                 ...job,
-                match_score: job.score || 0
+                match_score: job.score || 0,
               }));
             }
-
-            const transformedRecs = recommendationsData.map(rec => {
+  
+            const transformedRecs = recommendationsData.map((rec) => {
               const jobData = rec.job || rec;
               return {
                 ...jobData,
-                match_score: rec.score || rec.match_score || 0
+                match_score: rec.score || rec.match_score || 0,
               };
             });
-
+  
             setRecommendations(transformedRecs);
           } catch (recError) {
-            console.error("Error fetching recommendations:", recError);
-            setRecommendationsError("Failed to load recommendations. Please try again later.");
+            console.error("❌ Error fetching recommendations:", recError);
+            setRecommendationsError("Failed to load recommendations.");
           } finally {
             setRecommendationsLoading(false);
           }
         }
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("❌ Error fetching data:", error);
       } finally {
         setLoading(false);
       }
     };
-
+  
     fetchData();
+  
+    return () => {
+      socket.off("connect");
+      socket.off("disconnect");
+      socket.off("receive-message");
+    };
   }, [role]);
+  
 
   const filteredJobs = jobs.filter((job) =>
     job.title?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -116,6 +182,54 @@ const Home = () => {
     setShowModal(true);
   };
 
+  const openMessagePopup = (user) => {
+    setChatPartner(user);
+    setShowMessagePopup(true);
+    setHasUnreadMessages(false);
+  };
+
+  const openCandidateMessages = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const userId = localStorage.getItem("userId");
+      if (!token || !userId) {
+        console.error("No token or userId found");
+        return;
+      }
+  
+      const response = await axios.get(
+        `http://localhost:3001/api/messages/user/${userId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+  
+      if (response.data.messages && response.data.messages.length > 0) {
+        const lastMsg = response.data.messages.at(-1);
+        const senderId = lastMsg.from === userId ? lastMsg.to : lastMsg.from;
+  
+        const senderInfo = await axios.get(
+          `http://localhost:3001/Frontend/getUser/${senderId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+  
+        setChatPartner({
+          _id: senderInfo.data._id,
+          name: senderInfo.data.name,
+          picture: senderInfo.data.picture || "/images/avatar-placeholder.png"
+        });
+  
+        setShowMessagePopup(true);
+      } else {
+        alert("No messages found yet. Enterprises will contact you when interested.");
+      }
+    } catch (error) {
+      console.error("Error fetching candidate messages:", error);
+      alert("Could not open messages. Please try again later.");
+    }
+  };
+  
+  
+
   const handleSend = async () => {
     if (!contactName || !contactSubject || !contactMessage) {
       alert("Please fill out all fields.");
@@ -123,17 +237,32 @@ const Home = () => {
     }
 
     try {
-      const response = await axios.post("http://localhost:3001/api/messages/send", {
-        senderName: contactName,
-        subject: contactSubject,
-        message: contactMessage,
-        candidateId: selectedCandidate._id
-      });
+      const response = await axios.post(
+        "http://localhost:3001/api/messages/send",
+        {
+          from: currentUserId,
+          to: selectedCandidate._id,
+          text: contactMessage
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`
+          }
+        }
+      );
 
-      if (response.data.success) {
+      if (response.data.success || response.status === 200) {
+        socket.emit("send-message", {
+          from: currentUserId,
+          to: selectedCandidate._id,
+          text: contactMessage,
+          timestamp: new Date()
+        });
+
         socket.emit("notify-candidate", {
           to: selectedCandidate._id,
           message: `📬 New message from ${contactName}: "${contactSubject}"`,
+          type: "message"
         });
 
         alert("Message sent!");
@@ -234,6 +363,7 @@ const Home = () => {
 
   return (
     <>
+      {/* Contact Form Modal */}
       {showModal && (
         <div className="side-panel-overlay" onClick={() => setShowModal(false)}>
           <div className="side-panel" onClick={(e) => e.stopPropagation()}>
@@ -273,8 +403,31 @@ const Home = () => {
         </div>
       )}
 
+      {/* Live Chat Message Popup */}
+      {showMessagePopup && chatPartner && (
+        <MessagePopup
+          socket={socket}
+          selectedUser={chatPartner}
+          onClose={() => setShowMessagePopup(false)}
+          currentUserId={currentUserId}
+        />
+      )}
+
       <div className="home-container">
         <Navbar />
+
+        {/* Message notification icon for candidates */}
+        {localStorage.getItem("token") && role === "CANDIDATE" && (
+          <div className="message-notification-container">
+            <button 
+              className={`message-notification-button ${hasUnreadMessages ? 'has-notifications' : ''}`}
+              onClick={openCandidateMessages}
+            >
+              <FontAwesomeIcon icon={faMessage} />
+              {hasUnreadMessages && <span className="notification-badge"></span>}
+            </button>
+          </div>
+        )}
 
         <section className="hero_section_clean elite">
           <svg className="hero_blob" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
@@ -362,6 +515,33 @@ const Home = () => {
           </div>
         </section>
 
+        {!localStorage.getItem("token") && (
+          <section className="role-selector">
+            <div className="container">
+              <h2>Choose Your Path</h2>
+              <div className="role-cards">
+                <div className="role-card">
+                  <img src="/images/candidate-icon.png" alt="Candidate" />
+                  <h3>I'm a Candidate</h3>
+                  <p>Looking for my next career opportunity. I want to showcase my skills and connect with employers.</p>
+                  <Link to="/register?role=candidate" className="role-btn">
+                    Register as Candidate
+                  </Link>
+                </div>
+                
+                <div className="role-card">
+                  <img src="/images/enterprise-icon.png" alt="Enterprise" />
+                  <h3>I'm an Enterprise</h3>
+                  <p>Seeking talented professionals to join our team. I want to post jobs and find the right candidates.</p>
+                  <Link to="/register?role=enterprise" className="role-btn">
+                    Register as Enterprise
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
         {role === "ENTERPRISE" && (
           <section className="candidates_section">
             <div className="container">
@@ -390,9 +570,14 @@ const Home = () => {
                         <Link to={`/candidate/${candidate._id}`} className="view-profile-link">
                           View Profile
                         </Link>
-                        <button className="contact-btn" onClick={() => openContactModal(candidate)}>
-                          Contact
-                        </button>
+                        <div className="contact-buttons">
+                          <button className="contact-btn" onClick={() => openContactModal(candidate)}>
+                            <FontAwesomeIcon icon={faMessage} /> Email
+                          </button>
+                          <button className="chat-btn" onClick={() => openMessagePopup(candidate)}>
+                            <FontAwesomeIcon icon={faMessage} /> Chat
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))

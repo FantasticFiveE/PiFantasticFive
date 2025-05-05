@@ -1146,3 +1146,440 @@
   background-color: #ddd;
   color: black;
 }
+/* Role selector section styles */
+.role-selector {
+    padding: 4rem 0;
+    background-color: #f8faff;
+  }
+  
+  .role-selector h2 {
+    text-align: center;
+    font-size: 2.2rem;
+    margin-bottom: 2rem;
+    color: #333;
+  }
+  
+  .role-cards {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+  
+  .role-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(149, 157, 165, 0.1);
+    padding: 2rem;
+    width: 320px;
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .role-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(149, 157, 165, 0.2);
+  }
+  
+  .role-card img {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 1rem;
+  }
+  
+  .role-card h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: #333;
+  }
+  
+  .role-card p {
+    color: #666;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+  }
+  
+  .role-btn {
+    display: inline-block;
+    background: linear-gradient(to right, #36d1dc, #5b86e5);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+  }
+  
+  .role-btn:hover {
+    background: linear-gradient(to right, #5b86e5, #36d1dc);
+    transform: translateY(-2px);
+  }
+  
+  /* Message popup modifications */
+  .contact-buttons {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .contact-btn, .chat-btn {
+    background-color: #5b86e5;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+  }
+  
+  .chat-btn {
+    background-color: #36d1dc;
+  }
+  
+  .contact-btn:hover {
+    background-color: #4a75d4;
+  }
+  
+  .chat-btn:hover {
+    background-color: #2bbac5;
+  }
+  /* Add these styles to your Home.css file */
+
+/* Message notification icon for candidates */
+.message-notification-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+  }
+  
+  .message-notification-button {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #5b86e5, #36d1dc);
+    color: white;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+  }
+  
+  .message-notification-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+  }
+  
+  .message-notification-button.has-notifications {
+    animation: pulse 1.5s infinite;
+  }
+  
+  .notification-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    background-color: #ff4757;
+    border-radius: 50%;
+    border: 2px solid white;
+  }
+  
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(91, 134, 229, 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(91, 134, 229, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(91, 134, 229, 0);
+    }
+  }
+  
+  /* Styling for the MessagePopup component if needed */
+  .message-popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .message-popup {
+    background-color: white;
+    border-radius: 8px;
+    width: 350px;
+    max-width: 90vw;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  }
+  
+  .message-popup-header {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    background: linear-gradient(135deg, #5b86e5, #36d1dc);
+    color: white;
+  }
+  
+  .message-popup-header img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 10px;
+    border: 2px solid white;
+  }
+  
+  .message-popup-header .close-btn {
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+  }
+  
+  .message-popup-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 300px;
+  }
+  
+  .message-item {
+    padding: 10px;
+    border-radius: 8px;
+    max-width: 80%;
+    word-break: break-word;
+  }
+  
+  .message-sent {
+    background-color: #e3f2fd;
+    align-self: flex-end;
+    border-bottom-right-radius: 0;
+  }
+  
+  .message-received {
+    background-color: #f1f1f1;
+    align-self: flex-start;
+    border-bottom-left-radius: 0;
+  }
+  
+  .message-time {
+    font-size: 10px;
+    color: #888;
+    margin-top: 4px;
+    text-align: right;
+  }
+  
+  .message-popup-footer {
+    padding: 10px;
+    border-top: 1px solid #eee;
+    display: flex;
+    gap: 10px;
+  }
+  
+  .message-popup-footer input {
+    flex: 1;
+    padding: 10px;
+    border-radius: 20px;
+    border: 1px solid #ddd;
+    outline: none;
+  }
+  
+  .message-popup-footer button {
+    background: linear-gradient(135deg, #5b86e5, #36d1dc);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 0 15px;
+    cursor: pointer;
+  }
+  /* Add these styles to your Home.css file */
+
+/* Message notification icon for candidates */
+.message-notification-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+  }
+  
+  .message-notification-button {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #5b86e5, #36d1dc);
+    color: white;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+  }
+  
+  .message-notification-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+  }
+  
+  .message-notification-button.has-notifications {
+    animation: pulse 1.5s infinite;
+  }
+  
+  .notification-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    background-color: #ff4757;
+    border-radius: 50%;
+    border: 2px solid white;
+  }
+  
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(91, 134, 229, 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(91, 134, 229, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(91, 134, 229, 0);
+    }
+  }
+  
+  /* Styling for the MessagePopup component if needed */
+  .message-popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .message-popup {
+    background-color: white;
+    border-radius: 8px;
+    width: 350px;
+    max-width: 90vw;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  }
+  
+  .message-popup-header {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    background: linear-gradient(135deg, #5b86e5, #36d1dc);
+    color: white;
+  }
+  
+  .message-popup-header img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 10px;
+    border: 2px solid white;
+  }
+  
+  .message-popup-header .close-btn {
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+  }
+  
+  .message-popup-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 300px;
+  }
+  
+  .message-item {
+    padding: 10px;
+    border-radius: 8px;
+    max-width: 80%;
+    word-break: break-word;
+  }
+  
+  .message-sent {
+    background-color: #e3f2fd;
+    align-self: flex-end;
+    border-bottom-right-radius: 0;
+  }
+  
+  .message-received {
+    background-color: #f1f1f1;
+    align-self: flex-start;
+    border-bottom-left-radius: 0;
+  }
+  
+  .message-time {
+    font-size: 10px;
+    color: #888;
+    margin-top: 4px;
+    text-align: right;
+  }
+  
+  .message-popup-footer {
+    padding: 10px;
+    border-top: 1px solid #eee;
+    display: flex;
+    gap: 10px;
+  }
+  
+  .message-popup-footer input {
+    flex: 1;
+    padding: 10px;
+    border-radius: 20px;
+    border: 1px solid #ddd;
+    outline: none;
+  }
+  
+  .message-popup-footer button {
+    background: linear-gradient(135deg, #5b86e5, #36d1dc);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 0 15px;
+    cursor: pointer;
+  }

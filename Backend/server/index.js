@@ -27,6 +27,7 @@ const QuizResultModel = require("./models/QuizResultModel");
 const Application = require("./models/Application");
 const messageRoutes = require('./routes/messages');
 const setupSocketEvents = require('./socket');
+const Message = require('./models/Message');
 
 // Create Express app and HTTP server
 const app = express();
@@ -45,65 +46,58 @@ const io = socketIO(server, {
   pingInterval: 25000
 });
 
-// Socket.IO connection handling
-io.on('connection', (socket) => {
-  console.log('✅ Client connected:', socket.id);
+// 🔐 Socket.IO authentication middleware
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token;
+  if (!token) {
+    return next(new Error("Authentication token missing"));
+  }
 
-  // Authentication middleware for Socket.IO
-  socket.use((packet, next) => {
-    const token = socket.handshake.auth.token;
-    if (!token) {
-      return next(new Error('Authentication error'));
-    }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    socket.user = decoded;
+    next();
+  } catch (err) {
+    console.error("Authentication failed:", err);
+    return next(new Error("Authentication failed"));
+  }
+});
+
+// Socket.IO setup
+io.on("connection", (socket) => {
+  console.log("✅ Client connected:", socket.id, "User ID:", socket.user?.id);
+
+  // Each user joins their own room for private messaging
+  if (socket.user?.id) {
+    socket.join(socket.user.id);
+  }
+
+  // Message handling
+  socket.on("send-message", ({ to, from, text, timestamp }) => {
+    // Save to database first
+    const newMessage = new Message({
+      from,
+      to,
+      text,
+      timestamp
+    });
     
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-      socket.user = decoded;
-      next();
-    } catch (err) {
-      next(new Error('Authentication failed'));
-    }
+    newMessage.save()
+      .then(() => {
+        // Then emit to recipient
+        io.to(to).emit("receive-message", { from, to, text, timestamp });
+      })
+      .catch(err => {
+        console.error("Error saving message:", err);
+      });
   });
 
-  // Handle joining interview rooms
-  socket.on('join-interview', ({ interviewId }) => {
-    if (!interviewId) {
-      return socket.emit('error', 'Interview ID is required');
-    }
-    socket.join(interviewId);
-    console.log(`User ${socket.user.id} joined interview ${interviewId}`);
-  });
-
-  // WebRTC signaling handlers
-  socket.on('offer', ({ interviewId, offer }) => {
-    socket.to(interviewId).emit('offer', { 
-      userId: socket.user.id, 
-      offer 
-    });
-  });
-
-  socket.on('answer', ({ interviewId, answer }) => {
-    socket.to(interviewId).emit('answer', { 
-      userId: socket.user.id, 
-      answer 
-    });
-  });
-
-  socket.on('ice-candidate', ({ interviewId, candidate }) => {
-    socket.to(interviewId).emit('ice-candidate', { 
-      userId: socket.user.id, 
-      candidate 
-    });
-  });
-
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
-  });
-
-  socket.on('error', (err) => {
-    console.error('Socket error:', err.message);
+  socket.on("disconnect", () => {
+    console.log("❌ Client disconnected:", socket.id);
   });
 });
+
+
 
 // Swagger Configuration
 const options = {

@@ -1,14 +1,28 @@
 const mongoose = require('mongoose');
 
 const messageSchema = new mongoose.Schema({
-  senderName: String,
-  subject: String,
-  message: String,
-  candidateId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User' // assuming users are stored in a "User" model
+  from: {
+    type: mongoose.Schema.Types.Mixed, // Accepts ObjectId or String like "system"
+    ref: 'User',
+    required: true
   },
-  timestamp: Date
+  to: {
+    type: mongoose.Schema.Types.Mixed, // Same here
+    ref: 'User',
+    required: true
+  },
+  text: {
+    type: String,
+    required: true
+  },
+  timestamp: {
+    type: Date,
+    default: Date.now
+  },
+  read: {
+    type: Boolean,
+    default: false
+  }
 });
 
 module.exports = mongoose.model('Message', messageSchema);

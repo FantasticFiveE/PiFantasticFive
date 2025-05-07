@@ -5,7 +5,7 @@ const UserModel = require('./models/user');
 const Message = require('./models/Message');
 
 const activeConnections = new Map();
-const userSockets = new Map(); // Map userId -> socket.id
+const userSockets = new Map();
 
 const setupSocket = (server) => {
   const io = socketIO(server, {
@@ -19,7 +19,6 @@ const setupSocket = (server) => {
     pingInterval: 25000
   });
 
-  // 🔐 Authentication middleware
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth?.token;
@@ -35,7 +34,7 @@ const setupSocket = (server) => {
         role: user.role
       };
 
-      userSockets.set(user._id.toString(), socket.id); // Map user to socket
+      userSockets.set(user._id.toString(), socket.id);
       next();
     } catch (err) {
       console.error('Socket auth error:', err);
@@ -43,12 +42,12 @@ const setupSocket = (server) => {
     }
   });
 
-  // ✅ Main connection handler
   io.on('connection', (socket) => {
     const userId = socket.user?.id;
     console.log('✅ Client connected:', userId);
 
-    // 🔄 Heartbeat
+    socket.join(userId);
+
     const heartbeatInterval = setInterval(() => {
       socket.emit('ping');
     }, 5000);
@@ -57,29 +56,64 @@ const setupSocket = (server) => {
       console.log('❤️ Heartbeat from:', userId);
     });
 
-    // 💬 Messaging
-    socket.on('send-message', async ({ to, from, content }) => {
-      const newMessage = new Message({
-        from,
-        to,
-        text: content,
-        timestamp: new Date()
-      });
-    
-      await newMessage.save(); // save to MongoDB
-    
-      const recipientSocketId = userSockets.get(to);
-      if (recipientSocketId) {
-        io.to(recipientSocketId).emit('receive-message', {
+    socket.on('send-message', async ({ to, from, text, timestamp }) => {
+      try {
+        const newMessage = new Message({
           from,
-          content,
-          timestamp: newMessage.timestamp
+          to,
+          text,
+          timestamp: new Date(timestamp)
         });
-      } else {
-        console.warn(`⚠️ No active socket found for recipient ${to}`);
+
+        await newMessage.save();
+
+        // Emit to recipient
+        const recipientSocketId = userSockets.get(to);
+        if (recipientSocketId) {
+          io.to(recipientSocketId).emit('receive-message', {
+            from,
+            to,
+            text,
+            timestamp: newMessage.timestamp
+          });
+        }
+
+        // If message is to bot, handle bot response
+        if (to === 'bot') {
+          const response = await fetch('http://localhost:3001/api/messages/bot/interaction', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${socket.handshake.auth.token}`
+            },
+            body: JSON.stringify({ userId: from, message: text })
+          });
+
+          const { reply } = await response.json();
+
+          const botMessage = new Message({
+            from: 'bot',
+            to: from,
+            text: reply,
+            timestamp: new Date()
+          });
+
+          await botMessage.save();
+
+          const senderSocketId = userSockets.get(from);
+          if (senderSocketId) {
+            io.to(senderSocketId).emit('receive-message', {
+              from: 'bot',
+              to: from,
+              text: reply,
+              timestamp: botMessage.timestamp
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Error sending message:", err);
       }
     });
-    
 
     socket.on("notify-candidate", ({ to, message }) => {
       const recipientSocketId = userSockets.get(to);
@@ -89,10 +123,8 @@ const setupSocket = (server) => {
       }
     });
 
-    // 🎥 WebRTC Interview Setup
     socket.on('join-interview', ({ interviewId }) => {
       if (!interviewId) return socket.emit('error', 'Interview ID is required');
-
       socket.join(interviewId);
       console.log(`👥 User ${userId} joined interview ${interviewId}`);
       socket.to(interviewId).emit('user-connected', { userId });
@@ -152,7 +184,6 @@ const setupSocket = (server) => {
       }
     });
 
-    // 🔌 Disconnect
     socket.on('disconnect', () => {
       clearInterval(heartbeatInterval);
       const pc = activeConnections.get(userId);

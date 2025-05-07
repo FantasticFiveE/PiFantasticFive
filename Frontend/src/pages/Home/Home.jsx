@@ -19,18 +19,19 @@ import {
   faLightbulb,
   faStar,
   faMessage,
-  faBell
+  faBell,
+  faRobot
 } from "@fortawesome/free-solid-svg-icons";
 import { motion } from "framer-motion";
 import { TypeAnimation } from "react-type-animation";
-const token = localStorage.getItem("token");
-
-const socket = io("http://localhost:3001", {
-  auth: { token },
-  transports: ['websocket']
-});
 
 const Home = () => {
+  const token = localStorage.getItem("token");
+  const socket = io("http://localhost:3001", {
+    auth: { token },
+    transports: ['websocket']
+  });
+
   const [jobs, setJobs] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [recommendations, setRecommendations] = useState([]);
@@ -43,67 +44,61 @@ const Home = () => {
   const [contactName, setContactName] = useState("");
   const [contactSubject, setContactSubject] = useState("");
   const [contactMessage, setContactMessage] = useState("");
-  
-  // Message popup states
   const [showMessagePopup, setShowMessagePopup] = useState(false);
   const [chatPartner, setChatPartner] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [messageNotifications, setMessageNotifications] = useState([]);
   const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
+  const [messages, setMessages] = useState([]);
 
   const role = localStorage.getItem("role");
-  const [messages, setMessages] = useState([]);
 
   useEffect(() => {
     const userId = localStorage.getItem("userId");
     if (userId) {
       setCurrentUserId(userId);
     }
-  
-    // 👂 Listen to socket events
+
+    // Socket event listeners
     socket.on("connect", () => {
       console.log("✅ Connected to socket server");
     });
-  
+
     socket.on("disconnect", () => {
       console.log("❌ Disconnected from socket server");
     });
-  
+
     socket.on("receive-message", (data) => {
       console.log("📥 Message received from:", data.from);
-    
       if (data.to === userId) {
         setMessages(prev => [...prev, data]);
         setMessageNotifications(prev => [...prev, data]);
         setHasUnreadMessages(true);
       }
     });
-  
+
     const fetchData = async () => {
       try {
         const jobsRes = await axios.get("http://localhost:3001/Frontend/jobs");
         setJobs(jobsRes.data);
-  
+
         if (role === "ENTERPRISE") {
           const candidatesRes = await axios.get("http://localhost:3001/api/Frontend/all-candidates");
           setCandidates(candidatesRes.data);
         }
-  
-        const token = localStorage.getItem("token");
+
         if (token) {
           if (role === "CANDIDATE") {
             try {
               const messagesRes = await axios.get(
                 `http://localhost:3001/api/messages/history/${userId}/system`,
-                {
-                  headers: { Authorization: `Bearer ${token}` },
-                }
+                { headers: { Authorization: `Bearer ${token}` } }
               );
-  
+
               const unreadMessages = messagesRes.data.messages?.filter(
                 (msg) => !msg.read && msg.to === userId
               );
-  
+
               if (unreadMessages?.length > 0) {
                 setMessageNotifications(unreadMessages);
                 setHasUnreadMessages(true);
@@ -112,18 +107,15 @@ const Home = () => {
               console.error("❌ Error fetching messages:", msgError);
             }
           }
-  
-          // 🔁 Fetch recommendations
+
+          // Fetch recommendations
           setRecommendationsLoading(true);
           try {
             const recRes = await axios.get(
               "http://localhost:3001/api/recommendations/for-user",
-              {
-                headers: { Authorization: `Bearer ${token}` },
-                timeout: 5000,
-              }
+              { headers: { Authorization: `Bearer ${token}` } }
             );
-  
+
             let recommendationsData = [];
             if (Array.isArray(recRes.data)) {
               recommendationsData = recRes.data;
@@ -135,7 +127,7 @@ const Home = () => {
                 match_score: job.score || 0,
               }));
             }
-  
+
             const transformedRecs = recommendationsData.map((rec) => {
               const jobData = rec.job || rec;
               return {
@@ -143,7 +135,7 @@ const Home = () => {
                 match_score: rec.score || rec.match_score || 0,
               };
             });
-  
+
             setRecommendations(transformedRecs);
           } catch (recError) {
             console.error("❌ Error fetching recommendations:", recError);
@@ -158,16 +150,15 @@ const Home = () => {
         setLoading(false);
       }
     };
-  
+
     fetchData();
-  
+
     return () => {
       socket.off("connect");
       socket.off("disconnect");
       socket.off("receive-message");
     };
-  }, [role]);
-  
+  }, [role, token]);
 
   const filteredJobs = jobs.filter((job) =>
     job.title?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -188,6 +179,16 @@ const Home = () => {
     setHasUnreadMessages(false);
   };
 
+  const openBotChat = () => {
+    setChatPartner({
+      _id: 'bot',
+      name: 'NextBot Assistant',
+      picture: '/images/bot-avatar.png'
+    });
+    setShowMessagePopup(true);
+    setHasUnreadMessages(false);
+  };
+
   const openCandidateMessages = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -196,39 +197,38 @@ const Home = () => {
         console.error("No token or userId found");
         return;
       }
-  
+
       const response = await axios.get(
         `http://localhost:3001/api/messages/user/${userId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
-  
+
       if (response.data.messages && response.data.messages.length > 0) {
         const lastMsg = response.data.messages.at(-1);
         const senderId = lastMsg.from === userId ? lastMsg.to : lastMsg.from;
-  
+
         const senderInfo = await axios.get(
           `http://localhost:3001/Frontend/getUser/${senderId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-  
+
         setChatPartner({
           _id: senderInfo.data._id,
           name: senderInfo.data.name,
           picture: senderInfo.data.picture || "/images/avatar-placeholder.png"
         });
-  
+
         setShowMessagePopup(true);
       } else {
-        alert("No messages found yet. Enterprises will contact you when interested.");
+        // If no messages, open bot chat
+        openBotChat();
       }
     } catch (error) {
       console.error("Error fetching candidate messages:", error);
-      alert("Could not open messages. Please try again later.");
+      alert("Could not open messages. Starting chat with NextBot instead.");
+      openBotChat();
     }
   };
-  
-  
 
   const handleSend = async () => {
     if (!contactName || !contactSubject || !contactMessage) {
@@ -287,26 +287,24 @@ const Home = () => {
           <span>{Math.round((job.match_score || job.score) * 100)}% Match</span>
         </div>
       )}
-      
       <div className="job-card-body">
         <div className="job-card-header">
           <div className="company-info">
             <div className="company-logo">
-              <img 
-                src={job.entrepriseId?.picture || job.company?.logo || "/images/working.png"} 
-                alt="Company Logo" 
+              <img
+                src={job.entrepriseId?.picture || job.company?.logo || "/images/working.png"}
+                alt="Company Logo"
                 onError={(e) => {
                   e.target.src = "/images/working.png";
                 }}
               />
             </div>
-
             <div className="company-details">
               <span className="company-name">
-                {job.entrepriseId?.enterprise?.name || 
-                 job.entrepriseId?.name || 
-                 job.company?.name || 
-                 "Unknown Company"}
+                {job.entrepriseId?.enterprise?.name ||
+                  job.entrepriseId?.name ||
+                  job.company?.name ||
+                  "Unknown Company"}
               </span>
               <span className="company-location">
                 <FontAwesomeIcon icon={faLocationDot} style={{ marginRight: "5px" }} />
@@ -320,9 +318,7 @@ const Home = () => {
             </svg>
           </div>
         </div>
-
         <h3 className="job-title">{job.title || "Untitled Position"}</h3>
-
         {(job.skills?.length > 0 || job.languages?.length > 0 || job.tags?.length > 0) && (
           <div className="job-tags">
             {(job.skills || job.tags || []).slice(0, 3).map((skill, index) => (
@@ -340,12 +336,10 @@ const Home = () => {
           </div>
         )}
       </div>
-
       <div className="job-card-footer">
         <span className="job-salary">
           {job.salary ? `${job.salary}€` : "Competitive"} <span className="job-salary-period">/Month</span>
         </span>
-
         <Link to={`/job/${job._id || job.id}`} className="apply-btn-home">
           Apply Now <FontAwesomeIcon icon={faChevronRight} />
         </Link>
@@ -374,7 +368,6 @@ const Home = () => {
                 <p className="muted-text">{selectedCandidate?.email}</p>
               </div>
             </div>
-
             <input
               type="text"
               placeholder="e.g. John Smith from HR Department"
@@ -392,7 +385,6 @@ const Home = () => {
               value={contactMessage}
               onChange={(e) => setContactMessage(e.target.value)}
             ></textarea>
-
             <div className="side-panel-actions">
               <button onClick={handleSend}>Send</button>
               <button onClick={() => setShowModal(false)} className="cancel-btn">
@@ -415,33 +407,37 @@ const Home = () => {
 
       <div className="home-container">
         <Navbar />
-
-        {/* Message notification icon for candidates */}
+        {/* Message notification and bot chat buttons for candidates */}
         {localStorage.getItem("token") && role === "CANDIDATE" && (
           <div className="message-notification-container">
-            <button 
+            <button
               className={`message-notification-button ${hasUnreadMessages ? 'has-notifications' : ''}`}
               onClick={openCandidateMessages}
+              title="View Messages"
             >
               <FontAwesomeIcon icon={faMessage} />
               {hasUnreadMessages && <span className="notification-badge"></span>}
             </button>
+            <button
+              className="bot-chat-button"
+              onClick={openBotChat}
+              title="Chat with NextBot"
+            >
+              <FontAwesomeIcon icon={faRobot} />
+            </button>
           </div>
         )}
-
         <section className="hero_section_clean elite">
           <svg className="hero_blob" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
             <g transform="translate(300,300)">
               <path d="M120,-152C156,-115,182,-77,186,-38C190,1,171,41,147,84C123,127,94,172,55,182C16,193,-33,170,-76,143C-118,117,-154,86,-166,47C-178,7,-165,-41,-139,-89C-113,-137,-75,-186,-28,-192C19,-199,77,-164,120,-152Z" fill="#5b86e5" opacity="0.3" />
             </g>
           </svg>
-
           <div className="hero_shapes">
             <div className="circle circle1"></div>
             <div className="circle circle2"></div>
             <div className="blur_light"></div>
           </div>
-
           <div className="hero_wrapper">
             <motion.div
               className="hero_text_block"
@@ -464,12 +460,10 @@ const Home = () => {
                   style={{ display: 'inline-block' }}
                 />
               </h1>
-
               <p className="hero_subtext">
-                NextHire bridges the gap between top companies and ambitious professionals. Whether you're looking for 
+                NextHire bridges the gap between top companies and ambitious professionals. Whether you're looking for
                 your dream job or the perfect candidate — we've got you covered.
               </p>
-
               <motion.div
                 className="hero_ctas"
                 initial={{ opacity: 0, y: 20 }}
@@ -483,9 +477,8 @@ const Home = () => {
                   whileTap={{ scale: 0.95 }}
                 >
                   <FontAwesomeIcon icon={faCirclePlay} style={{ color: "#ffffff" }} />
-                  &nbsp; Get Started
+                    Get Started
                 </motion.a>
-
                 <motion.a
                   href="#about"
                   className="hero_btn secondary"
@@ -493,11 +486,10 @@ const Home = () => {
                   whileTap={{ scale: 0.95 }}
                 >
                   <FontAwesomeIcon icon={faLightbulb} style={{ color: "#36d1dc" }} />
-                  &nbsp; Learn More
+                    Learn More
                 </motion.a>
               </motion.div>
             </motion.div>
-
             <motion.div
               className="hero_image_block"
               initial={{ opacity: 0, scale: 0.85 }}
@@ -514,7 +506,6 @@ const Home = () => {
             </motion.div>
           </div>
         </section>
-
         {!localStorage.getItem("token") && (
           <section className="role-selector">
             <div className="container">
@@ -528,7 +519,6 @@ const Home = () => {
                     Register as Candidate
                   </Link>
                 </div>
-                
                 <div className="role-card">
                   <img src="/images/enterprise-icon.png" alt="Enterprise" />
                   <h3>I'm an Enterprise</h3>
@@ -541,7 +531,6 @@ const Home = () => {
             </div>
           </section>
         )}
-
         {role === "ENTERPRISE" && (
           <section className="candidates_section">
             <div className="container">
@@ -588,7 +577,6 @@ const Home = () => {
             </div>
           </section>
         )}
-
         <section className="jobs_section">
           <div className="container">
             <div className="job-section-header">
@@ -605,7 +593,6 @@ const Home = () => {
                 <button type="button">Search</button>
               </div>
             </div>
-
             {localStorage.getItem("token") && (
               <div className="recommendations-section">
                 <h2 className="section-title clean">
@@ -619,7 +606,6 @@ const Home = () => {
                     {recommendationsError}
                   </div>
                 )}
-                
                 <div className="job-list">
                   {recommendationsLoading ? (
                     <div className="loading-container">
@@ -635,7 +621,6 @@ const Home = () => {
                 </div>
               </div>
             )}
-
             <div className="latest-jobs-section">
               <h2 className="section-title clean">Latest Job Offers</h2>
               <div className="job-list">
@@ -650,7 +635,6 @@ const Home = () => {
             </div>
           </div>
         </section>
-
         <Footer />
       </div>
     </>

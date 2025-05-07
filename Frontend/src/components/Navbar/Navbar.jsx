@@ -56,13 +56,6 @@ const Navbar = () => {
             {/* 🔒 Authenticated User */}
             {isAuthenticated && userId ? (
   <>
-    {/* ✅ Only show messages for candidates */}
-    {userRole === "CANDIDATE" && (
-      <li className="nav-item">
-        <Link className="nav-link futuristic-nav-link" to="/messages">📨 Messages</Link>
-      </li>
-    )}
-
     <li className="nav-item">
       <Link
         className="nav-link futuristic-nav-link"

@@ -18,7 +18,11 @@ const CandidateMessages = () => {
     const fetchMessages = async () => {
       try {
         const res = await axios.get(`http://localhost:3001/api/messages/${candidateId}`);
-        setMessages(res.data);
+        if (Array.isArray(res.data.messages)) {
+          setMessages(res.data.messages);
+        } else {
+          setMessages(res.data); // fallback if structure is flat
+        }
       } catch (err) {
         console.error("❌ Error fetching messages:", err);
       }
@@ -26,10 +30,9 @@ const CandidateMessages = () => {
 
     fetchMessages();
 
-    // 🔔 Listen for real-time notifications for this user
     socket.on(`notification-${candidateId}`, (data) => {
-      alert(data.message); // or use toast for a better UI
-      fetchMessages();     // re-fetch updated messages
+      alert(data.message);
+      fetchMessages(); // Refresh messages
     });
 
     return () => {
@@ -47,11 +50,13 @@ const CandidateMessages = () => {
         ) : (
           <ul className="messages-list">
             {messages.map((msg) => (
-              <li key={msg._id} className="message-card">
-                <h4>📩 {msg.subject}</h4>
-                <p><strong>From:</strong> {msg.senderName}</p>
-                <p>{msg.message}</p>
-                <span className="timestamp">{new Date(msg.timestamp).toLocaleString()}</span>
+              <li key={msg._id || Math.random()} className="message-card">
+                <h4>📩 {msg.subject || 'No Subject'}</h4>
+                <p><strong>From:</strong> {msg.senderName || msg.from}</p>
+                <p>{msg.message || msg.text}</p>
+                <span className="timestamp">
+                  {msg.timestamp ? new Date(msg.timestamp).toLocaleString() : ''}
+                </span>
               </li>
             ))}
           </ul>

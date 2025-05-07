@@ -5,7 +5,9 @@ import axios from "axios";
 const MessagePopup = ({ socket, selectedUser, onClose, currentUserId }) => {
   const [messages, setMessages] = useState([]);
   const [newMsg, setNewMsg] = useState("");
+  const [error, setError] = useState(null);
   const chatEndRef = useRef(null);
+  const [isBotTyping, setIsBotTyping] = useState(false);
 
   // Load chat history
   useEffect(() => {
@@ -20,8 +22,10 @@ const MessagePopup = ({ socket, selectedUser, onClose, currentUserId }) => {
           }
         );
         setMessages(res.data.messages || []);
+        setError(null);
       } catch (err) {
         console.error("Error loading messages", err);
+        setError("Failed to load messages. Please try again.");
       }
     };
 
@@ -62,27 +66,56 @@ const MessagePopup = ({ socket, selectedUser, onClose, currentUserId }) => {
     };
 
     try {
+      // Add user message immediately
+      setMessages((prev) => [...prev, messageObj]);
+      setNewMsg("");
+      setError(null);
+
       // Save to database
       await axios.post(
         "http://localhost:3001/api/messages/send",
         messageObj,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "application/json"
-          }
-        }
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       );
 
-      // Emit via socket
-      socket.emit("send-message", messageObj);
-      
-      // Add to local state
-      setMessages((prev) => [...prev, messageObj]);
-      setNewMsg("");
+      // If sending to bot, get bot response
+      if (selectedUser._id === 'bot') {
+        setIsBotTyping(true);
+
+        const res = await axios.post(
+          "http://localhost:3001/api/messages/bot/interaction",
+          { userId: currentUserId, message: newMsg },
+          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+        );
+
+        const botResponse = {
+          from: 'bot',
+          to: currentUserId,
+          text: res.data.reply,
+          timestamp: new Date()
+        };
+
+        // Add bot response to messages
+        setMessages((prev) => [...prev, botResponse]);
+        setIsBotTyping(false);
+
+        // Save bot message to database
+        await axios.post(
+          "http://localhost:3001/api/messages/send",
+          botResponse,
+          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+        );
+
+        // Emit bot response via socket
+        socket.emit("send-message", botResponse);
+      } else {
+        // Regular message to human
+        socket.emit("send-message", messageObj);
+      }
     } catch (err) {
       console.error("Error sending message:", err);
-      alert("Failed to send message");
+      setIsBotTyping(false);
+      setError("Failed to send message. Please try again.");
     }
   };
 
@@ -97,35 +130,76 @@ const MessagePopup = ({ socket, selectedUser, onClose, currentUserId }) => {
     <div className="message-popup">
       <div className="popup-header">
         <div className="popup-user-info">
-          <img 
-            src={selectedUser.picture || "/images/avatar-placeholder.png"} 
-            alt={selectedUser.name} 
+          <img
+            src={selectedUser.picture || (selectedUser._id === 'bot' ? "/images/bot-avatar.png" : "/images/avatar-placeholder.png")}
+            alt={selectedUser.name}
             className="popup-avatar"
           />
-          <span>Chat with {selectedUser.name}</span>
+          <span>
+            {selectedUser._id === 'bot' ? (
+              <>NextBot Assistant <span className="bot-badge">AI</span></>
+            ) : (
+              `Chat with ${selectedUser.name}`
+            )}
+          </span>
         </div>
         <button onClick={onClose} className="close-button">✖</button>
       </div>
       <div className="popup-body">
+        {error && <div className="error-message">{error}</div>}
         {messages.length === 0 ? (
           <div className="no-messages">
-            <p>No messages yet. Say hello! 👋</p>
+            {selectedUser._id === 'bot' ? (
+              <>
+                <p>Hello! I'm NextBot 🤖</p>
+                <p>Ask me about job applications, interviews, or profile tips!</p>
+                <div className="bot-quick-questions">
+                  <button onClick={() => { setNewMsg("How do I apply for jobs?"); sendMessage(); }}>
+                    How to apply?
+                  </button>
+                  <button onClick={() => { setNewMsg("Interview tips"); sendMessage(); }}>
+                    Interview tips
+                  </button>
+                  <button onClick={() => { setNewMsg("Profile help"); sendMessage(); }}>
+                    Profile help
+                  </button>
+                </div>
+              </>
+            ) : (
+              <p>No messages yet. Say hello! 👋</p>
+            )}
           </div>
         ) : (
           messages.map((msg, i) => (
             <div
               key={i}
-              className={`msg ${msg.from === currentUserId ? "sent" : "received"}`}
+              className={`msg ${msg.from === currentUserId ? "sent" : "received"} ${
+                msg.from === 'bot' ? "bot-msg" : ""
+              }`}
             >
-              <div className="msg-content">{msg.text}</div>
+              <div className="msg-content">
+                {msg.text.split('\n').map((line, idx) => (
+                  <p key={idx}>{line}</p>
+                ))}
+              </div>
               <div className="msg-time">
                 {new Date(msg.timestamp).toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit'
                 })}
+                {msg.from === 'bot' && <span className="bot-indicator">AI</span>}
               </div>
             </div>
           ))
+        )}
+        {isBotTyping && (
+          <div className="msg received bot-msg">
+            <div className="typing-indicator">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
         )}
         <div ref={chatEndRef} />
       </div>
@@ -134,10 +208,16 @@ const MessagePopup = ({ socket, selectedUser, onClose, currentUserId }) => {
           value={newMsg}
           onChange={(e) => setNewMsg(e.target.value)}
           onKeyPress={handleKeyPress}
-          placeholder="Type a message..."
+          placeholder={
+            selectedUser._id === 'bot'
+              ? "Ask me about jobs, applications, or interviews..."
+              : "Type a message..."
+          }
           rows={1}
         />
-        <button onClick={sendMessage} className="send-button">Send</button>
+        <button onClick={sendMessage} className="send-button">
+          Send
+        </button>
       </div>
     </div>
   );

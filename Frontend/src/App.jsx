@@ -97,16 +97,16 @@ function App() {
             <Route path="/candidate/:id" element={<CandidateProfile />} />
             <Route path="/messages" element={<CandidateMessages />} />
 
-            {/* Back Office Routes (Protected) */}
-            <Route path="/dashboard" element={<ProtectedRoute><DashboardLayoutWrapper /></ProtectedRoute>}>
-              <Route index element={<DashboardLayout />} />
-              <Route path="manage-candidates" element={<ManageCandidates />} />
-              <Route path="manage-employees" element={<ManageEmployees />} />
-              <Route path="application-info" element={<ApplicationInfo />} />
-              <Route path="settings" element={<SettingsPage />} />
-              <Route path="calendar" element={<CalendarView />} />
-              <Route path="jobs" element={<AllJobs />} />
-            </Route>
+{/* Back Office Routes (Unprotected) */}
+<Route path="/dashboard" element={<DashboardLayoutWrapper />}>
+  <Route index element={<DashboardLayout />} />
+  <Route path="manage-candidates" element={<ManageCandidates />} />
+  <Route path="manage-employees" element={<ManageEmployees />} />
+  <Route path="application-info" element={<ApplicationInfo />} />
+  <Route path="settings" element={<SettingsPage />} />
+  <Route path="calendar" element={<CalendarView />} />
+  <Route path="jobs" element={<AllJobs />} />
+</Route>
 
             {/* Dashboard Login Route */}
             <Route path="/dashboard/login" element={<LoginPage />} />

@@ -63,16 +63,31 @@ router.post("/auth/login", async (req, res) => {
 // Get all users
 router.get("/users", async (req, res) => {
     try {
-      console.log("📥 Requête reçue pour /api/users");  // debug log
-      const users = await UserModel.find(); // ⚠️ bien UserModel ici
-      res.status(200).json(users);
-    } catch (err) {
-      console.error("❌ Erreur dans /api/users:", err);  // trace exacte
-      res.status(500).json({ message: "Erreur serveur", error: err.message });
-    }
-  });
-  
+        const users = await UserModel.find()
+            .populate({
+                path: 'applications.jobId',
+                select: 'title'
+            })
+            .populate({
+                path: 'interviews.jobId',
+                select: 'title'
+            })
+            .select('+applications +interviews'); // Include fields marked with select: false
 
+        res.status(200).json({
+            success: true,
+            count: users.length,
+            data: users
+        });
+    } catch (err) {
+        console.error("Error fetching users:", err);
+        res.status(500).json({ 
+            success: false,
+            message: "Error fetching users",
+            error: err.message 
+        });
+    }
+});
 // Get single user by ID
 router.get("/users/:id", async (req, res) => {
     try {
@@ -253,5 +268,4 @@ router.get('/approved-candidates', async(req, res) => {
     }
 });
 
-
-module.exports = router;
+  module.exports = router;

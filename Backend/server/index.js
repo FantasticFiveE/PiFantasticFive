@@ -1380,6 +1380,52 @@ app.get('/api/users', async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
+// Get application statistics by month
+app.get('/applications/stats', async (req, res) => {
+  try {
+      // Get all candidates with their applications
+      const candidates = await UserModel.find(
+          { role: "CANDIDATE" },
+          'applications'
+      ).lean();
+
+      // Initialize monthly counts (0-11 for January-December)
+      const monthlyCounts = Array(12).fill(0);
+
+      candidates.forEach(candidate => {
+          candidate.applications?.forEach(application => {
+              if (application.dateSubmitted) {
+                  try {
+                      const dateValue = application.dateSubmitted.$date || application.dateSubmitted;
+                      const applicationDate = new Date(dateValue);
+                      
+                      if (!isNaN(applicationDate)) {
+                          const month = applicationDate.getMonth(); // 0-11
+                          monthlyCounts[month]++;
+                      }
+                  } catch (error) {
+                      console.error("Error processing application date:", error);
+                  }
+              }
+          });
+      });
+
+      res.status(200).json({
+          success: true,
+          data: {
+              monthlyCounts,
+              // You can add more stats here if needed
+          }
+      });
+  } catch (err) {
+      console.error("Error fetching application stats:", err);
+      res.status(500).json({ 
+          success: false,
+          message: "Error fetching application statistics",
+          error: err.message 
+      });
+  }
+});
 
 app.post('/admins', async (req, res) => {
   try {

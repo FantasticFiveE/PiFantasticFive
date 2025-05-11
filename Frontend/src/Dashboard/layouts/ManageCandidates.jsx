@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import "./ManageCandidates.css";
 
 function ManageCandidates() {
   const [candidates, setCandidates] = useState([]);
@@ -11,12 +12,8 @@ function ManageCandidates() {
     const fetchCandidates = async () => {
       try {
         const response = await fetch("http://localhost:3001/api/users");
-        if (!response.ok) {
-          throw new Error("Failed to fetch candidates");
-        }
-        const usersData = await response.json();
-
-        // Filter candidates (users with role "CANDIDATE")
+        if (!response.ok) throw new Error("Failed to fetch candidates");
+        const { data: usersData } = await response.json();
         const candidateData = usersData.filter((user) => user.role === "CANDIDATE");
         setCandidates(candidateData);
         setLoading(false);
@@ -34,9 +31,7 @@ function ManageCandidates() {
       const response = await fetch(`http://localhost:3001/api/users/${id}`, {
         method: "DELETE",
       });
-      if (!response.ok) {
-        throw new Error("Failed to delete candidate");
-      }
+      if (!response.ok) throw new Error("Failed to delete candidate");
       setCandidates(candidates.filter((candidate) => candidate._id !== id));
     } catch (err) {
       setError(err.message);
@@ -66,12 +61,10 @@ function ManageCandidates() {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to update candidate details");
-      }
+      if (!response.ok) throw new Error("Failed to update candidate");
 
-      setCandidates((prevCandidates) =>
-        prevCandidates.map((candidate) =>
+      setCandidates((prev) =>
+        prev.map((candidate) =>
           candidate._id === id
             ? {
                 ...candidate,
@@ -85,7 +78,6 @@ function ManageCandidates() {
             : candidate
         )
       );
-
       setEditingId(null);
     } catch (err) {
       setError(err.message);
@@ -97,26 +89,21 @@ function ManageCandidates() {
     setEditedCandidate((prev) => ({ ...prev, [name]: value }));
   };
 
-  if (loading) {
-    return <div>Loading candidates...</div>;
-  }
-
-  if (error) {
-    return <div style={{ color: "red" }}>Error: {error}</div>;
-  }
+  if (loading) return <div className="loading-message">Loading candidates...</div>;
+  if (error) return <div className="error-message">Error: {error}</div>;
 
   return (
-    <div className="p-4 shadow mb-4">
+    <div className="manage-container">
       <h2>Manage Candidates</h2>
       <p>Manage candidate profiles and their details.</p>
 
-      <div>
+      <div className="candidate-list">
         {candidates.length > 0 ? (
           candidates.map((candidate) => (
-            <div key={candidate._id} className="border p-3 mb-2 rounded">
-              <h6>{candidate.name || candidate.email}</h6>
+            <div key={candidate._id} className="candidate-card">
+              <h6 className="candidate-title">{candidate.name || candidate.email}</h6>
               {editingId === candidate._id ? (
-                <div>
+                <div className="edit-form">
                   <input
                     type="text"
                     name="name"
@@ -142,7 +129,7 @@ function ManageCandidates() {
                   <button onClick={() => setEditingId(null)}>Cancel</button>
                 </div>
               ) : (
-                <div>
+                <div className="candidate-info">
                   <p>
                     <strong>Skills:</strong>{" "}
                     {candidate.profile?.skills?.join(", ") || "No skills available"}
@@ -153,12 +140,32 @@ function ManageCandidates() {
                   </p>
                   <p>
                     <strong>Applications:</strong> {candidate.applications?.length || 0}
+                    {candidate.applications?.length > 0 && (
+                      <ul>
+                        {candidate.applications.map((app, index) => (
+                          <li key={index}>
+                            {app.jobId?.title || "Unknown job"} - {app.status}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </p>
                   <p>
                     <strong>Interviews:</strong> {candidate.interviews?.length || 0}
+                    {candidate.interviews?.length > 0 && (
+                      <ul>
+                        {candidate.interviews.map((interview, index) => (
+                          <li key={index}>
+                            {interview.jobId?.title || "Unknown job"} - {interview.status}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </p>
-                  <button onClick={() => handleEdit(candidate)}>Edit</button>
-                  <button onClick={() => handleDelete(candidate._id)}>Delete</button>
+                  <div className="action-buttons">
+                    <button onClick={() => handleEdit(candidate)}>Edit</button>
+                    <button onClick={() => handleDelete(candidate._id)}>Delete</button>
+                  </div>
                 </div>
               )}
             </div>

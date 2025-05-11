@@ -9,17 +9,16 @@ import Assessments from "../components/Widgets/Assessments";
 import CandidateStatus from "../components/Sections/CandidateStatus";
 import InterviewMeetingInfo from "../components/Sections/InterviewMeetingInfo";
 import ApplicationInfo from "../components/Sections/ApplicationInfo";
-import EnterpriseQuizzes from "../components/Sections/QuizPost"; // Importez le composant
+import EnterpriseQuizzes from "../components/Sections/QuizPost";
+import AdminClustering from "../components/Sections/clustering";
 
 function DashboardLayout() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Simulate fetching data (replace with actual API calls)
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Simulate an API call delay
         await new Promise((resolve) => setTimeout(resolve, 1000));
         setLoading(false);
       } catch (err) {
@@ -77,18 +76,14 @@ function DashboardLayout() {
       </div>
 
       <div className="row">
-        {/* First Column */}
         <div className="col-lg-9 col-md-12 p-0">
           <div className="p-3">
-            {/* <InterviewMeetingInfo /> */}
             <PostedJobs />
-            <CandidateStatus />  
-            <EnterpriseQuizzes /> {/* Ajoutez le composant ici */}
-
+            <CandidateStatus />
+            <EnterpriseQuizzes />
+            <AdminClustering /> {/* ← Now rendered */}
           </div>
         </div>
-
-        
       </div>
     </div>
   );

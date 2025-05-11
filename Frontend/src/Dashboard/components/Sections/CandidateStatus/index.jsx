@@ -3,51 +3,66 @@ import SectionHeader from "../SectionHeader";
 
 function CandidateStatus() {
   const [rows, setRows] = useState([]);
-  const [searchTerm, setSearchTerm] = useState(""); // State for search term
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(false); // Loading state for handling fetch
 
   useEffect(() => {
     const fetchCandidates = async () => {
       try {
-        // Fetch users data
+        setLoading(true); // Start loading
+
         const usersResponse = await fetch("http://localhost:3001/api/users");
         const usersData = await usersResponse.json();
 
-        // Fetch jobs data to map jobId to job title
+        // Log the usersData to check its structure
+        console.log("usersData:", usersData);
+
+        // Check if usersData is an array before filtering
+        if (!Array.isArray(usersData)) {
+          throw new Error("usersData is not an array");
+        }
+
         const jobsResponse = await fetch("http://localhost:3001/api/jobs");
         const jobsData = await jobsResponse.json();
+
+        // Create a mapping of jobId to job title
         const jobMap = jobsData.reduce((acc, job) => {
-          acc[job._id] = job.title; // Map job ID to job title
+          acc[job._id] = job.title;
           return acc;
         }, {});
 
-        // Filter candidates (role === "CANDIDATE")
-        const candidateData = usersData.filter((user) => user.role === "CANDIDATE");
+        // Filter candidates only
+        const candidates = usersData.filter(user => user.role === "CANDIDATE");
 
-        // Transform backend data into the format expected by the table
-        const transformedRows = candidateData.map((candidate) => {
-          const jobApplication = candidate.applications && candidate.applications[0]; // Get the first application
-          const interview = candidate.interviews && candidate.interviews[0]; // Get the first interview
-          const experience = (candidate.profile && candidate.profile.experience && candidate.profile.experience[0] && candidate.profile.experience[0].title) || "N/A"; // Get experience title or fallback
-          const skills = (candidate.profile && candidate.profile.skills && candidate.profile.skills.join(", ")) || "N/A"; // Get skills as a comma-separated string or fallback
+        // Transform the candidate data
+        const transformed = candidates.map(candidate => {
+          const application = candidate.applications?.[0];
+          const interview = candidate.interviews?.[0];
+          const experience = candidate.profile?.experience?.[0]?.title || "N/A";
+          const skills = candidate.profile?.skills?.join(", ") || "N/A";
 
-          // Check if the application is approved and the interview is completed
-          const isInterviewCompleted = interview && interview.status === "Completed";
-          const interviewDate = isInterviewCompleted && interview.date && interview.date.$date ? new Date(interview.date.$date).toLocaleDateString() : "N/A";
+          const interviewDate =
+            interview?.status === "Completed" && interview.date?.$date
+              ? new Date(interview.date.$date).toLocaleDateString()
+              : "N/A";
 
           return {
-            name: candidate.name || candidate.email, // Use name if available, otherwise fallback to email
-            jobName: (jobApplication && jobApplication.jobId && jobMap[jobApplication.jobId]) || "N/A", // Map job ID to job title
-            applicationStatus: (jobApplication && jobApplication.status) || "N/A", // Get application status or fallback
-            interviewDate, // Format interview date or fallback
-            interviewStatus: (interview && interview.status) || "Pending", // Get interview status or fallback
-            skills, // Skills as a comma-separated string
-            experience, // Experience title
+            name: candidate.name || candidate.email,
+            jobName: jobMap[application?.jobId] || "N/A",
+            applicationStatus: application?.status || "N/A",
+            interviewDate,
+            interviewStatus: interview?.status || "Pending",
+            skills,
+            experience,
           };
         });
 
-        setRows(transformedRows);
+        // Update state with transformed data
+        setRows(transformed);
       } catch (error) {
         console.error("Error fetching candidates:", error);
+      } finally {
+        setLoading(false); // End loading
       }
     };
 
@@ -55,7 +70,7 @@ function CandidateStatus() {
   }, []);
 
   // Filter rows based on search term
-  const filteredRows = rows.filter((row) =>
+  const filteredRows = rows.filter(row =>
     row.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     row.jobName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     row.skills.toLowerCase().includes(searchTerm.toLowerCase())
@@ -63,14 +78,17 @@ function CandidateStatus() {
 
   return (
     <div className="p-4 shadow mb-4 candidate-status-container">
-      {/* Pass searchTerm and setSearchTerm to SectionHeader */}
       <SectionHeader
         title="Candidate Status"
         viewAllPath="/dashboard/manage-candidates"
-        onSearch={(term) => setSearchTerm(term)}
+        onSearch={setSearchTerm}
       />
       <div className="candidate-status-table">
-        <TableComponent rows={filteredRows} />
+        {loading ? (
+          <div>Loading...</div> // Show loading text or spinner while data is being fetched
+        ) : (
+          <TableComponent rows={filteredRows} />
+        )}
       </div>
     </div>
   );

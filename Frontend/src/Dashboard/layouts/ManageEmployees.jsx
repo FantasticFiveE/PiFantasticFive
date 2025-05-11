@@ -6,10 +6,9 @@ function ManageEmployees() {
   const [enterprises, setEnterprises] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [editingId, setEditingId] = useState(null); // Track which enterprise is being edited
-  const [editedEnterprise, setEditedEnterprise] = useState({}); // Store edited data
+  const [editingId, setEditingId] = useState(null);
+  const [editedEnterprise, setEditedEnterprise] = useState({});
 
-  // Fetch enterprise users from the backend
   useEffect(() => {
     const fetchEnterprises = async () => {
       try {
@@ -17,14 +16,15 @@ function ManageEmployees() {
         if (!response.ok) {
           throw new Error("Failed to fetch enterprise users");
         }
-        const usersData = await response.json();
 
-        // Filter enterprise users (users with role "ENTERPRISE")
-        const enterpriseData = usersData.filter((user) => user.role === "ENTERPRISE");
-        setEnterprises(enterpriseData);
-        setLoading(false);
+        const data = await response.json();
+        console.log("Fetched usersData:", data);
+
+        const enterpriseUsers = data.data.filter((user) => user.role === "ENTERPRISE");
+        setEnterprises(enterpriseUsers);
       } catch (err) {
         setError(err.message);
+      } finally {
         setLoading(false);
       }
     };
@@ -32,14 +32,11 @@ function ManageEmployees() {
     fetchEnterprises();
   }, []);
 
-  // Handle updating the verification status of an enterprise user
   const handleUpdateStatus = async (id, status) => {
     try {
       const response = await fetch(`http://localhost:3001/api/users/${id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           verificationStatus: {
             status: status,
@@ -48,22 +45,16 @@ function ManageEmployees() {
         }),
       });
 
-      console.log("Response status:", response.status); // Log the response status
-      console.log("Response body:", await response.json()); // Log the response body
+      if (!response.ok) throw new Error("Failed to update verification status");
 
-      if (!response.ok) {
-        throw new Error("Failed to update verification status");
-      }
-
-      // Update the enterprise's status in the local state
-      setEnterprises((prevEnterprises) =>
-        prevEnterprises.map((enterprise) =>
+      setEnterprises((prev) =>
+        prev.map((enterprise) =>
           enterprise._id === id
             ? {
                 ...enterprise,
                 verificationStatus: {
                   ...enterprise.verificationStatus,
-                  status: status,
+                  status,
                   updatedDate: new Date().toISOString(),
                 },
               }
@@ -75,46 +66,19 @@ function ManageEmployees() {
     }
   };
 
-  // Handle saving edited enterprise details
-  const handleSave = async (id) => {
+  const handleDelete = async (id) => {
     try {
       const response = await fetch(`http://localhost:3001/api/users/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          enterprise: editedEnterprise,
-        }),
+        method: "DELETE",
       });
+      if (!response.ok) throw new Error("Failed to delete user");
 
-      if (!response.ok) {
-        throw new Error("Failed to save enterprise details");
-      }
-
-      // Update the enterprise's details in the local state
-      setEnterprises((prevEnterprises) =>
-        prevEnterprises.map((enterprise) =>
-          enterprise._id === id
-            ? {
-                ...enterprise,
-                enterprise: {
-                  ...enterprise.enterprise,
-                  ...editedEnterprise,
-                },
-              }
-            : enterprise
-        )
-      );
-
-      // Exit edit mode
-      setEditingId(null);
+      setEnterprises((prev) => prev.filter((enterprise) => enterprise._id !== id));
     } catch (err) {
       setError(err.message);
     }
   };
 
-  // Handle entering edit mode
   const handleEdit = (enterprise) => {
     setEditingId(enterprise._id);
     setEditedEnterprise({
@@ -125,49 +89,59 @@ function ManageEmployees() {
     });
   };
 
-  // Handle input changes in edit mode
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setEditedEnterprise((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  const handleSave = async (id) => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/users/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enterprise: editedEnterprise }),
+      });
+
+      if (!response.ok) throw new Error("Failed to update enterprise");
+
+      setEnterprises((prev) =>
+        prev.map((enterprise) =>
+          enterprise._id === id
+            ? {
+                ...enterprise,
+                enterprise: editedEnterprise,
+              }
+            : enterprise
+        )
+      );
+
+      setEditingId(null);
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
-  if (loading) {
-    return <div>Loading enterprise users...</div>;
-  }
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditedEnterprise((prev) => ({ ...prev, [name]: value }));
+  };
 
-  if (error) {
-    return <div>Error: {error}</div>;
-  }
+  if (loading) return <p>Loading enterprises...</p>;
+  if (error) return <p>Error: {error}</p>;
 
   return (
-    <div className="p-4 shadow mb-4 manage-employees-container">
-      {/* Header Section */}
-      <div className="d-flex justify-content-between align-items-center border-bottom border-2 pb-1 mb-3">
-        <div className="d-flex flex-column gap-1">
-          <Heading style={{ fontSize: "19px" }}>Manage Enterprises</Heading>
-          <Subtitle style={{ fontSize: "14px" }}>
-            Manage enterprise users and their verification status.
-          </Subtitle>
-        </div>
+    <div className="p-4 manage-employees-container">
+      <div className="mb-4 border-bottom pb-2">
+        <Heading>Manage Enterprises</Heading>
+        <Subtitle>Total: {enterprises.length} enterprises</Subtitle>
       </div>
 
-      {/* List of Enterprises */}
       <div className="enterprise-list">
         {enterprises.map((enterprise) => (
           <div
             key={enterprise._id}
-            className="enterprise-item d-flex justify-content-between align-items-center p-3 mb-2 border rounded"
+            className="enterprise-item d-flex justify-content-between align-items-start p-3 mb-3 border rounded"
           >
             <div>
               <h6>{enterprise.email}</h6>
               {editingId === enterprise._id ? (
-                // Edit mode
                 <div className="d-flex flex-column gap-2">
                   <input
-                    type="text"
                     name="name"
                     value={editedEnterprise.name}
                     onChange={handleInputChange}
@@ -175,7 +149,6 @@ function ManageEmployees() {
                     placeholder="Enterprise Name"
                   />
                   <input
-                    type="text"
                     name="industry"
                     value={editedEnterprise.industry}
                     onChange={handleInputChange}
@@ -183,7 +156,6 @@ function ManageEmployees() {
                     placeholder="Industry"
                   />
                   <input
-                    type="text"
                     name="location"
                     value={editedEnterprise.location}
                     onChange={handleInputChange}
@@ -191,8 +163,8 @@ function ManageEmployees() {
                     placeholder="Location"
                   />
                   <input
-                    type="number"
                     name="employeeCount"
+                    type="number"
                     value={editedEnterprise.employeeCount}
                     onChange={handleInputChange}
                     className="form-control"
@@ -200,23 +172,14 @@ function ManageEmployees() {
                   />
                 </div>
               ) : (
-                // View mode
                 <div>
-                  <p className="mb-0">
-                    <strong>Enterprise Name:</strong> {enterprise.enterprise?.name}
-                  </p>
-                  <p className="mb-0">
-                    <strong>Industry:</strong> {enterprise.enterprise?.industry}
-                  </p>
-                  <p className="mb-0">
-                    <strong>Location:</strong> {enterprise.enterprise?.location}
-                  </p>
-                  <p className="mb-0">
-                    <strong>Employee Count:</strong> {enterprise.enterprise?.employeeCount}
-                  </p>
+                  <p><strong>Enterprise Name:</strong> {enterprise.enterprise?.name}</p>
+                  <p><strong>Industry:</strong> {enterprise.enterprise?.industry}</p>
+                  <p><strong>Location:</strong> {enterprise.enterprise?.location}</p>
+                  <p><strong>Employee Count:</strong> {enterprise.enterprise?.employeeCount}</p>
                 </div>
               )}
-              <p className="mb-0">
+              <p>
                 <strong>Verification Status:</strong>{" "}
                 <span
                   style={{
@@ -232,30 +195,20 @@ function ManageEmployees() {
                 </span>
               </p>
             </div>
-            <div className="d-flex gap-2">
+
+            <div className="d-flex flex-column gap-2">
               {editingId === enterprise._id ? (
-                // Save and Cancel buttons in edit mode
                 <>
-                  <button
-                    className="btn btn-success btn-sm"
-                    onClick={() => handleSave(enterprise._id)}
-                  >
+                  <button className="btn btn-success btn-sm" onClick={() => handleSave(enterprise._id)}>
                     Save
                   </button>
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => setEditingId(null)}
-                  >
+                  <button className="btn btn-secondary btn-sm" onClick={() => setEditingId(null)}>
                     Cancel
                   </button>
                 </>
               ) : (
-                // Edit, Approve, Reject, and Delete buttons in view mode
                 <>
-                  <button
-                    className="btn btn-primary btn-sm"
-                    onClick={() => handleEdit(enterprise)}
-                  >
+                  <button className="btn btn-primary btn-sm" onClick={() => handleEdit(enterprise)}>
                     Edit
                   </button>
                   <button
@@ -266,11 +219,14 @@ function ManageEmployees() {
                     Approve
                   </button>
                   <button
-                    className="btn btn-danger btn-sm"
+                    className="btn btn-warning btn-sm"
                     onClick={() => handleUpdateStatus(enterprise._id, "REJECTED")}
                     disabled={enterprise.verificationStatus?.status === "REJECTED"}
                   >
                     Reject
+                  </button>
+                  <button className="btn btn-danger btn-sm" onClick={() => handleDelete(enterprise._id)}>
+                    Delete
                   </button>
                 </>
               )}

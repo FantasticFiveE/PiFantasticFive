@@ -11,7 +11,7 @@ pipeline {
         BRANCH_NAME = 'message'
         GIT_REPO = 'https://github.com/FantasticFiveE/PiFantasticFive.git'
         SONAR_PROJECT_KEY = 'Devops'
-        SONAR_HOST_URL = 'http://sonarqube:9000'
+        SONAR_HOST_URL = 'http://sonarqube:9000' // DO NOT USE localhost
     }
 
     stages {
@@ -39,7 +39,7 @@ pipeline {
         stage('🧪 Run Unit Tests') {
             steps {
                 dir("${APP_DIR}") {
-                    sh 'npm test || true'
+                    sh 'npm test || true' // Optional: avoid pipeline fail on test error
                 }
             }
         }
@@ -49,13 +49,13 @@ pipeline {
                 dir("${APP_DIR}") {
                     withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                         withSonarQubeEnv('scanner') {
-                            sh '''
+                            sh """
                                 sonar-scanner \
-                                  -Dsonar.projectKey=$SONAR_PROJECT_KEY \
+                                  -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
                                   -Dsonar.sources=src \
-                                  -Dsonar.host.url=$SONAR_HOST_URL \
-                                  -Dsonar.login=$SONAR_TOKEN
-                            '''
+                                  -Dsonar.host.url=http://sonarqube:9000
+                                  -Dsonar.login=${SONAR_TOKEN}
+                            """
                         }
                     }
                 }

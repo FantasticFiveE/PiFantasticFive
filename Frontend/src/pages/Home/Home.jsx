@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
@@ -8,6 +8,9 @@ import { io } from "socket.io-client";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import "./Home.css";
+import.meta.env.VITE_BACKEND_URL
+import.meta.env.VITE_SOCKET_URL
+
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faLanguage,
@@ -27,9 +30,13 @@ import { TypeAnimation } from "react-type-animation";
 
 const Home = () => {
   const token = localStorage.getItem("token");
-  const socket = io("http://localhost:3001", {
+  const role = localStorage.getItem("role");
+  const navigate = useNavigate();
+
+  const socket = io(import.meta.env.VITE_SOCKET_URL, {
     auth: { token },
-    transports: ['websocket']
+    transports: ['websocket'],
+    path: '/socket.io/'
   });
 
   const [jobs, setJobs] = useState([]);
@@ -51,9 +58,12 @@ const Home = () => {
   const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
   const [messages, setMessages] = useState([]);
 
-  const role = localStorage.getItem("role");
-
   useEffect(() => {
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
     const userId = localStorage.getItem("userId");
     if (userId) {
       setCurrentUserId(userId);
@@ -62,6 +72,10 @@ const Home = () => {
     // Socket event listeners
     socket.on("connect", () => {
       console.log("✅ Connected to socket server");
+    });
+
+    socket.on("connect_error", (error) => {
+      console.error("❌ Socket connection error:", error);
     });
 
     socket.on("disconnect", () => {
@@ -79,40 +93,45 @@ const Home = () => {
 
     const fetchData = async () => {
       try {
-        const jobsRes = await axios.get("http://localhost:3001/Frontend/jobs");
+        const jobsRes = await axios.get("http://backend:3001/Frontend/jobs", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         setJobs(jobsRes.data);
 
         if (role === "ENTERPRISE") {
-          const candidatesRes = await axios.get("http://localhost:3001/api/Frontend/all-candidates");
+          const candidatesRes = await axios.get("http://backend:3001/api/Frontend/all-candidates", {
+            headers: { Authorization: `Bearer ${token}` }
+          });
           setCandidates(candidatesRes.data);
         }
 
-        if (token) {
-          if (role === "CANDIDATE") {
-            try {
-              const messagesRes = await axios.get(
-                `http://localhost:3001/api/messages/history/${userId}/system`,
-                { headers: { Authorization: `Bearer ${token}` } }
-              );
+        if (role === "CANDIDATE") {
+          try {
+            const messagesRes = await axios.get(
+              `http://backend:3001/api/messages/history/${userId}/system`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
 
-              const unreadMessages = messagesRes.data.messages?.filter(
-                (msg) => !msg.read && msg.to === userId
-              );
+            const unreadMessages = messagesRes.data.messages?.filter(
+              (msg) => !msg.read && msg.to === userId
+            );
 
-              if (unreadMessages?.length > 0) {
-                setMessageNotifications(unreadMessages);
-                setHasUnreadMessages(true);
-              }
-            } catch (msgError) {
-              console.error("❌ Error fetching messages:", msgError);
+            if (unreadMessages?.length > 0) {
+              setMessageNotifications(unreadMessages);
+              setMessages(messagesRes.data.messages);
+              setHasUnreadMessages(true);
             }
+          } catch (msgError) {
+            console.error("❌ Error fetching messages:", msgError);
           }
+        }
 
-          // Fetch recommendations
+        // Fetch recommendations
+        if (token) {
           setRecommendationsLoading(true);
           try {
             const recRes = await axios.get(
-              "http://localhost:3001/api/recommendations/for-user",
+              "http://backend:3001/api/recommendations/for-user",
               { headers: { Authorization: `Bearer ${token}` } }
             );
 
@@ -155,10 +174,12 @@ const Home = () => {
 
     return () => {
       socket.off("connect");
+      socket.off("connect_error");
       socket.off("disconnect");
       socket.off("receive-message");
+      socket.disconnect();
     };
-  }, [role, token]);
+  }, [token, role, navigate, socket]);
 
   const filteredJobs = jobs.filter((job) =>
     job.title?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -191,7 +212,6 @@ const Home = () => {
 
   const openCandidateMessages = async () => {
     try {
-      const token = localStorage.getItem("token");
       const userId = localStorage.getItem("userId");
       if (!token || !userId) {
         console.error("No token or userId found");
@@ -199,7 +219,7 @@ const Home = () => {
       }
 
       const response = await axios.get(
-        `http://localhost:3001/api/messages/user/${userId}`,
+        `http://backend:3001/api/messages/user/${userId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -208,7 +228,7 @@ const Home = () => {
         const senderId = lastMsg.from === userId ? lastMsg.to : lastMsg.from;
 
         const senderInfo = await axios.get(
-          `http://localhost:3001/Frontend/getUser/${senderId}`,
+          `http://backend:3001/Frontend/getUser/${senderId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -220,7 +240,6 @@ const Home = () => {
 
         setShowMessagePopup(true);
       } else {
-        // If no messages, open bot chat
         openBotChat();
       }
     } catch (error) {
@@ -238,7 +257,7 @@ const Home = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:3001/api/messages/send",
+        "http://backend:3001/api/messages/send",
         {
           from: currentUserId,
           to: selectedCandidate._id,
@@ -246,7 +265,7 @@ const Home = () => {
         },
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`
+            Authorization: `Bearer ${token}`
           }
         }
       );
@@ -256,7 +275,7 @@ const Home = () => {
           from: currentUserId,
           to: selectedCandidate._id,
           text: contactMessage,
-          timestamp: new Date()
+          timestamp: new Date().toISOString()
         });
 
         socket.emit("notify-candidate", {
@@ -357,7 +376,6 @@ const Home = () => {
 
   return (
     <>
-      {/* Contact Form Modal */}
       {showModal && (
         <div className="side-panel-overlay" onClick={() => setShowModal(false)}>
           <div className="side-panel" onClick={(e) => e.stopPropagation()}>
@@ -395,7 +413,6 @@ const Home = () => {
         </div>
       )}
 
-      {/* Live Chat Message Popup */}
       {showMessagePopup && chatPartner && (
         <MessagePopup
           socket={socket}
@@ -407,8 +424,7 @@ const Home = () => {
 
       <div className="home-container">
         <Navbar />
-        {/* Message notification and bot chat buttons for candidates */}
-        {localStorage.getItem("token") && role === "CANDIDATE" && (
+        {token && role === "CANDIDATE" && (
           <div className="message-notification-container">
             <button
               className={`message-notification-button ${hasUnreadMessages ? 'has-notifications' : ''}`}
@@ -506,7 +522,7 @@ const Home = () => {
             </motion.div>
           </div>
         </section>
-        {!localStorage.getItem("token") && (
+        {!token && (
           <section className="role-selector">
             <div className="container">
               <h2>Choose Your Path</h2>
@@ -593,7 +609,7 @@ const Home = () => {
                 <button type="button">Search</button>
               </div>
             </div>
-            {localStorage.getItem("token") && (
+            {token && (
               <div className="recommendations-section">
                 <h2 className="section-title clean">
                   Recommended For You

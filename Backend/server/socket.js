@@ -1,6 +1,6 @@
 const socketIO = require('socket.io');
 const jwt = require('jsonwebtoken');
-const { RTCSessionDescription, RTCPeerConnection, RTCIceCandidate } = require('wrtc');
+//const { RTCSessionDescription, RTCPeerConnection, RTCIceCandidate } = require('wrtc');
 const UserModel = require('./models/user');
 const Message = require('./models/Message');
 

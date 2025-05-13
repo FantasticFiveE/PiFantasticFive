@@ -1,8 +1,7 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-// ✅ Subschemas d'abord
-
+// Subschemas
 const ExperienceSchema = new Schema({
   title: { type: String },
   company: { type: String },
@@ -48,7 +47,6 @@ const InterviewSchema = new Schema({
     leaveTime: { type: Date }
   }],
   recordingUrl: { type: String },
-  // New fields for AI summary
   transcript: [{
     speaker: String,
     text: String,
@@ -63,6 +61,7 @@ const InterviewSchema = new Schema({
   },
   lastUpdated: { type: Date }
 }, { _id: false });
+
 const ApplicationSchema = new Schema({
   jobId: { type: Schema.Types.ObjectId, ref: 'Job' },
   enterpriseId: { type: Schema.Types.ObjectId, ref: 'User' },
@@ -105,7 +104,7 @@ const EnterpriseSchema = new Schema({
   employeeCount: { type: Number },
 }, { _id: false });
 
-// ✅ Job Schema
+// Job Schema
 const JobSchema = new Schema({
   title: { type: String, required: true },
   description: { type: String },
@@ -117,9 +116,7 @@ const JobSchema = new Schema({
   entrepriseId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
 });
 
-const JobModel = mongoose.models.Job || mongoose.model("Job", JobSchema);
-
-// ✅ User Schema
+// User Schema
 const UserSchema = new Schema({
   email: { type: String, required: true, unique: true },
   name: { type: String, required: true },
@@ -136,7 +133,7 @@ const UserSchema = new Schema({
   lastLogin: { type: Date },
   permissions: PermissionsSchema,
   verificationStatus: VerificationSchema,
-  profile: ProfileSchema, // ✅ OK maintenant car défini au-dessus
+  profile: ProfileSchema,
   picture: { type: String },
   verificationCode: { type: Number },
   resetPasswordToken: { type: String },
@@ -158,9 +155,11 @@ const UserSchema = new Schema({
   }]
 });
 
-// ✅ Export
+const UserModel = mongoose.models.User || mongoose.model('User', UserSchema);
+const JobModel = mongoose.models.Job || mongoose.model('Job', JobSchema);
+
+// Export only UserModel and JobModel
 module.exports = {
-  UserModel: mongoose.models.User || mongoose.model('User', UserSchema),
-  JobModel,
-  ApplicationModel: require("./Application")
+  UserModel,
+  JobModel
 };

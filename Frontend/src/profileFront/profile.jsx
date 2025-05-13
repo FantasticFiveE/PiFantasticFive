@@ -6,7 +6,7 @@ import { FaCamera, FaCheckCircle, FaTimesCircle, FaUpload, FaFilePdf, FaCog, FaU
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar/Navbar";
 import Footer from "../components/Footer/Footer";
-import "./Profile.css";
+import "./profile.css";
 
 const Profile = () => {
   const id = localStorage.getItem("userId");

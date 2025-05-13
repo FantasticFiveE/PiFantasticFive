@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import axios from 'axios';
 import './Signup.css';
 import { FaUser, FaBuilding, FaEye, FaEyeSlash, FaFileUpload, FaSignInAlt } from 'react-icons/fa';
+import.meta.env.VITE_BACKEND_URL
+import.meta.env.VITE_SOCKET_URL
 
 function Signup() {
     const [formData, setFormData] = useState({
@@ -101,9 +103,10 @@ function Signup() {
                 formDataToSend.append('employeeCount', formData.enterprise.employeeCount);
             }
       
-            const result = await axios.post('http://localhost:3001/Frontend/register', formDataToSend, {
-                headers: { 'Content-Type': 'multipart/form-data' },
+            const result = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/Frontend/register`, formDataToSend, {
+            headers: { 'Content-Type': 'multipart/form-data' },
             });
+
       
             setConfirmationMessage("A verification code has been sent to your email.");
       

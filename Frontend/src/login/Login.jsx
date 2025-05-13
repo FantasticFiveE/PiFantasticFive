@@ -14,35 +14,28 @@ function Login() {
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
 
-  // Set up particle system
   useEffect(() => {
     const createParticles = () => {
       const particleContainer = document.createElement('div');
       particleContainer.className = 'particle-system';
       
-      // Create 40 particles
       for (let i = 0; i < 40; i++) {
         const particle = document.createElement('div');
         particle.className = 'particle';
         
-        // Random size between 3px and 12px
         const size = Math.random() * 9 + 3;
         particle.style.width = `${size}px`;
         particle.style.height = `${size}px`;
         
-        // Random position
         particle.style.top = `${Math.random() * 100}%`;
         particle.style.left = `${Math.random() * 100}%`;
         
-        // Random animation duration between 8s and 20s
         const duration = Math.random() * 12 + 8;
         particle.style.animation = `generateParticles ${duration}s ease-in-out infinite`;
         
-        // Random delay between 0s and 5s
         const delay = Math.random() * 5;
         particle.style.animationDelay = `${delay}s`;
         
-        // Random z-index for depth
         const zIndex = Math.floor(Math.random() * 200) - 100;
         particle.style.transform = `translateZ(${zIndex}px)`;
         
@@ -57,7 +50,6 @@ function Login() {
 
     createParticles();
     
-    // Clean up function to remove particles when component unmounts
     return () => {
       const particleSystem = document.querySelector('.particle-system');
       if (particleSystem) {
@@ -66,10 +58,8 @@ function Login() {
     };
   }, []);
 
-  // Add 3D tilt effect to the form card
   useEffect(() => {
     const formCard = document.querySelector('.futuristic-form-card');
-    
     if (!formCard) return;
     
     const handleMouseMove = (e) => {
@@ -80,9 +70,8 @@ function Login() {
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
       
-      // Calculate rotation based on mouse position (subtle effect)
-      const rotateY = ((x - centerX) / centerX) * 5; // max 5 degrees
-      const rotateX = ((centerY - y) / centerY) * 5; // max 5 degrees
+      const rotateY = ((x - centerX) / centerX) * 5;
+      const rotateX = ((centerY - y) / centerY) * 5;
       
       formCard.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(0)`;
     };
@@ -96,16 +85,13 @@ function Login() {
     formCard.addEventListener('mouseleave', handleMouseLeave);
     
     return () => {
-      if (formCard) {
-        formCard.removeEventListener('mousemove', handleMouseMove);
-        formCard.removeEventListener('mouseleave', handleMouseLeave);
-      }
+      formCard.removeEventListener('mousemove', handleMouseMove);
+      formCard.removeEventListener('mouseleave', handleMouseLeave);
     };
   }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    // Clear error when user starts typing
     if (error) setError("");
   };
 
@@ -115,7 +101,7 @@ function Login() {
   
     try {
       const result = await axios.post(
-        "http://localhost:3001/Frontend/login",
+        "http://backend:3001/Frontend/login",
         formData,
         {
           headers: { "Content-Type": "application/json" },
@@ -129,7 +115,6 @@ function Login() {
         const { token, userId, role, userData } = result.data;
         const userRole = role.toUpperCase();
         
-        // Add a success animation to the form before redirect
         const formCard = document.querySelector('.futuristic-form-card');
         if (formCard) {
           formCard.style.transition = 'all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
@@ -138,19 +123,17 @@ function Login() {
           formCard.style.borderColor = 'rgba(54, 209, 220, 0.5)';
         }
       
-        // Local storage operations
         localStorage.setItem("token", token);
         localStorage.setItem("userId", userId);
         localStorage.setItem("role", role);
       
         console.log("✅ Token saved:", localStorage.getItem("token"));
       
-        login(userData, token); // context update
+        login(userData, token);
         
-        // Delay navigation to allow for animation
         setTimeout(() => {
           if (userRole === "ENTERPRISE") {
-            navigate("/enterprise-dashboard");
+            navigate("/dashboard");
           } else {
             navigate("/home");
           }
@@ -158,7 +141,6 @@ function Login() {
       } else {
         setError(result.data.message || "Email or password is incorrect!");
         
-        // Add error shake animation
         const formCard = document.querySelector('.futuristic-form-card');
         if (formCard) {
           formCard.style.animation = 'none';
@@ -175,7 +157,6 @@ function Login() {
       console.error("Login Error:", err.response?.data || err.message);
       setError(err.response?.data?.message || "Unable to login.");
       
-      // Add error animation
       const formCard = document.querySelector('.futuristic-form-card');
       if (formCard) {
         formCard.style.animation = 'none';
@@ -188,7 +169,7 @@ function Login() {
       
   const handleGoogleSuccess = async (response) => {
     try {
-      const result = await axios.post("http://localhost:3001/auth/google", {
+      const result = await axios.post("http://backend:3001/auth/google", {
         credential: response.credential,
       });
 
@@ -196,7 +177,6 @@ function Login() {
         const { token, userId, role, userData } = result.data;
         const userRole = role.toUpperCase();
 
-        // Add success animation
         const formCard = document.querySelector('.futuristic-form-card');
         if (formCard) {
           formCard.style.transition = 'all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
@@ -205,12 +185,11 @@ function Login() {
         }
 
         localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(userData));
+        localStorage.setItem("userId", userId);
         localStorage.setItem("role", userRole);
 
         login(userData, token);
         
-        // Delay navigation for animation
         setTimeout(() => {
           navigate("/home");
         }, 800);

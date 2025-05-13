@@ -1,8 +1,8 @@
 pipeline {
     agent {
         docker {
-            image 'node-sonar' // Custom Docker image with sonar-scanner pre-installed
-            args '-u root'
+            image 'node-sonar' // Custom image with sonar-scanner
+            args '-u root --network devnet'
         }
     }
 
@@ -11,7 +11,7 @@ pipeline {
         BRANCH_NAME = 'message'
         GIT_REPO = 'https://github.com/FantasticFiveE/PiFantasticFive.git'
         SONAR_PROJECT_KEY = 'Devops'
-        SONAR_HOST_URL = 'http://sonarqube:9000' // DO NOT USE localhost
+        SONAR_HOST_URL = 'http://sonarqube:9000' // ✅ docker-compose service name
     }
 
     stages {
@@ -39,7 +39,7 @@ pipeline {
         stage('🧪 Run Unit Tests') {
             steps {
                 dir("${APP_DIR}") {
-                    sh 'npm test || true' // Optional: avoid pipeline fail on test error
+                    sh 'npm test || true'
                 }
             }
         }
@@ -53,7 +53,7 @@ pipeline {
                                 sonar-scanner \
                                   -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
                                   -Dsonar.sources=src \
-                                  -Dsonar.host.url=http://sonarqube:9000
+                                  -Dsonar.host.url=${SONAR_HOST_URL} \
                                   -Dsonar.login=${SONAR_TOKEN}
                             """
                         }

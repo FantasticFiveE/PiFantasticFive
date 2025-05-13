@@ -39,7 +39,7 @@ pipeline {
         stage('🧪 Run Unit Tests') {
             steps {
                 dir("${APP_DIR}") {
-                    sh 'npm test || true'
+                    sh 'npm test || true' // Avoid breaking the pipeline if no test script
                 }
             }
         }
@@ -51,9 +51,9 @@ pipeline {
                         withSonarQubeEnv('scanner') {
                             sh """
                                 sonar-scanner \
-                                  -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                                  -Dsonar.projectKey=$SONAR_PROJECT_KEY \
                                   -Dsonar.sources=src \
-                                  -Dsonar.host.url=${SONAR_HOST_URL} \
+                                  -Dsonar.host.url=$SONAR_HOST_URL \
                                   -Dsonar.login=$SONAR_AUTH_TOKEN
                             """
                         }

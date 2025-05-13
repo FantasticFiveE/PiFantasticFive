@@ -1,7 +1,7 @@
 pipeline {
     agent {
         docker {
-            image 'node-sonar' // Custom image with sonar-scanner
+            image 'node-sonar'
             args '-u root --network devnet'
         }
     }
@@ -11,7 +11,7 @@ pipeline {
         BRANCH_NAME = 'message'
         GIT_REPO = 'https://github.com/FantasticFiveE/PiFantasticFive.git'
         SONAR_PROJECT_KEY = 'Devops'
-        SONAR_HOST_URL = 'http://sonarqube:9000' // ✅ docker-compose service name
+        SONAR_HOST_URL = 'http://sonarqube:9000'
     }
 
     stages {
@@ -49,13 +49,11 @@ pipeline {
                 dir("${APP_DIR}") {
                     withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                         withSonarQubeEnv('scanner') {
-                            sh """
-                                sonar-scanner \
-                                  -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                                  -Dsonar.sources=src \
-                                  -Dsonar.host.url=${SONAR_HOST_URL} \
-                                  -Dsonar.login=${SONAR_TOKEN}
-                            """
+                            sh "sonar-scanner " +
+                               "-Dsonar.projectKey=${SONAR_PROJECT_KEY} " +
+                               "-Dsonar.sources=src " +
+                               "-Dsonar.host.url=${SONAR_HOST_URL} " +
+                               "-Dsonar.login=${SONAR_TOKEN}"
                         }
                     }
                 }

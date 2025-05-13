@@ -181,42 +181,80 @@ const EntrepriseProfile = () => {
     }
   };
 
-  const openApplicationModal = async (jobId) => {
-    try {
-      const res = await axios.get(`http://localhost:3001/Frontend/job-applications/${jobId}`);
-      
-      // Handle different response formats
-      let applications = [];
-      
-      if (Array.isArray(res.data)) {
-        // If response is already an array
-        applications = res.data;
-      } else if (res.data && Array.isArray(res.data.applications)) {
-        // If response is an object with applications array
-        applications = res.data.applications;
-      } else if (res.data && typeof res.data === 'object') {
-        // If response is a single object, put it in an array
-        applications = [res.data];
-      }
-      
-      // Get quiz length - use first application or fallback
-      const quizLength = applications[0]?.quizLength || (jobQuizLengths[jobId] || 0);
-      const passingScore = Math.ceil(quizLength / 2);
-  
-      // Filter qualified candidates
-      const qualifiedCandidates = applications.filter(app => {
-        return app.quizScore !== undefined && app.quizScore >= passingScore;
-      });
-  
-      setSelectedApplications(qualifiedCandidates);
-      setSelectedJobId(jobId);
-      setShowModal(true);
-    } catch (err) {
-      console.error("❌ Failed to fetch applications for job:", jobId, err);
-      setSelectedApplications([]); // Set empty array on error
-      setShowModal(true); // Still show the modal
+const openApplicationModal = async (jobId) => {
+  try {
+    const res = await axios.get(`http://localhost:3001/Frontend/job-applications/${jobId}`);
+    
+    // Handle different response formats
+    let applications = [];
+    
+    if (Array.isArray(res.data)) {
+      applications = res.data;
+    } else if (res.data && Array.isArray(res.data.applications)) {
+      applications = res.data.applications;
+    } else if (res.data && typeof res.data === 'object') {
+      applications = [res.data];
     }
-  };
+    
+    // Get quiz length - use first application or fallback
+    const quizLength = applications[0]?.quizLength || (jobQuizLengths[jobId] || 0);
+    const passingScore = Math.ceil(quizLength / 2);
+  
+    // Get job details for ML prediction
+    const jobRes = await axios.get(`http://localhost:3001/Frontend/job/${jobId}`);
+    const job = jobRes.data;
+
+    // Filter and enhance qualified candidates with ML predictions
+    const qualifiedCandidates = await Promise.all(
+      applications
+        .filter(app => app.quizScore !== undefined && app.quizScore >= passingScore)
+        .map(async (app) => {
+          try {
+            // Get ML prediction for each candidate
+            const predictionRes = await axios.post('http://localhost:3001/predict-from-skills', {
+              candidate_skills: app.candidateId.profile?.skills || [],
+              job_skills: job.skills || [],
+              candidate_exp: app.candidateId.profile?.experience || 0,
+              required_exp: job.requiredExperience || 1,
+              candidate_education: app.candidateId.profile?.education || '',
+              required_education: job.education || ''
+            });
+
+            return {
+              ...app,
+              mlPrediction: {
+                hired: predictionRes.data.hired === 1,
+                confidence: Math.round(predictionRes.data.confidence * 100),
+                matches: predictionRes.data.matches
+              }
+            };
+          } catch (error) {
+            console.error(`Error getting prediction for candidate ${app.candidateId._id}:`, error);
+            return {
+              ...app,
+              mlPrediction: null
+            };
+          }
+        })
+    );
+
+    // Sort candidates by ML prediction confidence (highest first)
+    qualifiedCandidates.sort((a, b) => {
+      if (a.mlPrediction && b.mlPrediction) {
+        return b.mlPrediction.confidence - a.mlPrediction.confidence;
+      }
+      return 0;
+    });
+
+    setSelectedApplications(qualifiedCandidates);
+    setSelectedJobId(jobId);
+    setShowModal(true);
+  } catch (err) {
+    console.error("❌ Failed to fetch applications for job:", jobId, err);
+    setSelectedApplications([]);
+    setShowModal(true);
+  }
+};
   const handleScheduleInterview = (candidate) => {
     setSelectedCandidate(candidate);
     setShowInterviewModal(true);
@@ -228,41 +266,51 @@ const EntrepriseProfile = () => {
   };
 
   const handleSubmitInterview = async () => {
-    try {
-      const interviewData = {
-        jobId: selectedJobId,
-        enterpriseId: id,
-        candidateId: selectedCandidate.candidateId._id,
-        date: new Date(`${interviewDetails.date}T${interviewDetails.time}`),
-        status: 'Scheduled',
-        meeting: {
-          type: interviewDetails.type,
-          link: interviewDetails.type === 'Virtual' 
-            ? interviewDetails.link 
-            : enterprise.location,
-          notes: interviewDetails.notes
-        }
-      };
-  
-      const response = await axios.post('http://localhost:3001/api/interviews', interviewData);
+  try {
+    // First get prediction
+    const predictionRes = await axios.post('http://localhost:3001/Frontend/predict-score', {
+      jobId: selectedJobId,
+      candidateId: selectedCandidate.candidateId._id
+    });
 
-      alert('Interview scheduled successfully! The candidate will receive a confirmation email.');
-      
-      setShowInterviewModal(false);
-      setInterviewDetails({
-        type: 'Virtual',
-        link: '',
-        date: '',
-        time: '',
-        notes: ''
-      });
-      
-      fetchInterviews(selectedJobId);
-    } catch (error) {
-      console.error('Error scheduling interview:', error);
-      alert(`Failed to schedule interview: ${error.response?.data?.message || error.message}`);
-    }
-  };
+    const interviewData = {
+      jobId: selectedJobId,
+      enterpriseId: id,
+      candidateId: selectedCandidate.candidateId._id,
+      date: new Date(`${interviewDetails.date}T${interviewDetails.time}`),
+      status: 'Scheduled',
+      meeting: {
+        type: interviewDetails.type,
+        link: interviewDetails.type === 'Virtual' 
+          ? interviewDetails.link 
+          : enterprise.location,
+        notes: interviewDetails.notes
+      },
+      evaluation: {
+        predictedScore: predictionRes.data.predictedScore
+      },
+      mlFeatures: predictionRes.data.features
+    };
+
+    const response = await axios.post('http://localhost:3001/api/interviews/', interviewData);
+
+    alert(`Interview scheduled successfully! Predicted score: ${Math.round(predictionRes.data.predictedScore * 100)}/100. The candidate will receive a confirmation email.`);
+    
+    setShowInterviewModal(false);
+    setInterviewDetails({
+      type: 'Virtual',
+      link: '',
+      date: '',
+      time: '',
+      notes: ''
+    });
+    
+    fetchInterviews(selectedJobId);
+  } catch (error) {
+    console.error('Error scheduling interview:', error);
+    alert(`Failed to schedule interview: ${error.response?.data?.message || error.message}`);
+  }
+};
 
   const handleChooseImage = () => fileInputRef.current.click();
 
@@ -773,14 +821,34 @@ const EntrepriseProfile = () => {
         {selectedApplications.length > 0 ? (
           selectedApplications.map((app, i) => (
             <div key={i} className="application-card">
-              <p><strong>Name:</strong> {app.candidateId?.name}</p>
-              <p><strong>Email:</strong> {app.candidateId?.email}</p>
-              <p><strong>Phone:</strong> {app.candidateId?.profile?.phone || "Not available"}</p>
-              <p>
-                <strong>Quiz score:</strong> {app.quizScore}/{app.quizLength} 
-                ({Math.round((app.quizScore/app.quizLength)*100)}%)
-              </p>
-              <p className="text-success">✅ Qualified (Needed {app.passingScore} correct answers)</p>
+              <div className="candidate-header">
+                <div>
+                  <h6>{app.candidateId?.name}</h6>
+                  <p className="text-muted">{app.candidateId?.email}</p>
+                </div>
+                {app.mlPrediction && (
+                  <div className={`prediction-badge ${app.mlPrediction.hired ? 'recommended' : 'not-recommended'}`}>
+                    {app.mlPrediction.hired ? 'Recommended' : 'Not Recommended'} ({app.mlPrediction.confidence}%)
+                  </div>
+                )}
+              </div>
+              
+              <div className="candidate-details">
+                <p><strong>Phone:</strong> {app.candidateId?.profile?.phone || "Not available"}</p>
+                <p>
+                  <strong>Quiz score:</strong> {app.quizScore}/{app.quizLength} 
+                  ({Math.round((app.quizScore/app.quizLength)*100)}%)
+                </p>
+                <p className="text-success">✅ Qualified (Needed {app.passingScore} correct answers)</p>
+
+                {app.mlPrediction && (
+                  <div className="match-details">
+                    <p><strong>Skill Match:</strong> {Math.round(app.mlPrediction.matches.skill_match * 100)}%</p>
+                    <p><strong>Experience Match:</strong> {Math.round(app.mlPrediction.matches.exp_match * 100)}%</p>
+                    <p><strong>Education Match:</strong> {Math.round(app.mlPrediction.matches.education_match * 100)}%</p>
+                  </div>
+                )}
+              </div>
 
               <div className="action-buttons">
                 <button 
@@ -830,67 +898,83 @@ const EntrepriseProfile = () => {
 
         {/* Scheduled Interviews Section */}
         {scheduledInterviews.length > 0 && (
-          <div className="interviews-section mt-5">
-            <h4 className="mb-4">
-              <FontAwesomeIcon icon={faCalendarAlt} className="me-2" />
-              Scheduled Interviews
-            </h4>
-            <div className="interview-list">
-              {scheduledInterviews.map((interview, index) => (
-                <div key={index} className="interview-card">
-                  <div className="interview-header">
-                    <h6>
-                      <FontAwesomeIcon icon={faVideo} className="me-2" />
-                      Interview with {interview.candidateId?.name}
-                    </h6>
-                    <span className={`status-badge ${interview.status.toLowerCase()}`}>
-                      {interview.status}
-                    </span>
-                  </div>
-                  <div className="interview-details">
-                    <p>
-                      <strong>Date:</strong> {new Date(interview.date).toLocaleString()}
-                    </p>
-                    <p>
-                      <strong>Type:</strong> {interview.meeting.type}
-                    </p>
-                    {interview.meeting.type === 'Virtual' && (
-                      <p>
-                        <strong>Link:</strong> 
-                        <a 
-                          href={interview.meeting.link} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="interview-link"
-                        >
-                          {interview.meeting.link}
-                        </a>
-                      </p>
-                    )}
-                    {interview.meeting.notes && (
-                      <p>
-                        <strong>Notes:</strong> {interview.meeting.notes}
-                      </p>
-                    )}
-                  </div>
-                  <div className="interview-actions">
-                    {interview.meeting.type === 'Virtual' && (
-                      <a 
-                        href={interview.meeting.link} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="btn btn-sm btn-primary"
-                      >
-                        <FontAwesomeIcon icon={faVideo} className="me-2" />
-                        Join Meeting
-                      </a>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+  <div className="interviews-section mt-5">
+    <h4 className="mb-4">
+      <FontAwesomeIcon icon={faCalendarAlt} className="me-2" />
+      Scheduled Interviews
+    </h4>
+    <div className="interview-list">
+      {scheduledInterviews.map((interview, index) => (
+        <div key={index} className="interview-card">
+          <div className="interview-header">
+            <h6>
+              <FontAwesomeIcon icon={faVideo} className="me-2" />
+              Interview with {interview.candidateId?.name}
+            </h6>
+            <span className={`status-badge ${interview.status.toLowerCase()}`}>
+              {interview.status}
+            </span>
           </div>
-        )}
+          <div className="interview-details">
+            <p>
+              <strong>Date:</strong> {new Date(interview.date).toLocaleString()}
+            </p>
+            <p>
+              <strong>Type:</strong> {interview.meeting.type}
+            </p>
+            {interview.evaluation?.predictedScore && (
+              <p>
+                <strong>Predicted Score:</strong> 
+                <span className="score-badge">
+                  {Math.round(interview.evaluation.predictedScore * 100)}/100
+                </span>
+              </p>
+            )}
+            {interview.meeting.type === 'Virtual' && (
+              <p>
+                <strong>Link:</strong> 
+                <a 
+                  href={interview.meeting.link} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="interview-link"
+                >
+                  {interview.meeting.link}
+                </a>
+              </p>
+            )}
+            {interview.meeting.notes && (
+              <p>
+                <strong>Notes:</strong> {interview.meeting.notes}
+              </p>
+            )}
+          </div>
+          <div className="interview-actions">
+            {interview.meeting.type === 'Virtual' && (
+              <a 
+                href={interview.meeting.link} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="btn btn-sm btn-primary"
+              >
+                <FontAwesomeIcon icon={faVideo} className="me-2" />
+                Join Meeting
+              </a>
+            )}
+            {interview.status === 'Completed' && interview.evaluation?.finalScore && (
+              <div className="final-score">
+                <strong>Final Score:</strong>
+                <span className="score-badge final">
+                  {Math.round(interview.evaluation.finalScore * 100)}/100
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
 
         {showInterviewModal && (
           <div className="custom-modal-overlay">

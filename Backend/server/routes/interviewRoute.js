@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const { UserModel } = require('../models/user');
 const JobModel = require('../models/job');
+const Interview = require('../models/interview');
 const mongoose = require('mongoose');
 const nodemailer = require('nodemailer');
-
+const axios = require('axios');
 // Configure email transporter
 const transporter = nodemailer.createTransport({
   service: process.env.EMAIL_SERVICE || 'gmail',
@@ -166,6 +167,12 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ message: "Invalid IDs provided" });
     }
 
+    // Get prediction from ML model
+    const prediction = await axios.post('http://localhost:3001/Frontend/predict-score', {
+      jobId,
+      candidateId
+    });
+
     // Find the job, enterprise and candidate
     const [job, enterprise, candidate] = await Promise.all([
       JobModel.findById(jobId),
@@ -201,33 +208,26 @@ router.post('/', async (req, res) => {
       date: new Date(date),
       status: 'Scheduled',
       meeting: meetingData,
+      evaluation: {
+        predictedScore: prediction.data.predictedScore
+      },
+      mlFeatures: prediction.data.features,
       createdAt: new Date()
     };
 
+    // Save interview to the database
+    await new Interview(newInterview).save();
+
     // Add interview to both enterprise and candidate
-    await Promise.all([
+    await Promise.all([ 
       UserModel.findByIdAndUpdate(enterpriseId, {
         $push: { 
-          interviews: newInterview,
-          notifications: {
-            type: 'INTERVIEW',
-            message: `You scheduled an interview for ${job.title}`,
-            jobId: job._id,
-            seen: false,
-            createdAt: new Date()
-          }
+          interviews: newInterview
         }
       }),
       UserModel.findByIdAndUpdate(candidateId, {
         $push: { 
-          interviews: newInterview,
-          notifications: {
-            type: 'INTERVIEW',
-            message: `Interview scheduled for ${job.title} at ${enterprise.enterprise.name}`,
-            jobId: job._id,
-            seen: false,
-            createdAt: new Date()
-          }
+          interviews: newInterview
         }
       })
     ]);
@@ -254,61 +254,6 @@ router.post('/', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
-
-// Get interview details
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "Invalid interview ID" });
-    }
-
-    // Find users who have this interview
-    const [enterprise, candidate] = await Promise.all([
-      UserModel.findOne({ 'interviews._id': id })
-        .select('interviews enterprise')
-        .populate('interviews.jobId', 'title'),
-      UserModel.findOne({ 'interviews.candidateId': id })
-        .select('name email picture profile')
-    ]);
-
-    if (!enterprise || !candidate) {
-      return res.status(404).json({ message: "Interview not found" });
-    }
-
-    const interview = enterprise.interviews.find(i => i._id.toString() === id);
-
-    if (!interview) {
-      return res.status(404).json({ message: "Interview not found" });
-    }
-
-    const response = {
-      _id: interview._id,
-      jobId: interview.jobId,
-      jobTitle: interview.jobId?.title || 'No title',
-      enterprise: enterprise.enterprise,
-      candidate: {
-        _id: candidate._id,
-        name: candidate.name,
-        email: candidate.email,
-        picture: candidate.picture,
-        profile: candidate.profile
-      },
-      date: interview.date,
-      status: interview.status,
-      meeting: interview.meeting,
-      createdAt: interview.createdAt
-    };
-
-    res.json(response);
-  } catch (error) {
-    console.error('Error fetching interview:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Get interviews for a job
 router.get('/job/:jobId', async (req, res) => {
   try {
     const { jobId } = req.params;
@@ -349,8 +294,6 @@ router.get('/job/:jobId', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
-
-// Update interview status
 router.put('/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
@@ -399,6 +342,57 @@ router.put('/:id/status', async (req, res) => {
     res.json({ message: "Interview status updated successfully" });
   } catch (error) {
     console.error('Error updating interview status:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid interview ID" });
+    }
+
+    // Find users who have this interview
+    const [enterprise, candidate] = await Promise.all([
+      UserModel.findOne({ 'interviews._id': id })
+        .select('interviews enterprise')
+        .populate('interviews.jobId', 'title'),
+      UserModel.findOne({ 'interviews.candidateId': id })
+        .select('name email picture profile')
+    ]);
+
+    if (!enterprise || !candidate) {
+      return res.status(404).json({ message: "Interview not found" });
+    }
+
+    const interview = enterprise.interviews.find(i => i._id.toString() === id);
+
+    if (!interview) {
+      return res.status(404).json({ message: "Interview not found" });
+    }
+
+    const response = {
+      _id: interview._id,
+      jobId: interview.jobId,
+      jobTitle: interview.jobId?.title || 'No title',
+      enterprise: enterprise.enterprise,
+      candidate: {
+        _id: candidate._id,
+        name: candidate.name,
+        email: candidate.email,
+        picture: candidate.picture,
+        profile: candidate.profile
+      },
+      date: interview.date,
+      status: interview.status,
+      meeting: interview.meeting,
+      createdAt: interview.createdAt
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('Error fetching interview:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

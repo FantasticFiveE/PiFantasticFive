@@ -1,7 +1,7 @@
 pipeline {
     agent {
         docker {
-            image 'node-sonar'
+            image 'node-sonar' // your custom image with Node + Sonar scanner
             args '-u root --network devnet'
         }
     }

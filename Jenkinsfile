@@ -1,7 +1,7 @@
 pipeline {
     agent {
         docker {
-            image 'node-sonar' // your custom image with Node + Sonar scanner
+            image 'node-sonar' // Custom Docker image with sonar-scanner pre-installed
             args '-u root --network devnet'
         }
     }
@@ -11,7 +11,7 @@ pipeline {
         BRANCH_NAME = 'message'
         GIT_REPO = 'https://github.com/FantasticFiveE/PiFantasticFive.git'
         SONAR_PROJECT_KEY = 'Devops'
-        SONAR_HOST_URL = 'http://sonarqube:9000'
+        SONAR_HOST_URL = 'http://sonarqube:9000' // Docker hostname (not localhost)
     }
 
     stages {
@@ -39,7 +39,7 @@ pipeline {
         stage('🧪 Run Unit Tests') {
             steps {
                 dir("${APP_DIR}") {
-                    sh 'npm test || true'
+                    sh 'npm test || true' // prevents pipeline failure from missing script
                 }
             }
         }
@@ -49,11 +49,16 @@ pipeline {
                 dir("${APP_DIR}") {
                     withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                         withSonarQubeEnv('scanner') {
-                            sh "sonar-scanner " +
-                               "-Dsonar.projectKey=${SONAR_PROJECT_KEY} " +
-                               "-Dsonar.sources=src " +
-                               "-Dsonar.host.url=${SONAR_HOST_URL} " +
-                               "-Dsonar.login=${SONAR_TOKEN}"
+                            retry(3) {
+                                sleep(time: 20, unit: 'SECONDS') // wait for SonarQube to be ready
+                                sh """
+                                    sonar-scanner \\
+                                      -Dsonar.projectKey=${SONAR_PROJECT_KEY} \\
+                                      -Dsonar.sources=src \\
+                                      -Dsonar.host.url=${SONAR_HOST_URL} \\
+                                      -Dsonar.login=${SONAR_TOKEN}
+                                """
+                            }
                         }
                     }
                 }

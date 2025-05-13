@@ -1,7 +1,7 @@
 pipeline {
     agent {
         docker {
-            image 'node:18'
+            image 'node-sonar' // Custom Docker image with sonar-scanner pre-installed
             args '-u root'
         }
     }
@@ -49,13 +49,13 @@ pipeline {
                 dir("${APP_DIR}") {
                     withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                         withSonarQubeEnv('scanner') {
-                            sh """
+                            sh '''
                                 sonar-scanner \
-                                  -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                                  -Dsonar.projectKey=$SONAR_PROJECT_KEY \
                                   -Dsonar.sources=src \
-                                  -Dsonar.host.url=${SONAR_HOST_URL} \
+                                  -Dsonar.host.url=$SONAR_HOST_URL \
                                   -Dsonar.login=$SONAR_TOKEN
-                            """
+                            '''
                         }
                     }
                 }

@@ -1454,6 +1454,119 @@ app.post('/admins', async (req, res) => {
     res.status(500).json({ message: "Erreur serveur." });
   }
 });
+app.get('/Frontend/job/:id', async (req, res) => {
+    const { id } = req.params; // Job ID from the URL
+
+    try {
+        // Fetch job details
+        const job = await JobModel.findById(id)
+            .select('title description salary location skills') // Adjust the fields you want to return
+            .populate('entrepriseId'); // Populate company information if needed
+
+        if (!job) {
+            return res.status(404).json({ message: 'Job not found' });
+        }
+
+        // Respond with the job details
+        res.json(job);
+    } catch (error) {
+        console.error('Error fetching job details:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+app.get('/Frontend/candidate/:id', async (req, res) => {
+    const { id } = req.params; // Candidate ID from the URL
+
+    try {
+        // Fetch candidate profile
+        const candidate = await UserModel.findById(id)
+            .select('name email profile') // Adjust the fields you want to return
+            .populate('applications') // You can populate related fields if necessary
+            .populate('interviews'); // Populate interviews if necessary
+
+        if (!candidate) {
+            return res.status(404).json({ message: 'Candidate not found' });
+        }
+
+        // Respond with the candidate profile
+        res.json(candidate);
+    } catch (error) {
+        console.error('Error fetching candidate profile:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+app.post('/Frontend/predict-score', async (req, res) => {
+  try {
+    const { jobId, candidateId } = req.body;
+    
+    // Get job and candidate data
+    const [job, candidate] = await Promise.all([
+    JobModel.findById(jobId),
+      UserModel.findById(candidateId)
+    ]);
+
+    if (!job || !candidate) {
+      return res.status(404).json({ error: 'Job or candidate not found' });
+    }
+
+    // Prepare features for ML model
+    const features = {
+      domain_match: candidate.profile.domain === job.domain ? 1 : 0,
+      experience_match: Math.min(candidate.profile.experienceYears / job.requiredExperience, 1),
+      education_match: candidate.profile.education === job.requiredEducation ? 1 : 0,
+      skill_match: calculateSkillMatch(candidate.profile.skills, job.skills),
+      quiz_score: candidate.quizScore || 0
+    };
+
+    // Call Flask ML service
+    const mlResponse = await axios.post('http://localhost:7000/predict', features);
+    const predictedScore = mlResponse.data.interview_score;
+
+    res.json({
+      predictedScore,
+      features
+    });
+
+  } catch (error) {
+    console.error('Error predicting interview score:', error);
+    res.status(500).json({ error: 'Failed to predict interview score' });
+  }
+});
+
+function calculateSkillMatch(candidateSkills, jobSkills) {
+  if (!jobSkills || jobSkills.length === 0) return 0;
+  if (!candidateSkills || candidateSkills.length === 0) return 0;
+  
+  const matchedSkills = candidateSkills.filter(skill => 
+    jobSkills.includes(skill)
+  ).length;
+  
+  return matchedSkills / jobSkills.length;
+}
+app.post('/predict-from-skills', async (req, res) => {
+  try {
+    // Ensure experience values are numbers, not arrays
+    const requestData = {
+      ...req.body,
+      candidate_exp: Array.isArray(req.body.candidate_exp) 
+        ? req.body.candidate_exp[0] || 0 
+        : req.body.candidate_exp || 0,
+      required_exp: Array.isArray(req.body.required_exp) 
+        ? req.body.required_exp[0] || 1 
+        : req.body.required_exp || 1
+    };
+
+    const response = await axios.post('http://localhost:5000/predict-from-skills', requestData);
+    res.json(response.data);
+  } catch (error) {
+    console.error('Error calling Flask service:', error.response?.data || error.message);
+    res.status(500).json({ 
+      error: 'Failed to get prediction',
+      details: error.response?.data || error.message,
+      status: 'failed' 
+    });
+  }
+});
 
 const recommendationRoutes = require('./routes/recommendationRoute');
 app.use('/api/recommendations', recommendationRoutes);

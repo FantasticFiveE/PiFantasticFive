@@ -22,7 +22,7 @@ const AdminClustering = () => {
     setError(null);
 
     try {
-      const response = await axios.get('http://192.168.1.24:3001/cluster');
+const response = await axios.get('http://192.168.1.33:3001/cluster');
       setClusters(response.data.clusters || []);
       setCandidates(response.data.candidates || []);
       setLastUpdated(new Date());

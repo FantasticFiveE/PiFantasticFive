@@ -1,0 +1,25 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script type="module">
+import RefreshRuntime from "/@react-refresh"
+RefreshRuntime.injectIntoGlobalHook(window)
+window.$RefreshReg$ = () => {}
+window.$RefreshSig$ = () => (type) => type
+window.__vite_plugin_react_preamble_installed__ = true
+</script>
+
+  <script type="module" src="/@vite/client"></script>
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NEXTHIRE</title>
+  <link rel="shortcut icon" href="/images/favicon.png" type="image/png">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx?t=1747027691620"></script>
+</body>
+</html>

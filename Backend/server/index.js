@@ -162,13 +162,15 @@ async function createBotUser() {
   try {
     const existingBot = await UserModel.findOne({ email: 'bot@jobmatch.com' });
     if (!existingBot) {
-      const botUser = await UserModel.create({
-        email: 'bot@jobmatch.com',
-        name: 'NextBot',
-        role: 'CANDIDATE',
-        emailVerified: true,
-        verificationStatus: { status: 'APPROVED', emailVerified: true }
-      });
+    const botUser = await UserModel.create({
+      email: 'bot@jobmatch.com',
+      name: 'NextBot',
+      password: await bcrypt.hash("bot_password", 10),
+      role: 'CANDIDATE',
+      emailVerified: true,
+      verificationStatus: { status: 'APPROVED', emailVerified: true }
+    });
+
       console.log('✅ Bot user created:', botUser.email);
     } else {
       console.log('✅ Bot user already exists:', existingBot.email);
@@ -274,8 +276,8 @@ app.use('/api', jobRoutes);
 app.use('/api/interviews', interviewRoutes);
 app.use('/quiz', quizRoutes);
 
-const uploadDir = pathphan
-.join(__dirname, 'Uploads');
+const uploadDir = path.join(__dirname, 'Uploads');
+
 const resumeUpload = multer({
   storage: multer.diskStorage({
     destination: uploadDir,
@@ -890,7 +892,7 @@ app.post("/Frontend/reset-password/:token", async(req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
     const user = await UserModel.findById(decoded.id);
 
-    if (!user || user.reset audiblePasswordToken !== token) {
+    if (!user || user.resetPasswordToken !== token) {
       return res.status(400).json({ message: "Invalid or expired reset token." });
     }
 

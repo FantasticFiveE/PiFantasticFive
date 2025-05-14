@@ -22,12 +22,14 @@ pipeline {
             agent {
                 docker {
                     image 'node-sonar'
-                    args "--network devnet -u root -v ${env.WORKSPACE}:/workspace -w /workspace/${APP_DIR}"
+                    args "--network devnet -u root -v ${env.WORKSPACE}/..:/workspace"
                 }
             }
             steps {
-                sh 'ls -la'
-                sh 'npm install'
+                dir("workspace/HamoudaMyApp-DevOps/${APP_DIR}") {
+                    sh 'ls -la'
+                    sh 'npm install'
+                }
             }
         }
 
@@ -35,16 +37,18 @@ pipeline {
             agent {
                 docker {
                     image 'node-sonar'
-                    args "--network devnet -u root -v ${env.WORKSPACE}:/workspace -w /workspace/${APP_DIR}"
+                    args "--network devnet -u root -v ${env.WORKSPACE}/..:/workspace"
                 }
             }
             steps {
-                script {
-                    def pkg = readJSON file: 'package.json'
-                    if (pkg.scripts?.test) {
-                        sh 'npm test'
-                    } else {
-                        echo '⚠️ No test script found in package.json'
+                dir("workspace/HamoudaMyApp-DevOps/${APP_DIR}") {
+                    script {
+                        def pkg = readJSON file: 'package.json'
+                        if (pkg.scripts?.test) {
+                            sh 'npm test'
+                        } else {
+                            echo '⚠️ No test script found in package.json'
+                        }
                     }
                 }
             }
@@ -54,21 +58,23 @@ pipeline {
             agent {
                 docker {
                     image 'node-sonar'
-                    args "--network devnet -u root -v ${env.WORKSPACE}:/workspace -w /workspace/${APP_DIR}"
+                    args "--network devnet -u root -v ${env.WORKSPACE}/..:/workspace"
                 }
             }
             steps {
-                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                    withSonarQubeEnv('scanner') {
-                        retry(3) {
-                            sleep(time: 20, unit: 'SECONDS')
-                            sh """
-                                sonar-scanner \
-                                    -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                                    -Dsonar.sources=src \
-                                    -Dsonar.host.url=${SONAR_HOST_URL} \
-                                    -Dsonar.login=${SONAR_TOKEN}
-                            """
+                dir("workspace/HamoudaMyApp-DevOps/${APP_DIR}") {
+                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                        withSonarQubeEnv('scanner') {
+                            retry(3) {
+                                sleep(time: 20, unit: 'SECONDS')
+                                sh """
+                                    sonar-scanner \
+                                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                                        -Dsonar.sources=src \
+                                        -Dsonar.host.url=${SONAR_HOST_URL} \
+                                        -Dsonar.login=${SONAR_TOKEN}
+                                """
+                            }
                         }
                     }
                 }
@@ -79,11 +85,13 @@ pipeline {
             agent {
                 docker {
                     image 'node-sonar'
-                    args "--network devnet -u root -v ${env.WORKSPACE}:/workspace -w /workspace/${APP_DIR}"
+                    args "--network devnet -u root -v ${env.WORKSPACE}/..:/workspace"
                 }
             }
             steps {
-                sh 'npm run build'
+                dir("workspace/HamoudaMyApp-DevOps/${APP_DIR}") {
+                    sh 'npm run build'
+                }
             }
         }
     }

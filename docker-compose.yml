@@ -11,6 +11,8 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: example
     volumes:
       - mongo-data:/data/db
+    networks:
+      - devnet
 
   backend:
     build:
@@ -22,6 +24,8 @@ services:
       - MONGO_URI=mongodb://root:example@mongo:27017/users?authSource=admin
     depends_on:
       - mongo
+    networks:
+      - devnet
 
   frontend:
     build:
@@ -32,27 +36,47 @@ services:
       - "5173:80"
     depends_on:
       - backend
+    networks:
+      - devnet
 
   jenkins:
     image: jenkins/jenkins:lts
     container_name: jenkins
+    user: root # 🛠️ ensure Jenkins has permission to write to mounted volumes
     ports:
       - "8080:8080"
     volumes:
-      - jenkins_home:/var/jenkins_home
+      - jenkins-data:/var/jenkins_home # ✅ named volume (no permission issue)
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - backend
       - frontend
+      - sonarqube
+    networks:
+      - devnet
 
   sonarqube:
-    container_name: sonarqube
     image: sonarqube:community
+    container_name: sonarqube
     ports:
       - "9000:9000"
     environment:
       - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
+    networks:
+      - devnet
+
+  node-sonar:
+    build:
+      context: .
+      dockerfile: Dockerfile.node-sonar
+    image: node-sonar
+    container_name: node-sonar
+    networks:
+      - devnet
 
 volumes:
   mongo-data:
-  jenkins_home:
+  jenkins-data: # ✅ replaces `jenkins_home` to fix write errors
+
+networks:
+  devnet:

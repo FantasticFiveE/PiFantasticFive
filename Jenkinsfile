@@ -22,13 +22,11 @@ pipeline {
             agent {
                 docker {
                     image 'node-sonar'
-                    args "--network devnet -v ${env.WORKSPACE}/..:/workspace"
+                    args "--network devnet -v ${env.WORKSPACE}:${env.WORKSPACE} -w ${env.WORKSPACE}/${APP_DIR}"
                 }
             }
             steps {
-                dir("/workspace/${APP_DIR}") {
-                    sh 'npm install'
-                }
+                sh 'npm install'
             }
         }
 
@@ -36,18 +34,16 @@ pipeline {
             agent {
                 docker {
                     image 'node-sonar'
-                    args "--network devnet -v ${env.WORKSPACE}/..:/workspace"
+                    args "--network devnet -v ${env.WORKSPACE}:${env.WORKSPACE} -w ${env.WORKSPACE}/${APP_DIR}"
                 }
             }
             steps {
-                dir("/workspace/${APP_DIR}") {
-                    script {
-                        def pkg = readJSON file: 'package.json'
-                        if (pkg.scripts?.test) {
-                            sh 'npm test'
-                        } else {
-                            echo '⚠️ No test script found in package.json'
-                        }
+                script {
+                    def pkg = readJSON file: 'package.json'
+                    if (pkg.scripts?.test) {
+                        sh 'npm test'
+                    } else {
+                        echo '⚠️ No test script found in package.json'
                     }
                 }
             }
@@ -57,23 +53,21 @@ pipeline {
             agent {
                 docker {
                     image 'node-sonar'
-                    args "--network devnet -v ${env.WORKSPACE}/..:/workspace"
+                    args "--network devnet -v ${env.WORKSPACE}:${env.WORKSPACE} -w ${env.WORKSPACE}/${APP_DIR}"
                 }
             }
             steps {
-                dir("/workspace/${APP_DIR}") {
-                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                        withSonarQubeEnv('scanner') {
-                            retry(3) {
-                                sleep(time: 20, unit: 'SECONDS')
-                                sh """
-                                    sonar-scanner \
-                                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                                        -Dsonar.sources=src \
-                                        -Dsonar.host.url=${SONAR_HOST_URL} \
-                                        -Dsonar.login=${SONAR_TOKEN}
-                                """
-                            }
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    withSonarQubeEnv('scanner') {
+                        retry(3) {
+                            sleep(time: 20, unit: 'SECONDS')
+                            sh """
+                                sonar-scanner \
+                                    -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                                    -Dsonar.sources=src \
+                                    -Dsonar.host.url=${SONAR_HOST_URL} \
+                                    -Dsonar.login=${SONAR_TOKEN}
+                            """
                         }
                     }
                 }
@@ -84,13 +78,11 @@ pipeline {
             agent {
                 docker {
                     image 'node-sonar'
-                    args "--network devnet -v ${env.WORKSPACE}/..:/workspace"
+                    args "--network devnet -v ${env.WORKSPACE}:${env.WORKSPACE} -w ${env.WORKSPACE}/${APP_DIR}"
                 }
             }
             steps {
-                dir("/workspace/${APP_DIR}") {
-                    sh 'npm run build'
-                }
+                sh 'npm run build'
             }
         }
     }

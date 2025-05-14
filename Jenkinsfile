@@ -22,7 +22,7 @@ pipeline {
             agent {
                 docker {
                     image 'node-sonar'
-                    args "--network devnet -u root -v ${env.WORKSPACE}/${APP_DIR}:/app -w /app"
+                    args "--network devnet -u root -v ${env.WORKSPACE}:/workspace -w /workspace/${APP_DIR}"
                 }
             }
             steps {
@@ -35,7 +35,7 @@ pipeline {
             agent {
                 docker {
                     image 'node-sonar'
-                    args "--network devnet -u root -v ${env.WORKSPACE}/${APP_DIR}:/app -w /app"
+                    args "--network devnet -u root -v ${env.WORKSPACE}:/workspace -w /workspace/${APP_DIR}"
                 }
             }
             steps {
@@ -54,7 +54,7 @@ pipeline {
             agent {
                 docker {
                     image 'node-sonar'
-                    args "--network devnet -u root -v ${env.WORKSPACE}/${APP_DIR}:/app -w /app"
+                    args "--network devnet -u root -v ${env.WORKSPACE}:/workspace -w /workspace/${APP_DIR}"
                 }
             }
             steps {
@@ -79,7 +79,7 @@ pipeline {
             agent {
                 docker {
                     image 'node-sonar'
-                    args "--network devnet -u root -v ${env.WORKSPACE}/${APP_DIR}:/app -w /app"
+                    args "--network devnet -u root -v ${env.WORKSPACE}:/workspace -w /workspace/${APP_DIR}"
                 }
             }
             steps {

@@ -26,8 +26,10 @@ pipeline {
                 }
             }
             steps {
-                sh 'ls -la'
-                sh 'npm install'
+                dir("${APP_DIR}") {
+                    sh 'ls -la'
+                    sh 'npm install'
+                }
             }
         }
 
@@ -39,12 +41,14 @@ pipeline {
                 }
             }
             steps {
-                script {
-                    def pkg = readJSON file: 'package.json'
-                    if (pkg.scripts?.test) {
-                        sh 'npm test'
-                    } else {
-                        echo '⚠️ No test script found in package.json'
+                dir("${APP_DIR}") {
+                    script {
+                        def pkg = readJSON file: 'package.json'
+                        if (pkg.scripts?.test) {
+                            sh 'npm test'
+                        } else {
+                            echo '⚠️ No test script found in package.json'
+                        }
                     }
                 }
             }
@@ -54,21 +58,23 @@ pipeline {
             agent {
                 docker {
                     image 'node-sonar'
-                    args "--network devnet -u root -v ${env.WORKSPACE}:${env.WORKSPACE} -w ${env.WORKSPACE}"
+                    args "--network devnet -u root -v ${env.WORKSPACE}:${env.WORKSPACE} -w ${env.WORKSPACE}/${APP_DIR}"
                 }
             }
             steps {
-                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                    withSonarQubeEnv('scanner') {
-                        retry(3) {
-                            sleep(time: 10, unit: 'SECONDS')
-                            sh """
-                                sonar-scanner \
-                                    -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                                    -Dsonar.sources=Frontend/src \
-                                    -Dsonar.host.url=${SONAR_HOST_URL} \
-                                    -Dsonar.login=${SONAR_TOKEN}
-                            """
+                dir("${APP_DIR}") {
+                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                        withSonarQubeEnv('scanner') {
+                            retry(3) {
+                                sleep(time: 20, unit: 'SECONDS')
+                                sh """
+                                    sonar-scanner \
+                                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                                        -Dsonar.sources=src \
+                                        -Dsonar.host.url=${SONAR_HOST_URL} \
+                                        -Dsonar.login=${SONAR_TOKEN}
+                                """
+                            }
                         }
                     }
                 }
@@ -83,7 +89,9 @@ pipeline {
                 }
             }
             steps {
-                sh 'npm run build'
+                dir("${APP_DIR}") {
+                    sh 'npm run build'
+                }
             }
         }
     }

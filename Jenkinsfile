@@ -22,12 +22,11 @@ pipeline {
             agent {
                 docker {
                     image 'node-sonar'
-                    args "--network devnet -v ${env.WORKSPACE}/..:/workspace --user root"
+                    args "--network devnet -v ${env.WORKSPACE}/..:/workspace"
                 }
             }
             steps {
                 dir("/workspace/${APP_DIR}") {
-                    sh 'ls -la'
                     sh 'npm install'
                 }
             }
@@ -37,7 +36,7 @@ pipeline {
             agent {
                 docker {
                     image 'node-sonar'
-                    args "--network devnet -u root -v ${env.WORKSPACE}/..:/workspace"
+                    args "--network devnet -v ${env.WORKSPACE}/..:/workspace"
                 }
             }
             steps {
@@ -58,7 +57,7 @@ pipeline {
             agent {
                 docker {
                     image 'node-sonar'
-                    args "--network devnet -u root -v ${env.WORKSPACE}/..:/workspace"
+                    args "--network devnet -v ${env.WORKSPACE}/..:/workspace"
                 }
             }
             steps {
@@ -85,7 +84,7 @@ pipeline {
             agent {
                 docker {
                     image 'node-sonar'
-                    args "--network devnet -u root -v ${env.WORKSPACE}/..:/workspace"
+                    args "--network devnet -v ${env.WORKSPACE}/..:/workspace"
                 }
             }
             steps {

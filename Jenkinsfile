@@ -22,13 +22,14 @@ pipeline {
             agent {
                 docker {
                     image 'node-sonar'
-                    args "--network devnet -v ${env.WORKSPACE}:${env.WORKSPACE} -w ${env.WORKSPACE}/${APP_DIR}"
+                    args "--network devnet -v ${env.WORKSPACE}:${env.WORKSPACE} -w ${env.WORKSPACE}/${APP_DIR}" // no --user
                 }
             }
             steps {
                 sh 'npm install'
             }
         }
+
 
         stage('🧪 Run Unit Tests') {
             agent {

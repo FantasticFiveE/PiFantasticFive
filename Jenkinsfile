@@ -26,7 +26,7 @@ pipeline {
                 }
             }
             steps {
-                dir("workspace/HamoudaMyApp-DevOps/${APP_DIR}") {
+                dir("/workspace/${APP_DIR}") {
                     sh 'ls -la'
                     sh 'npm install'
                 }
@@ -41,7 +41,7 @@ pipeline {
                 }
             }
             steps {
-                dir("workspace/HamoudaMyApp-DevOps/${APP_DIR}") {
+                dir("/workspace/${APP_DIR}") {
                     script {
                         def pkg = readJSON file: 'package.json'
                         if (pkg.scripts?.test) {
@@ -62,7 +62,7 @@ pipeline {
                 }
             }
             steps {
-                dir("workspace/HamoudaMyApp-DevOps/${APP_DIR}") {
+                dir("/workspace/${APP_DIR}") {
                     withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                         withSonarQubeEnv('scanner') {
                             retry(3) {
@@ -89,7 +89,7 @@ pipeline {
                 }
             }
             steps {
-                dir("workspace/HamoudaMyApp-DevOps/${APP_DIR}") {
+                dir("/workspace/${APP_DIR}") {
                     sh 'npm run build'
                 }
             }

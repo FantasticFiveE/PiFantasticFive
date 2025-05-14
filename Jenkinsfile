@@ -22,7 +22,7 @@ pipeline {
             agent {
                 docker {
                     image 'node-sonar'
-                    args "--network devnet -u root -v ${env.WORKSPACE}/..:/workspace"
+                    args "--network devnet -v ${env.WORKSPACE}/..:/workspace --user root"
                 }
             }
             steps {
